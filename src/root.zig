@@ -5,6 +5,27 @@ export fn add(a: i32, b: i32) i32 {
     return a + b;
 }
 
-test "basic add functionality" {
-    try testing.expect(add(3, 7) == 10);
+test "builder" {
+    _ = Builder.init();
+    _ = Wave.init();
 }
+
+pub const Builder = struct {
+    wave: Wave,
+
+    fn init() Builder {
+        return Builder{
+            .wave = Wave.init(),
+        };
+    }
+};
+
+const Wave = struct {
+    data: []f32,
+
+    fn init() Wave {
+        return Wave{
+            .data = &[_]f32{},
+        };
+    }
+};
