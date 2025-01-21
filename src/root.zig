@@ -6,7 +6,7 @@ export fn add(a: i32, b: i32) i32 {
 }
 
 test "builder" {
-    _ = Builder.init();
+    _ = Builder.init(.{});
 }
 
 test "wave" {
@@ -18,7 +18,11 @@ test "wave" {
 pub const Builder = struct {
     wave: Wave,
 
-    fn init() Builder {
+    const initOption = struct { };
+
+    fn init(option: initOption) Builder {
+        _ = option;
+
         return Builder{
             .wave = Wave.init(.{}),
         };
