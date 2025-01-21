@@ -13,6 +13,7 @@ test "wave" {
     _ = Wave.init(.{});
     _ = Wave.init(.{}).data;
     _ = Wave.init(.{}).apply();
+    _ = Wave.init(.{}).apply().data;
 }
 
 pub const Builder = struct {
