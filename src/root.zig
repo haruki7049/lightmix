@@ -16,30 +16,26 @@ test "wave" {
 }
 
 pub const Builder = struct {
-    wave: Wave,
+    wave: Wave = Wave.init(.{}),
 
     const initOption = struct { };
 
     fn init(option: initOption) Builder {
         _ = option;
 
-        return Builder{
-            .wave = Wave.init(.{}),
-        };
+        return Builder{};
     }
 };
 
 const Wave = struct {
-    data: []f32,
+    data: []f32 = &[_]f32{},
 
     const initOption = struct { };
 
     fn init(option: initOption) Wave {
         _ = option;
 
-        return Wave{
-            .data = &[_]f32{},
-        };
+        return Wave{};
     }
 
     fn apply(self: Wave) Wave {
