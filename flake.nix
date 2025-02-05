@@ -22,7 +22,12 @@
       ];
 
       perSystem =
-        { pkgs, lib, stdenv, ... }:
+        {
+          pkgs,
+          lib,
+          stdenv,
+          ...
+        }:
         let
           lightmix = pkgs.stdenv.mkDerivation {
             name = "lightmix";
