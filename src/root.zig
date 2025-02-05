@@ -34,7 +34,7 @@ pub const Builder = struct {
 /// Contains Wave data
 /// Usage: Wave.init(.{}).apply()
 const Wave = struct {
-    data: []f32 = &[_]f32{},
+    data: std.ArrayList([]const f32) = undefined,
 
     const initOption = struct { };
 
