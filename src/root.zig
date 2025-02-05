@@ -36,13 +36,15 @@ pub const Builder = struct {
 const Wave = struct {
     data: std.ArrayList([]const f32) = undefined,
 
-    const initOption = struct { };
+    const initOption = struct {
+        data: std.ArrayList([]const f32) = undefined,
+    };
 
     /// `init` method
     fn init(option: initOption) Wave {
-        _ = option;
-
-        return Wave{};
+        return Wave{
+            .data = option.data,
+        };
     }
 
     /// apply method
