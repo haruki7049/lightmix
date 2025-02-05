@@ -20,7 +20,7 @@ test "wave" {
 pub const Builder = struct {
     wave: Wave = Wave.init(.{}),
 
-    const initOption = struct { };
+    const initOption = struct {};
 
     /// `init` method
     fn init(option: initOption) Builder {
