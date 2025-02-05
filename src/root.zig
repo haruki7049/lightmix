@@ -36,6 +36,7 @@ const Wave = struct {
         };
     }
 
+    /// `deinit` method
     fn deinit(self: *Self) void {
         self.data.deinit();
     }
