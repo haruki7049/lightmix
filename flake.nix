@@ -36,6 +36,10 @@
             nativeBuildInputs = [
               pkgs.zig_0_13.hook
             ];
+
+            postInstall = ''
+              zig build docs --prefix $out
+            '';
           };
         in
         {
