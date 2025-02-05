@@ -22,7 +22,17 @@
       ];
 
       perSystem =
-        { pkgs, ... }:
+        { pkgs, lib, stdenv, ... }:
+        let
+          lightmix = pkgs.stdenv.mkDerivation {
+            name = "lightmix";
+            src = lib.cleanSource ./.;
+
+            nativeBuildInputs = [
+              pkgs.zig_0_13.hook
+            ];
+          };
+        in
         {
           treefmt = {
             projectRootFile = "flake.nix";
@@ -34,6 +44,11 @@
               ".gitignore"
               "flake.lock"
             ];
+          };
+
+          packages = {
+            inherit lightmix;
+            default = lightmix;
           };
 
           devShells.default = pkgs.mkShell {
