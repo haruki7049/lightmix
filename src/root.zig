@@ -8,8 +8,6 @@ test "wave" {
 
     _ = Wave.init(.{});
     _ = Wave.init(.{}).data;
-    _ = Wave.init(.{}).apply();
-    _ = Wave.init(.{}).apply().data;
 
     const example = Wave.init(.{
         .data = std.ArrayList([]const f32).init(allocator),
@@ -40,10 +38,17 @@ const Wave = struct {
     fn deinit(self: *Self) void {
         self.data.deinit();
     }
+};
 
-    /// apply method
-    /// Used to apply function, such as sine function
-    fn apply(self: Wave) Wave {
-        return self;
-    }
+/// ノーツの順番
+const Order = struct {
+    notes: std.ArrayList([]const Note) = undefined,
+};
+
+/// 音符
+const Note = struct {
+    wave: Wave = undefined,
+
+    /// 秒数
+    seconds: u32 = undefined,
 };
