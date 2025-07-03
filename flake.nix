@@ -24,47 +24,42 @@
       perSystem =
         {
           pkgs,
-          lib,
-          stdenv,
           ...
         }:
-        let
-          lightmix = pkgs.stdenv.mkDerivation {
-            name = "lightmix";
-            src = lib.cleanSource ./.;
-
-            nativeBuildInputs = [
-              pkgs.zig_0_13.hook
-            ];
-
-            postInstall = ''
-              zig build docs --prefix $out
-            '';
-          };
-        in
         {
           treefmt = {
             projectRootFile = "flake.nix";
-            programs.nixfmt.enable = true;
-            programs.zig.enable = true;
-            programs.mdformat.enable = true;
-            settings.excludes = [
-              "LICENSE"
-              ".gitignore"
-              "flake.lock"
-            ];
-          };
 
-          packages = {
-            inherit lightmix;
-            default = lightmix;
+            # Nix
+            programs.nixfmt.enable = true;
+
+            # Zig
+            programs.zig.enable = true;
+
+            # GitHub Actions
+            programs.actionlint.enable = true;
+
+            # Markdown
+            programs.mdformat.enable = true;
+
+            # ShellScript
+            programs.shellcheck.enable = true;
+            programs.shfmt.enable = true;
           };
 
           devShells.default = pkgs.mkShell {
-            packages = [
-              pkgs.zig_0_13
+            nativeBuildInputs = [
+              # Compiler
+              pkgs.zig_0_14
+
+              # LSP
+              pkgs.zls
               pkgs.nil
             ];
+
+            shellHook = ''
+              export PS1="\n[nix-shell:\w]$ "
+            '';
           };
         };
     };
