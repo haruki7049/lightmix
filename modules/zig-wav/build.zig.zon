@@ -1,6 +1,6 @@
 .{
-    .name = .zig_soundio,
-    .fingerprint = 0x6f9ce4bde181945,
+    .name = .zig_wav,
+    .fingerprint = 0xd6cd4a1a38920f82,
     .version = "0.1.0",
 
     .dependencies = .{},
