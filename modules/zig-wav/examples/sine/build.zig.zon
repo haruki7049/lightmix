@@ -1,0 +1,17 @@
+.{
+    .name = .sine,
+    .version = "0.0.0",
+    .fingerprint = 0xd96ef33f8fdb548e,
+    .minimum_zig_version = "0.14.1",
+
+    .dependencies = .{
+        .zig_wav = .{ .path = "../.." },
+    },
+
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "LICENSE",
+    },
+}
