@@ -6,7 +6,7 @@ pub fn build(b: *std.Build) void {
 
     // Library module declaration
     const lib_mod = b.addModule("zig_wav", .{
-        .root_source_file = b.path("src/wav.zig"),
+        .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
     });
