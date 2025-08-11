@@ -4,7 +4,11 @@
     .fingerprint = 0xe48269dbca8904a,
     .minimum_zig_version = "0.14.1",
 
-    .dependencies = .{},
+    .dependencies = .{
+        .zig_wav = .{
+            .path = "modules/zig-wav",
+        },
+    },
 
     .paths = .{
         "build.zig",
