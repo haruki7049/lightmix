@@ -2,8 +2,8 @@
 .direnv/
 
 # Nix's result
-result/
-result-*/
+result
+result-*
 
 ## Zig-lang
 # This file is for zig-specific build artifacts.
