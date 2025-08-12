@@ -1,3 +1,5 @@
+//! Wave
+
 const std = @import("std");
 const zig_wav = @import("zig_wav");
 const testing = std.testing;
