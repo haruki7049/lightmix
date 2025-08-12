@@ -19,6 +19,32 @@ pub const initOptions = struct {
     bits: usize,
 };
 
+pub const Generators = struct {
+    allocator: std.mem.Allocator,
+
+    pub fn init(allocator: std.mem.Allocator) Generators {
+        return Generators{ .allocator = allocator };
+    }
+
+    pub fn soundless(self: Generators, samples: usize) ![]const f32 {
+        var result = std.ArrayList(f32).init(self.allocator);
+        var i: usize = 0;
+
+        while (i < samples) : (i += 1) {
+            result.append(0.0) catch |err| {
+                std.debug.print("{any}\n", .{err});
+                @panic("Panic in Wave.Generators.soundless");
+            };
+        }
+
+        return try result.toOwnedSlice();
+    }
+
+    pub fn deinit(self: Generators, data: []const f32) void {
+        self.allocator.free(data);
+    }
+};
+
 pub fn init(data: []const f32, allocator: std.mem.Allocator, options: initOptions) !Self {
     const owned_data = try allocator.alloc(f32, data.len);
     @memcpy(owned_data, data);
@@ -134,4 +160,26 @@ test "init & deinit" {
     try testing.expectEqual(wave.sample_rate, 44100);
     try testing.expectEqual(wave.channels, 1);
     try testing.expectEqual(wave.bits, 16);
+}
+
+test "Generators.soundless" {
+    const allocator = testing.allocator;
+    const generators = Self.Generators.init(allocator);
+    const data: []const f32 = try generators.soundless(44100);
+    defer generators.deinit(data);
+
+    const wave = try Self.init(data, allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+        .bits = 16,
+    });
+    defer wave.deinit();
+
+    try testing.expectEqual(wave.sample_rate, 44100);
+    try testing.expectEqual(wave.channels, 1);
+    try testing.expectEqual(wave.bits, 16);
+
+    try testing.expectEqual(wave.data[0], 0.0);
+    try testing.expectEqual(wave.data[1], 0.0);
+    try testing.expectEqual(wave.data[2], 0.0);
 }
