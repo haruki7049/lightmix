@@ -95,7 +95,7 @@ pub const Wave = struct {
 
 test "init & deinit" {
     const allocator = testing.allocator;
-    const wave = try Wave.init(@embedFile("./assets/sine.wav"), allocator);
+    const wave = try Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
     defer wave.deinit();
 
     try testing.expectEqual(wave.data[0], 0.0);
