@@ -6,7 +6,9 @@ const zig_wav = @import("zig_wav");
 const testing = std.testing;
 
 pub const Wave = @import("./wave.zig");
+pub const Composer = @import("./composer.zig");
 
 test "Import tests" {
     _ = @import("./wave.zig");
+    _ = @import("./composer.zig");
 }
