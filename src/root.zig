@@ -5,7 +5,7 @@ const std = @import("std");
 const zig_wav = @import("zig_wav");
 const testing = std.testing;
 
-const Wave = struct {
+pub const Wave = struct {
     const Self = @This();
 
     data: []const f32,
@@ -19,7 +19,7 @@ const Wave = struct {
     /// The data argument can receive a binary data, as @embedFile("./assets/sine.wav")
     /// Therefore you can use this function as:
     /// const wave = Wave.init(@embedFile("./asset/sine.wav"));
-    fn init(data: []const u8, allocator: std.mem.Allocator) !Self {
+    pub fn init(data: []const u8, allocator: std.mem.Allocator) !Self {
         var stream = std.io.fixedBufferStream(data);
         var decoder = try zig_wav.decoder(stream.reader());
 
@@ -53,11 +53,11 @@ const Wave = struct {
     }
 
     /// Free the Wave struct
-    fn deinit(self: Self) void {
+    pub fn deinit(self: Self) void {
         self.allocator.free(self.data);
     }
 
-    fn write(self: Self, file: std.fs.File) !void {
+    pub fn write(self: Self, file: std.fs.File) !void {
         var encoder = try zig_wav.encoder(i16, file.writer(), file.seekableStream(), self.sample_rate, self.channels);
         try encoder.write(f32, self.data);
         try encoder.finalize();
