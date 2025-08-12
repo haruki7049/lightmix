@@ -7,7 +7,7 @@ const Self = @This();
 data: []const Wave,
 allocator: std.mem.Allocator,
 
-fn init(allocator: std.mem.Allocator) !Self {
+pub fn init(allocator: std.mem.Allocator) !Self {
     var d = std.ArrayList(Wave).init(allocator);
 
     return Self{
@@ -16,7 +16,7 @@ fn init(allocator: std.mem.Allocator) !Self {
     };
 }
 
-fn deinit(self: Self) void {
+pub fn deinit(self: Self) void {
     self.allocator.free(self.data);
 }
 
