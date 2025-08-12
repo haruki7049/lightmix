@@ -1,0 +1,16 @@
+.{
+    .name = .generate_triangle_wave,
+    .version = "0.0.0",
+    .fingerprint = 0x8d7ccaa6407e2b94,
+    .minimum_zig_version = "0.14.1",
+
+    .dependencies = .{
+        .lightmix = .{ .path = "../.." }
+    },
+
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
