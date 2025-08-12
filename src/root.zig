@@ -8,8 +8,12 @@ const testing = std.testing;
 const Wave = struct {
     const Self = @This();
 
-    inner: []const f32,
+    data: []const f32,
     allocator: std.mem.Allocator,
+
+    sample_rate: usize,
+    channels: usize,
+    bits: usize,
 
     /// Create Wave from binary data
     /// The data argument can receive a binary data, as @embedFile("./assets/sine.wav")
@@ -34,15 +38,29 @@ const Wave = struct {
             }
         }
 
+        const sample_rate: usize = decoder.sampleRate();
+        const channels: usize = decoder.channels();
+        const bits: usize = decoder.bits();
+
         return Self{
-            .inner = try arraylist.toOwnedSlice(),
-            .allocator = allocator
+            .data = try arraylist.toOwnedSlice(),
+            .allocator = allocator,
+
+            .sample_rate = sample_rate,
+            .channels = channels,
+            .bits = bits,
         };
     }
 
     /// Free the Wave struct
     fn deinit(self: Self) void {
-        self.allocator.free(self.inner);
+        self.allocator.free(self.data);
+    }
+
+    fn write(self: Self, file: std.fs.File) !void {
+        var encoder = try zig_wav.encoder(i16, file.writer(), file.seekableStream(), self.sample_rate, self.channels);
+        try encoder.write(f32, self.data);
+        try encoder.finalize();
     }
 };
 
@@ -51,7 +69,11 @@ test "init & deinit" {
     const wave = try Wave.init(@embedFile("./assets/sine.wav"), allocator);
     defer wave.deinit();
 
-    try testing.expectEqual(wave.inner[0], 0.0);
-    try testing.expectEqual(wave.inner[1], 5.0109863e-2);
-    try testing.expectEqual(wave.inner[2], 1.0003662e-1);
+    try testing.expectEqual(wave.data[0], 0.0);
+    try testing.expectEqual(wave.data[1], 5.0109863e-2);
+    try testing.expectEqual(wave.data[2], 1.0003662e-1);
+
+    try testing.expectEqual(wave.sample_rate, 44100);
+    try testing.expectEqual(wave.channels, 1);
+    try testing.expectEqual(wave.bits, 16);
 }
