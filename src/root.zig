@@ -46,7 +46,7 @@ const Wave = struct {
     }
 };
 
-test "init" {
+test "init & deinit" {
     const allocator = testing.allocator;
     const wave = try Wave.init(@embedFile("./assets/sine.wav"), allocator);
     defer wave.deinit();
