@@ -62,6 +62,15 @@ pub const Wave = struct {
         try encoder.write(f32, self.data);
         try encoder.finalize();
     }
+
+    pub fn filter(self: Self, filter_fn: fn (self: Self) anyerror!Self) Self {
+        const result: Self = filter_fn(self) catch |err| {
+            std.debug.print("{any}\n", .{err});
+            @panic("Error happened in filter function...");
+        };
+
+        return result;
+    }
 };
 
 test "init & deinit" {

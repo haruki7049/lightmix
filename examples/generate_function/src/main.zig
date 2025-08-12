@@ -7,7 +7,7 @@ pub fn main() !void {
     const sinewave: Wave = try Wave.init(@embedFile("./assets/sine.wav"), allocator);
     defer sinewave.deinit();
 
-    const overtone_wave: Wave = try generate_function(sinewave);
+    const overtone_wave: Wave = sinewave.filter(generate_function).filter(generate_function).filter(generate_function);
     defer overtone_wave.deinit();
 
     var file = try std.fs.cwd().createFile("result.wav", .{});
