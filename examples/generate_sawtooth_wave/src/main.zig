@@ -4,15 +4,15 @@ const Wave = lightmix.Wave;
 const allocator = std.heap.page_allocator;
 
 pub fn main() !void {
-    const data: [44100]f32 = generate_square_wave_data();
-    const square_wave: Wave = try Wave.init(data[0..], allocator, .{
+    const data: [44100]f32 = generate_sawtooth_wave_data();
+    const sawtooth_wave: Wave = try Wave.init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,
     });
-    defer square_wave.deinit();
+    defer sawtooth_wave.deinit();
 
-    const decayed_wave: Wave = square_wave.filter(decay);
+    const decayed_wave: Wave = sawtooth_wave.filter(decay);
     defer decayed_wave.deinit();
 
     var file = try std.fs.cwd().createFile("result.wav", .{});
@@ -21,7 +21,7 @@ pub fn main() !void {
     try decayed_wave.write(file);
 }
 
-fn generate_square_wave_data() [44100]f32 {
+fn generate_sawtooth_wave_data() [44100]f32 {
     const sample_rate: f32 = 44100.0;
     const freq: f32 = 440.0;
     const period: f32 = sample_rate / freq;
