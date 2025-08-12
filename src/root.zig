@@ -15,12 +15,37 @@ pub const Wave = struct {
     channels: usize,
     bits: usize,
 
+    pub const initOptions = struct {
+        sample_rate: usize,
+        channels: usize,
+        bits: usize,
+    };
+
+    pub fn init(data: []const f32, allocator: std.mem.Allocator, options: initOptions) !Self {
+        const owned_data = try allocator.alloc(f32, data.len);
+        @memcpy(owned_data, data);
+
+        return Self{
+            .data = owned_data,
+            .allocator = allocator,
+
+            .sample_rate = options.sample_rate,
+            .channels = options.channels,
+            .bits = options.bits,
+        };
+    }
+
+    /// Free the Wave struct
+    pub fn deinit(self: Self) void {
+        self.allocator.free(self.data);
+    }
+
     /// Create Wave from binary data
     /// The data argument can receive a binary data, as @embedFile("./assets/sine.wav")
     /// Therefore you can use this function as:
-    /// const wave = Wave.init(@embedFile("./asset/sine.wav"));
-    pub fn init(data: []const u8, allocator: std.mem.Allocator) !Self {
-        var stream = std.io.fixedBufferStream(data);
+    /// const wave = Wave.from_file_content(@embedFile("./asset/sine.wav"), allocator);
+    pub fn from_file_content(content: []const u8, allocator: std.mem.Allocator) Self {
+        var stream = std.io.fixedBufferStream(content);
         var decoder = try zig_wav.decoder(stream.reader());
 
         var buf: [64]f32 = undefined;
@@ -50,11 +75,6 @@ pub const Wave = struct {
             .channels = channels,
             .bits = bits,
         };
-    }
-
-    /// Free the Wave struct
-    pub fn deinit(self: Self) void {
-        self.allocator.free(self.data);
     }
 
     pub fn write(self: Self, file: std.fs.File) !void {
