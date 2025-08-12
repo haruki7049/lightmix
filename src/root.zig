@@ -44,7 +44,7 @@ pub const Wave = struct {
     /// The data argument can receive a binary data, as @embedFile("./assets/sine.wav")
     /// Therefore you can use this function as:
     /// const wave = Wave.from_file_content(@embedFile("./asset/sine.wav"), allocator);
-    pub fn from_file_content(content: []const u8, allocator: std.mem.Allocator) Self {
+    pub fn from_file_content(content: []const u8, allocator: std.mem.Allocator) !Self {
         var stream = std.io.fixedBufferStream(content);
         var decoder = try zig_wav.decoder(stream.reader());
 
