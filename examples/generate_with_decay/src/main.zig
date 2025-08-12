@@ -21,9 +21,7 @@ fn generate_function(original_wave: Wave) !Wave {
 
     for (original_wave.data, 0..) |data, n| {
         const i = original_wave.data.len - n;
-
         const volume: f32 = @as(f32, @floatFromInt(i)) * (1.0 / @as(f32, @floatFromInt(original_wave.data.len)));
-        std.debug.print("{d}\n", .{volume});
 
         const new_data = data * volume;
         try result.append(new_data);
