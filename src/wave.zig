@@ -40,7 +40,7 @@ pub const Generators = struct {
         return try result.toOwnedSlice();
     }
 
-    pub fn deinit(self: Generators, data: []const f32) void {
+    pub fn free(self: Generators, data: []const f32) void {
         self.allocator.free(data);
     }
 };
@@ -166,7 +166,7 @@ test "Generators.soundless" {
     const allocator = testing.allocator;
     const generators = Self.Generators.init(allocator);
     const data: []const f32 = try generators.soundless(44100);
-    defer generators.deinit(data);
+    defer generators.free(data);
 
     const wave = try Self.init(data, allocator, .{
         .sample_rate = 44100,

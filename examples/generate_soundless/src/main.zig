@@ -6,7 +6,7 @@ const allocator = std.heap.page_allocator;
 pub fn main() !void {
     const generators = Wave.Generators.init(allocator);
     const data: []const f32 = try generators.soundless(44100);
-    defer generators.deinit(data);
+    defer generators.free(data);
 
     const soundless_wave: Wave = try Wave.init(data, allocator, .{
         .sample_rate = 44100,
