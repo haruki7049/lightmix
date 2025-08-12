@@ -55,6 +55,9 @@
 
               # Nix
               pkgs.nil
+
+              # Music Player
+              pkgs.sox # Use this command as: `play result.wav`
             ];
           };
         };
