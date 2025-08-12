@@ -1,3 +1,5 @@
+//! Composer
+
 const std = @import("std");
 const testing = std.testing;
 const Wave = @import("./root.zig").Wave;
