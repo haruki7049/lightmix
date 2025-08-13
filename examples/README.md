@@ -2,3 +2,5 @@
 
 - Composer
 - Wave
+- drum
+- guitar
