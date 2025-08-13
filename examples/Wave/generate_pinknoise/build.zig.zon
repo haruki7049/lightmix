@@ -1,0 +1,16 @@
+.{
+    .name = .generate_pinknoise,
+    .version = "0.0.0",
+    .fingerprint = 0xa54dcee860679070,
+    .minimum_zig_version = "0.14.1",
+
+    .dependencies = .{
+        .lightmix = .{ .path = "../../.." }
+    },
+
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
