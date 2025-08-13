@@ -23,7 +23,7 @@ const volume: f32 = 1.0;
 
 fn generate_sinewave_data() [44100]f32 {
     const sample_rate: f32 = 44100.0;
-    const radins_per_sec: f32 = c_5 * std.math.pi;
+    const radins_per_sec: f32 = c_5 * 2.0 * std.math.pi;
 
     var result: [44100]f32 = undefined;
     var i: usize = 0;
