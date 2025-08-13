@@ -1,11 +1,11 @@
 .{
-    .name = .generate_sawtooth_wave,
+    .name = .generate_sinewave,
     .version = "0.0.0",
-    .fingerprint = 0x9abf981241297e1a,
+    .fingerprint = 0x67afc43683928479,
     .minimum_zig_version = "0.14.1",
 
     .dependencies = .{
-        .lightmix = .{ .path = "../.." }
+        .lightmix = .{ .path = "../../.." }
     },
 
     .paths = .{
