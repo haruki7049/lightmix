@@ -1,0 +1,18 @@
+name: Ziglang CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  run-zig-build-test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: mlugg/setup-zig@v2.0.5
+        with:
+          version: 0.14.0
+      - run: zig build test
