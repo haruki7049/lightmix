@@ -35,6 +35,38 @@ pub fn init(data: []const f32, allocator: std.mem.Allocator, options: initOption
     };
 }
 
+pub fn mix(self: Self, other: Self) !Self {
+    std.debug.assert(self.data.len == other.data.len);
+    std.debug.assert(self.sample_rate == other.sample_rate);
+    std.debug.assert(self.channels == other.channels);
+    std.debug.assert(self.bits == other.bits);
+
+    if (self.data.len == 0)
+        return Self{
+            .data = &[_]f32{},
+            .allocator = self.allocator,
+
+            .sample_rate = self.sample_rate,
+            .channels = self.channels,
+            .bits = self.bits,
+        };
+
+    var result = std.ArrayList(f32).init(self.allocator);
+
+    for (0 .. self.data.len) |i| {
+        try result.append(self.data[i] + other.data[i]);
+    }
+
+    return Self{
+        .data = try result.toOwnedSlice(),
+        .allocator = self.allocator,
+
+        .sample_rate = self.sample_rate,
+        .channels = self.channels,
+        .bits = self.bits,
+    };
+}
+
 /// Free the Wave struct
 pub fn deinit(self: Self) void {
     self.allocator.free(self.data);
@@ -158,4 +190,42 @@ test "Generators.soundless" {
     try testing.expectEqual(wave.data[0], 0.0);
     try testing.expectEqual(wave.data[1], 0.0);
     try testing.expectEqual(wave.data[2], 0.0);
+}
+
+test "mix" {
+    const allocator = testing.allocator;
+    const generator = struct {
+        fn sinewave() [44100]f32 {
+            const sample_rate: f32 = 44100.0;
+            const radins_per_sec: f32 = 440.0 * 2.0 * std.math.pi;
+
+            var result: [44100]f32 = undefined;
+            var i: usize = 0;
+
+            while (i < result.len) : (i += 1) {
+                result[i] = 0.5 * std.math.sin(@as(f32, @floatFromInt(i)) * radins_per_sec / sample_rate);
+            }
+
+            return result;
+        }
+    };
+
+    const data: [44100]f32 = generator.sinewave();
+    const wave = try Self.init(data[0..], allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+        .bits = 16,
+    });
+    defer wave.deinit();
+
+    const result: Self = try wave.mix(wave);
+    defer result.deinit();
+
+    try testing.expectEqual(wave.sample_rate, 44100);
+    try testing.expectEqual(wave.channels, 1);
+    try testing.expectEqual(wave.bits, 16);
+
+    try testing.expectEqual(result.data[0], 0.0);
+    try testing.expectEqual(result.data[1], 6.2648326e-2);
+    try testing.expectEqual(result.data[2], 1.2505053e-1);
 }
