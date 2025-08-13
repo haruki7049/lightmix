@@ -1,7 +1,7 @@
 //! Wave
 
 const std = @import("std");
-const zig_wav = @import("zig_wav");
+const lightmix_wav = @import("lightmix_wav");
 const testing = std.testing;
 
 const Self = @This();
@@ -107,7 +107,7 @@ pub fn deinit(self: Self) void {
 /// const wave = Wave.from_file_content(@embedFile("./asset/sine.wav"), allocator);
 pub fn from_file_content(content: []const u8, allocator: std.mem.Allocator) !Self {
     var stream = std.io.fixedBufferStream(content);
-    var decoder = try zig_wav.decoder(stream.reader());
+    var decoder = try lightmix_wav.decoder(stream.reader());
 
     var buf: [64]f32 = undefined;
     var arraylist = std.ArrayList(f32).init(allocator);
@@ -139,7 +139,7 @@ pub fn from_file_content(content: []const u8, allocator: std.mem.Allocator) !Sel
 }
 
 pub fn write(self: Self, file: std.fs.File) !void {
-    var encoder = try zig_wav.encoder(i16, file.writer(), file.seekableStream(), self.sample_rate, self.channels);
+    var encoder = try lightmix_wav.encoder(i16, file.writer(), file.seekableStream(), self.sample_rate, self.channels);
     try encoder.write(f32, self.data);
     try encoder.finalize();
 }

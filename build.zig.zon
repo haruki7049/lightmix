@@ -5,8 +5,9 @@
     .minimum_zig_version = "0.14.1",
 
     .dependencies = .{
-        .zig_wav = .{
-            .path = "modules/zig-wav",
+        .lightmix_wav = .{
+            .url = "https://github.com/haruki7049/lightmix_wav/archive/refs/tags/0.1.2.tar.gz",
+            .hash = "lightmix_wav-0.1.0-IIrulggJVQDrSJbe0vWlUntUmcQYnr4hAtNc31TN_89L",
         },
     },
 

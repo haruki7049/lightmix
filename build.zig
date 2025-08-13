@@ -5,7 +5,7 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     // Dependencies
-    const zig_wav = b.dependency("zig_wav", .{});
+    const lightmix_wav = b.dependency("lightmix_wav", .{});
 
     // Library module declaration
     const lib_mod = b.addModule("lightmix", .{
@@ -13,7 +13,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    lib_mod.addImport("zig_wav", zig_wav.module("zig_wav"));
+    lib_mod.addImport("lightmix_wav", lightmix_wav.module("lightmix_wav"));
 
     // Library installation
     const lib = b.addLibrary(.{
