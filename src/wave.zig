@@ -67,6 +67,35 @@ pub fn mix(self: Self, other: Self) !Self {
     };
 }
 
+pub fn fill_zero_to_end(self: Self, start: usize, end: usize) !Self {
+    // Initialization
+    var result = std.ArrayList(f32).init(self.allocator);
+    try result.appendSlice(self.data);
+
+    const delete_count: usize = result.items.len - start;
+
+    for (0 .. delete_count) |_| {
+        _ = result.pop();
+    }
+
+    std.debug.assert(start == result.items.len);
+
+    for (delete_count .. end) |_| {
+        try result.append(0.0);
+    }
+
+    std.debug.assert(result.items.len == end);
+
+    return Self{
+        .data = try result.toOwnedSlice(),
+        .allocator = self.allocator,
+
+        .sample_rate = self.sample_rate,
+        .channels = self.channels,
+        .bits = self.bits,
+    };
+}
+
 /// Free the Wave struct
 pub fn deinit(self: Self) void {
     self.allocator.free(self.data);
@@ -228,4 +257,47 @@ test "mix" {
     try testing.expectEqual(result.data[0], 0.0);
     try testing.expectEqual(result.data[1], 6.2648326e-2);
     try testing.expectEqual(result.data[2], 1.2505053e-1);
+}
+
+test "fill_zero_to_end" {
+    const allocator = testing.allocator;
+    const generator = struct {
+        fn sinewave() [44100]f32 {
+            const sample_rate: f32 = 44100.0;
+            const radins_per_sec: f32 = 440.0 * 2.0 * std.math.pi;
+
+            var result: [44100]f32 = undefined;
+            var i: usize = 0;
+
+            while (i < result.len) : (i += 1) {
+                result[i] = 0.5 * std.math.sin(@as(f32, @floatFromInt(i)) * radins_per_sec / sample_rate);
+            }
+
+            return result;
+        }
+    };
+
+    const data: [44100]f32 = generator.sinewave();
+    const wave = try Self.init(data[0..], allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+        .bits = 16,
+    });
+    defer wave.deinit();
+
+    const filled_wave: Self = try wave.fill_zero_to_end(22050, 44100);
+    defer filled_wave.deinit();
+
+    try testing.expectEqual(filled_wave.sample_rate, 44100);
+    try testing.expectEqual(filled_wave.channels, 1);
+    try testing.expectEqual(filled_wave.bits, 16);
+
+    try testing.expectEqual(filled_wave.data[0], 0.0);
+    try testing.expectEqual(filled_wave.data[1], 3.1324163e-2);
+    try testing.expectEqual(filled_wave.data[2], 6.2525265e-2);
+
+    try testing.expectEqual(filled_wave.data[22049], -3.1344667e-2);
+    try testing.expectEqual(filled_wave.data[22050], 0.0);
+    try testing.expectEqual(filled_wave.data[22051], 0.0);
+    try testing.expectEqual(filled_wave.data[44099], 0.0);
 }
