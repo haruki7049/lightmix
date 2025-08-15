@@ -13,7 +13,7 @@ pub fn main() !void {
     defer composer.deinit();
 
     const data: [44100]f32 = generate_sinewave_data();
-    const wave = try Wave.init(data[0..], allocator, .{
+    const wave = Wave.init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,

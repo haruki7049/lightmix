@@ -5,7 +5,7 @@ const allocator = std.heap.page_allocator;
 
 pub fn main() !void {
     const sine_data: [44100]f32 = generate_sinewave_data();
-    const sinewave: Wave = try Wave.init(sine_data[0..], allocator, .{
+    const sinewave: Wave = Wave.init(sine_data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,
@@ -13,7 +13,7 @@ pub fn main() !void {
     defer sinewave.deinit();
 
     const sawtooth_data: [44100]f32 = generate_sawtooth_wave_data();
-    const sawtooth_wave: Wave = try Wave.init(sawtooth_data[0..], allocator, .{
+    const sawtooth_wave: Wave = Wave.init(sawtooth_data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,

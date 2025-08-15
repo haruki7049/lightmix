@@ -5,7 +5,7 @@ const allocator = std.heap.page_allocator;
 
 pub fn main() !void {
     const data: [44100]f32 = generate_brown_noise();
-    const brown_noise: Wave = try Wave.init(data[0..], allocator, .{
+    const brown_noise: Wave = Wave.init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,

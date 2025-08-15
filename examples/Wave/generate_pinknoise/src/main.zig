@@ -5,7 +5,7 @@ const allocator = std.heap.page_allocator;
 
 pub fn main() !void {
     const data: [44100]f32 = generate_pink_noise();
-    const pinknoise: Wave = try Wave.init(data[0..], allocator, .{
+    const pinknoise: Wave = Wave.init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,

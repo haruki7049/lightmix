@@ -16,7 +16,7 @@ pub fn main() !void {
     const data: []const f32 = try generators.soundless(44100);
     defer generators.free(data);
 
-    const wave = try Wave.init(data, allocator, .{
+    const wave = Wave.init(data, allocator, .{
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,
