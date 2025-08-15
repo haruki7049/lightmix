@@ -174,6 +174,8 @@ pub fn debug_play(self: Self) !void {
 
     // Debug-play
 
+    std.debug.print("Debug-playing...\n", .{});
+
     const c_headers = @cImport({
         @cInclude("portaudio.h");
         @cInclude("sndfile.h");
@@ -182,11 +184,59 @@ pub fn debug_play(self: Self) !void {
     const c_path: [*c]const u8 = try self.allocator.dupeZ(u8, path);
 
     var sfInfo: c_headers.SF_INFO = undefined;
-    const sndFile: c_headers.SNDFILE = c_headers.sf_open(c_path, c_headers.SFM_READ, &sfInfo);
+    const sndFile: ?*c_headers.SNDFILE = c_headers.sf_open(c_path, c_headers.SFM_READ, &sfInfo);
+    defer _ = c_headers.sf_close(sndFile);
 
-    _ = c_headers.Pa_Initialize();
-    _ = c_headers.Pa_Terminate();
+    if (c_headers.Pa_Initialize() != c_headers.paNoError)
+        return error.PortaudioInitFailed;
+
+    defer _ = c_headers.Pa_Terminate();
+
+    var stream: ?*c_headers.PaStream = undefined;
+
+    if (self.bits != 16)
+        @panic("Debug-playing the others of 16 bits' Wave is not implemented yet.");
+
+    if (c_headers.Pa_OpenDefaultStream(
+        &stream,
+        0,
+        @intCast(self.channels),
+        c_headers.paFloat32,
+        @as(f64, @floatFromInt(self.sample_rate)),
+        256,
+        null,
+        null,
+    ) != c_headers.paNoError)
+        return error.PortaudioFailedToOpenStream;
+
+    defer _ = c_headers.Pa_CloseStream(stream.?);
+
+    if (c_headers.Pa_StartStream(stream) != c_headers.paNoError)
+        return error.PortaudioStartStreamFailed;
+
+    defer _ = c_headers.Pa_StopStream(stream);
+
+    var buffer: [256 * 2]f32 = undefined; // stereo
+    var framesRead: i64 = undefined;
+
+    while (true) {
+        framesRead = c_headers.sf_readf_float(sndFile, &buffer, 256);
+
+        if (c_headers.Pa_WriteStream(stream, &buffer, @intCast(framesRead)) != c_headers.paNoError)
+            break;
+
+        if (framesRead <= 0)
+            break;
+    }
+
+    std.debug.print("Debug-playing finished.\n", .{});
 }
+
+const DebugPlayErrors = error{
+    PortaudioInitFailed,
+    PortaudioFailedToOpenStream,
+    PortaudioStartStreamFailed,
+};
 
 test "from_file_content & deinit" {
     const allocator = testing.allocator;
