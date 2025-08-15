@@ -21,8 +21,8 @@ pub const initOptions = struct {
     bits: usize,
 };
 
-pub fn init(data: []const f32, allocator: std.mem.Allocator, options: initOptions) !Self {
-    const owned_data = try allocator.alloc(f32, data.len);
+pub fn init(data: []const f32, allocator: std.mem.Allocator, options: initOptions) Self {
+    const owned_data = allocator.alloc(f32, data.len) catch @panic("Out of memory");
     @memcpy(owned_data, data);
 
     return Self{
@@ -187,7 +187,7 @@ test "init & deinit" {
     };
 
     const data: [44100]f32 = generator.sinewave();
-    const wave = try Self.init(data[0..], allocator, .{
+    const wave = Self.init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,
@@ -205,7 +205,7 @@ test "Generators.soundless" {
     const data: []const f32 = try generators.soundless(44100);
     defer generators.free(data);
 
-    const wave = try Self.init(data, allocator, .{
+    const wave = Self.init(data, allocator, .{
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,
@@ -240,7 +240,7 @@ test "mix" {
     };
 
     const data: [44100]f32 = generator.sinewave();
-    const wave = try Self.init(data[0..], allocator, .{
+    const wave = Self.init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,
@@ -278,7 +278,7 @@ test "fill_zero_to_end" {
     };
 
     const data: [44100]f32 = generator.sinewave();
-    const wave = try Self.init(data[0..], allocator, .{
+    const wave = Self.init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,
