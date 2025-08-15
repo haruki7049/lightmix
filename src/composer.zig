@@ -34,6 +34,20 @@ pub fn deinit(self: Self) void {
     self.allocator.free(self.data);
 }
 
+pub fn init_with(data: []const Wave, allocator: std.mem.Allocator, options: initOptions) Self {
+    var list = std.ArrayList(Wave).init(allocator);
+    list.appendSlice(data) catch @panic("Out of memory");
+
+    return Self{
+        .allocator = allocator,
+        .data = list.toOwnedSlice() catch @panic("Out of memory"),
+
+        .sample_rate = options.sample_rate,
+        .channels = options.channels,
+        .bits = options.bits,
+    };
+}
+
 pub fn append(self: Self, wave: Wave) !Self {
     var d = std.ArrayList(Wave).init(self.allocator);
     try d.appendSlice(self.data);
@@ -86,6 +100,22 @@ pub fn finalize(self: Self) !Wave {
 test "init & deinit" {
     const allocator = testing.allocator;
     const composer = Self.init(allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+        .bits = 16,
+    });
+    defer composer.deinit();
+}
+
+test "init_with & deinit" {
+    const allocator = testing.allocator;
+
+    const wave = try Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
+    defer wave.deinit();
+
+    const data: []const Wave = &[_]Wave{ wave, wave };
+
+    const composer = Self.init_with(data, allocator, .{
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,
