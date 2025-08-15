@@ -173,9 +173,12 @@ test "finalize" {
     });
     defer composer.deinit();
 
-    const generators = Wave.Generators.init(allocator);
-    const data: []const f32 = try generators.soundless(44100);
-    defer generators.free(data);
+    var data: []f32 = try allocator.alloc(f32, 44100);
+    defer allocator.free(data);
+
+    for (0 .. data.len) |i| {
+        data[i] = 0.0;
+    }
 
     const wave = Wave.init(data, allocator, .{
         .sample_rate = 44100,

@@ -13,8 +13,6 @@ sample_rate: usize,
 channels: usize,
 bits: usize,
 
-pub const Generators = @import("./wave/generators.zig");
-
 pub const initOptions = struct {
     sample_rate: usize,
     channels: usize,
@@ -197,28 +195,6 @@ test "init & deinit" {
     try testing.expectEqual(wave.sample_rate, 44100);
     try testing.expectEqual(wave.channels, 1);
     try testing.expectEqual(wave.bits, 16);
-}
-
-test "Generators.soundless" {
-    const allocator = testing.allocator;
-    const generators = Self.Generators.init(allocator);
-    const data: []const f32 = try generators.soundless(44100);
-    defer generators.free(data);
-
-    const wave = Self.init(data, allocator, .{
-        .sample_rate = 44100,
-        .channels = 1,
-        .bits = 16,
-    });
-    defer wave.deinit();
-
-    try testing.expectEqual(wave.sample_rate, 44100);
-    try testing.expectEqual(wave.channels, 1);
-    try testing.expectEqual(wave.bits, 16);
-
-    try testing.expectEqual(wave.data[0], 0.0);
-    try testing.expectEqual(wave.data[1], 0.0);
-    try testing.expectEqual(wave.data[2], 0.0);
 }
 
 test "mix" {
