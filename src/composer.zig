@@ -19,12 +19,10 @@ pub const initOptions = struct {
     bits: usize,
 };
 
-pub fn init(allocator: std.mem.Allocator, options: initOptions) !Self {
-    var d = std.ArrayList(Wave).init(allocator);
-
+pub fn init(allocator: std.mem.Allocator, options: initOptions) Self {
     return Self{
         .allocator = allocator,
-        .data = try d.toOwnedSlice(),
+        .data = &[_]Wave{},
 
         .sample_rate = options.sample_rate,
         .channels = options.channels,
@@ -87,7 +85,7 @@ pub fn finalize(self: Self) !Wave {
 
 test "init & deinit" {
     const allocator = testing.allocator;
-    const composer = try Self.init(allocator, .{
+    const composer = Self.init(allocator, .{
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,
@@ -97,7 +95,7 @@ test "init & deinit" {
 
 test "append" {
     const allocator = testing.allocator;
-    const composer = try Self.init(allocator, .{
+    const composer = Self.init(allocator, .{
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,
@@ -115,7 +113,7 @@ test "append" {
 
 test "appendSlice" {
     const allocator = testing.allocator;
-    const composer = try Self.init(allocator, .{
+    const composer = Self.init(allocator, .{
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,
@@ -138,7 +136,7 @@ test "appendSlice" {
 
 test "finalize" {
     const allocator = testing.allocator;
-    const composer = try Self.init(allocator, .{
+    const composer = Self.init(allocator, .{
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,
