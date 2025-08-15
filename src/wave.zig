@@ -1,7 +1,9 @@
 //! Wave
 
 const std = @import("std");
+const build_options = @import("build_options");
 const lightmix_wav = @import("lightmix_wav");
+const known_folders = @import("known-folders");
 const testing = std.testing;
 
 const Self = @This();
@@ -51,7 +53,7 @@ pub fn mix(self: Self, other: Self) !Self {
 
     var result = std.ArrayList(f32).init(self.allocator);
 
-    for (0 .. self.data.len) |i| {
+    for (0..self.data.len) |i| {
         try result.append(self.data[i] + other.data[i]);
     }
 
@@ -72,13 +74,13 @@ pub fn fill_zero_to_end(self: Self, start: usize, end: usize) !Self {
 
     const delete_count: usize = result.items.len - start;
 
-    for (0 .. delete_count) |_| {
+    for (0..delete_count) |_| {
         _ = result.pop();
     }
 
     std.debug.assert(start == result.items.len);
 
-    for (delete_count .. end) |_| {
+    for (delete_count..end) |_| {
         try result.append(0.0);
     }
 
@@ -149,6 +151,41 @@ pub fn filter(self: Self, filter_fn: fn (self: Self) anyerror!Self) Self {
     };
 
     return result;
+}
+
+pub fn debug_play(self: Self) !void {
+    if (!build_options.with_debug_features)
+        @panic("Wave.debug_play called without 'with_debug_features' flag. Please turn on the flag.");
+
+    const cache_dir: std.fs.Dir = try known_folders.open(self.allocator, .cache, .{}) orelse @panic("XDG cache dir is null");
+    const path: []const u8 = blk: {
+        const cache_dir_path: []const u8 = try known_folders.getPath(self.allocator, .cache) orelse @panic("XDG cache dir is null");
+        const now: std.time.Instant = try std.time.Instant.now();
+        const result: []const u8 = try std.fmt.allocPrint(self.allocator, "{s}/result-{d}.{d}.wav", .{ cache_dir_path, now.timestamp.sec, now.timestamp.nsec });
+
+        break :blk result;
+    };
+    defer self.allocator.free(path);
+
+    const file = try cache_dir.createFile(path, .{});
+
+    try self.write(file);
+    std.debug.print("Wave file saved to: {s}\n", .{path});
+
+    // Debug-play
+
+    const c_headers = @cImport({
+        @cInclude("portaudio.h");
+        @cInclude("sndfile.h");
+    });
+
+    const c_path: [*c]const u8 = try self.allocator.dupeZ(u8, path);
+
+    var sfInfo: c_headers.SF_INFO = undefined;
+    const sndFile: c_headers.SNDFILE = c_headers.sf_open(c_path, c_headers.SFM_READ, &sfInfo);
+
+    _ = c_headers.Pa_Initialize();
+    _ = c_headers.Pa_Terminate();
 }
 
 test "from_file_content & deinit" {

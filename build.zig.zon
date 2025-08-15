@@ -9,6 +9,10 @@
             .url = "https://github.com/haruki7049/lightmix_wav/archive/refs/tags/0.1.2.tar.gz",
             .hash = "lightmix_wav-0.1.0-IIrulggJVQDrSJbe0vWlUntUmcQYnr4hAtNc31TN_89L",
         },
+        .known_folders = .{
+            .url = "https://github.com/ziglibs/known-folders/archive/ab5cf5feb936fa3b72c95d3ad0c0c67791937ba1.tar.gz",
+            .hash = "known_folders-0.0.0-Fy-PJtTTAADUOhGKM0sxzG4eMkNQxRvx9e5dfHVyaeA3",
+        },
     },
 
     .paths = .{

@@ -4,8 +4,14 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const with_debug_features = b.option(bool, "with_debug_features", "Enable debug features implemented by PortAudio") orelse false;
+
+    const options = b.addOptions();
+    options.addOption(bool, "with_debug_features", with_debug_features);
+
     // Dependencies
     const lightmix_wav = b.dependency("lightmix_wav", .{});
+    const known_folders = b.dependency("known_folders", .{});
 
     // Library module declaration
     const lib_mod = b.addModule("lightmix", .{
@@ -14,6 +20,9 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     lib_mod.addImport("lightmix_wav", lightmix_wav.module("lightmix_wav"));
+    lib_mod.addImport("known-folders", known_folders.module("known-folders"));
+    lib_mod.addOptions("build_options", options);
+    lib_mod.addOptions("with_debug_features", options);
 
     // Library installation
     const lib = b.addLibrary(.{
@@ -21,6 +30,10 @@ pub fn build(b: *std.Build) void {
         .name = "lightmix",
         .root_module = lib_mod,
     });
+
+    if (with_debug_features)
+        lib.linkLibC();
+
     b.installArtifact(lib);
 
     // Library unit tests

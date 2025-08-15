@@ -48,16 +48,24 @@
           };
 
           devShells.default = pkgs.mkShell {
-            packages = [
-              # Zig
+            nativeBuildInputs = [
+              # Compiler
               pkgs.zig_0_14
-              pkgs.zls
 
-              # Nix
+              # C library manager
+              pkgs.pkg-config
+
+              # LSP
               pkgs.nil
+              pkgs.zls
 
               # Music Player
               pkgs.sox # Use this command as: `play result.wav`
+            ];
+
+            buildInputs = [
+              pkgs.portaudio
+              pkgs.libsndfile
             ];
           };
         };
