@@ -161,7 +161,7 @@ pub fn debug_play(self: Self) !void {
     const path: []const u8 = blk: {
         const cache_dir_path: []const u8 = try known_folders.getPath(self.allocator, .cache) orelse @panic("XDG cache dir is null");
         const now: std.time.Instant = try std.time.Instant.now();
-        const result: []const u8 = try std.fmt.allocPrint(self.allocator, "{s}/result-{d}.{d}.wav", .{ cache_dir_path, now.timestamp.sec, now.timestamp.nsec });
+        const result: []const u8 = try std.fmt.allocPrint(self.allocator, "{s}/lightmix/result-{d}.{d}.wav", .{ cache_dir_path, now.timestamp.sec, now.timestamp.nsec });
 
         break :blk result;
     };
