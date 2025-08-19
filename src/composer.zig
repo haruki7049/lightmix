@@ -153,9 +153,6 @@ pub fn finalize(self: Self) !Wave {
     });
 
     for (padded_waveinfo_slice) |waveinfo| {
-        std.debug.print("{d}\n", .{waveinfo.wave.data.len});
-        std.debug.print("{d}\n", .{result.data.len});
-
         const wave = try result.mix(waveinfo.wave);
         result.deinit();
         waveinfo.wave.deinit();
