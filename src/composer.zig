@@ -155,11 +155,7 @@ pub fn finalize(self: Self) Wave {
     });
 
     for (padded_waveinfo_slice) |waveinfo| {
-        const wave = result.mix(waveinfo.wave) catch |err| {
-            std.debug.print("{any}\n", .{err});
-            @panic("Wave mixing with Composer failed.");
-        };
-
+        const wave = result.mix(waveinfo.wave);
         result.deinit();
         waveinfo.wave.deinit();
         result = wave;
