@@ -20,7 +20,7 @@ pub fn main() !void {
     });
     defer sinewave.deinit();
 
-    const snare_wave = try generate_snare_wave(pinknoise, sinewave);
+    const snare_wave = generate_snare_wave(pinknoise, sinewave);
     defer snare_wave.deinit();
 
     var file = try std.fs.cwd().createFile("result.wav", .{});
@@ -29,7 +29,7 @@ pub fn main() !void {
     try snare_wave.write(file);
 }
 
-fn generate_snare_wave(pinknoise: Wave, sinewave: Wave) !Wave {
+fn generate_snare_wave(pinknoise: Wave, sinewave: Wave) Wave {
     const decayed_pinknoise = pinknoise
         .filter(decay)
         .filter(decay)
@@ -46,7 +46,7 @@ fn generate_snare_wave(pinknoise: Wave, sinewave: Wave) !Wave {
         .filter(half_volume);
     defer decayed_sinewave.deinit();
 
-    const result = try decayed_pinknoise.mix(decayed_sinewave);
+    const result = decayed_pinknoise.mix(decayed_sinewave);
     return result;
 }
 
