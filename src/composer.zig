@@ -72,15 +72,16 @@ pub fn init_with(info: []const WaveInfo, allocator: std.mem.Allocator, options: 
     };
 }
 
-pub fn append(self: Self, wave: WaveInfo) !Self {
+pub fn append(self: Self, waveinfo: WaveInfo) Self {
     var d = std.ArrayList(WaveInfo).init(self.allocator);
-    try d.appendSlice(self.info);
+    d.appendSlice(self.info) catch @panic("Out of memory");
+    d.append(waveinfo) catch @panic("Out of memory");
 
-    try d.append(wave);
+    const result: []const WaveInfo = d.toOwnedSlice() catch @panic("Out of memory");
 
     return Self{
         .allocator = self.allocator,
-        .info = try d.toOwnedSlice(),
+        .info = result,
 
         .sample_rate = self.sample_rate,
         .channels = self.channels,
@@ -88,15 +89,16 @@ pub fn append(self: Self, wave: WaveInfo) !Self {
     };
 }
 
-pub fn appendSlice(self: Self, append_list: []const WaveInfo) !Self {
+pub fn appendSlice(self: Self, append_list: []const WaveInfo) Self {
     var d = std.ArrayList(WaveInfo).init(self.allocator);
-    try d.appendSlice(self.info);
+    d.appendSlice(self.info) catch @panic("Out of memory");
+    d.appendSlice(append_list) catch @panic("Out of memory");
 
-    try d.appendSlice(append_list);
+    const result: []const WaveInfo = d.toOwnedSlice() catch @panic("Out of memory");
 
     return Self{
         .allocator = self.allocator,
-        .info = try d.toOwnedSlice(),
+        .info = result,
 
         .sample_rate = self.sample_rate,
         .channels = self.channels,
@@ -104,7 +106,7 @@ pub fn appendSlice(self: Self, append_list: []const WaveInfo) !Self {
     };
 }
 
-pub fn finalize(self: Self) !Wave {
+pub fn finalize(self: Self) Wave {
     var end_point: usize = 0;
 
     // Calculate the length for emitted wave
@@ -137,10 +139,10 @@ pub fn finalize(self: Self) !Wave {
             .start_point = waveinfo.start_point,
         };
 
-        try padded_waveinfo_list.append(wi);
+        padded_waveinfo_list.append(wi) catch @panic("Out of memory");
     }
 
-    const padded_waveinfo_slice: []const WaveInfo = try padded_waveinfo_list.toOwnedSlice();
+    const padded_waveinfo_slice: []const WaveInfo = padded_waveinfo_list.toOwnedSlice() catch @panic("Out of memory");
     defer self.allocator.free(padded_waveinfo_slice);
 
     const empty_data: []const f32 = generate_soundless_data(end_point, self.allocator);
@@ -153,7 +155,7 @@ pub fn finalize(self: Self) !Wave {
     });
 
     for (padded_waveinfo_slice) |waveinfo| {
-        const wave = try result.mix(waveinfo.wave);
+        const wave = result.mix(waveinfo.wave);
         result.deinit();
         waveinfo.wave.deinit();
         result = wave;
@@ -240,7 +242,7 @@ test "init & deinit" {
 test "init_with & deinit" {
     const allocator = testing.allocator;
 
-    const wave = try Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
+    const wave = Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
     defer wave.deinit();
 
     const info: []const WaveInfo = &[_]WaveInfo{ .{ .wave = wave, .start_point = 0 }, .{ .wave = wave, .start_point = 0 } };
@@ -262,10 +264,10 @@ test "append" {
     });
     defer composer.deinit();
 
-    const wave = try Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
+    const wave = Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
     defer wave.deinit();
 
-    const appended_composer = try composer.append(.{ .wave = wave, .start_point = 0 });
+    const appended_composer = composer.append(.{ .wave = wave, .start_point = 0 });
     defer appended_composer.deinit();
 
     try testing.expectEqualSlices(WaveInfo, appended_composer.info, &[_]WaveInfo{ .{ .wave = wave, .start_point = 0 } });
@@ -280,7 +282,7 @@ test "appendSlice" {
     });
     defer composer.deinit();
 
-    const wave = try Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
+    const wave = Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
     defer wave.deinit();
 
     var append_list = std.ArrayList(WaveInfo).init(allocator);
@@ -288,7 +290,7 @@ test "appendSlice" {
     try append_list.append(.{ .wave = wave, .start_point = 0 });
     try append_list.append(.{ .wave = wave, .start_point = 0 });
 
-    const appended_composer = try composer.appendSlice(append_list.items);
+    const appended_composer = composer.appendSlice(append_list.items);
     defer appended_composer.deinit();
 
     try testing.expectEqualSlices(WaveInfo, appended_composer.info, &[_]WaveInfo{ .{ .wave = wave, .start_point = 0 }, .{ .wave = wave, .start_point = 0 } });
@@ -322,10 +324,10 @@ test "finalize" {
     try append_list.append(.{ .wave = wave, .start_point = 0 });
     try append_list.append(.{ .wave = wave, .start_point = 44100 });
 
-    const appended_composer = try composer.appendSlice(append_list.items);
+    const appended_composer = composer.appendSlice(append_list.items);
     defer appended_composer.deinit();
 
-    const result: Wave = try appended_composer.finalize();
+    const result: Wave = appended_composer.finalize();
     defer result.deinit();
 
     try testing.expectEqual(result.data.len, 88200);

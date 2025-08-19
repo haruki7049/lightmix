@@ -35,7 +35,7 @@ pub fn init(data: []const f32, allocator: std.mem.Allocator, options: initOption
     };
 }
 
-pub fn mix(self: Self, other: Self) !Self {
+pub fn mix(self: Self, other: Self) Self {
     std.debug.assert(self.data.len == other.data.len);
     std.debug.assert(self.sample_rate == other.sample_rate);
     std.debug.assert(self.channels == other.channels);
@@ -51,14 +51,16 @@ pub fn mix(self: Self, other: Self) !Self {
             .bits = self.bits,
         };
 
-    var result = std.ArrayList(f32).init(self.allocator);
+    var data = std.ArrayList(f32).init(self.allocator);
 
     for (0..self.data.len) |i| {
-        try result.append(self.data[i] + other.data[i]);
+        data.append(self.data[i] + other.data[i]) catch @panic("Out of memory");
     }
 
+    const result: []const f32 = data.toOwnedSlice() catch @panic("Out of memory");
+
     return Self{
-        .data = try result.toOwnedSlice(),
+        .data = result,
         .allocator = self.allocator,
 
         .sample_rate = self.sample_rate,
@@ -105,31 +107,41 @@ pub fn deinit(self: Self) void {
 /// The data argument can receive a binary data, as @embedFile("./assets/sine.wav")
 /// Therefore you can use this function as:
 /// const wave = Wave.from_file_content(@embedFile("./asset/sine.wav"), allocator);
-pub fn from_file_content(content: []const u8, allocator: std.mem.Allocator) !Self {
+pub fn from_file_content(content: []const u8, allocator: std.mem.Allocator) Self {
     var stream = std.io.fixedBufferStream(content);
-    var decoder = try lightmix_wav.decoder(stream.reader());
+    var decoder = lightmix_wav.decoder(stream.reader()) catch |err| {
+        std.debug.print("In lightmix_wav\n", .{});
+        std.debug.print("{any}\n", .{err});
+        @panic("Failed to create decoder");
+    };
 
     var buf: [64]f32 = undefined;
     var arraylist = std.ArrayList(f32).init(allocator);
 
     while (true) {
         // Read samples as f32. Channels are interleaved.
-        const samples_read = try decoder.read(f32, &buf);
+        const samples_read = decoder.read(f32, &buf) catch |err| {
+            std.debug.print("In lightmix_wav\n", .{});
+            std.debug.print("{any}\n", .{err});
+            @panic("Failed to read samples from decoder");
+        };
 
         // < ------ Do something with samples in buf. ------ >
-        try arraylist.appendSlice(&buf);
+        arraylist.appendSlice(&buf) catch @panic("Out of memory");
 
         if (samples_read < buf.len) {
             break;
         }
     }
 
+    const result: []const f32 = arraylist.toOwnedSlice() catch @panic("Out of memory");
+
     const sample_rate: usize = decoder.sampleRate();
     const channels: usize = decoder.channels();
     const bits: usize = decoder.bits();
 
     return Self{
-        .data = try arraylist.toOwnedSlice(),
+        .data = result,
         .allocator = allocator,
 
         .sample_rate = sample_rate,
@@ -240,7 +252,7 @@ const DebugPlayErrors = error{
 
 test "from_file_content & deinit" {
     const allocator = testing.allocator;
-    const wave = try Self.from_file_content(@embedFile("./assets/sine.wav"), allocator);
+    const wave = Self.from_file_content(@embedFile("./assets/sine.wav"), allocator);
     defer wave.deinit();
 
     try testing.expectEqual(wave.data[0], 0.0);
@@ -310,7 +322,7 @@ test "mix" {
     });
     defer wave.deinit();
 
-    const result: Self = try wave.mix(wave);
+    const result: Self = wave.mix(wave);
     defer result.deinit();
 
     try testing.expectEqual(wave.sample_rate, 44100);
