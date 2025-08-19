@@ -106,7 +106,7 @@ pub fn appendSlice(self: Self, append_list: []const WaveInfo) Self {
     };
 }
 
-pub fn finalize(self: Self) !Wave {
+pub fn finalize(self: Self) Wave {
     var end_point: usize = 0;
 
     // Calculate the length for emitted wave
@@ -139,10 +139,10 @@ pub fn finalize(self: Self) !Wave {
             .start_point = waveinfo.start_point,
         };
 
-        try padded_waveinfo_list.append(wi);
+        padded_waveinfo_list.append(wi) catch @panic("Out of memory");
     }
 
-    const padded_waveinfo_slice: []const WaveInfo = try padded_waveinfo_list.toOwnedSlice();
+    const padded_waveinfo_slice: []const WaveInfo = padded_waveinfo_list.toOwnedSlice() catch @panic("Out of memory");
     defer self.allocator.free(padded_waveinfo_slice);
 
     const empty_data: []const f32 = generate_soundless_data(end_point, self.allocator);
@@ -155,7 +155,11 @@ pub fn finalize(self: Self) !Wave {
     });
 
     for (padded_waveinfo_slice) |waveinfo| {
-        const wave = try result.mix(waveinfo.wave);
+        const wave = result.mix(waveinfo.wave) catch |err| {
+            std.debug.print("{any}\n", .{err});
+            @panic("Wave mixing with Composer failed.");
+        };
+
         result.deinit();
         waveinfo.wave.deinit();
         result = wave;
@@ -327,7 +331,7 @@ test "finalize" {
     const appended_composer = composer.appendSlice(append_list.items);
     defer appended_composer.deinit();
 
-    const result: Wave = try appended_composer.finalize();
+    const result: Wave = appended_composer.finalize();
     defer result.deinit();
 
     try testing.expectEqual(result.data.len, 88200);
