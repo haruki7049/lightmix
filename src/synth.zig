@@ -80,7 +80,16 @@ pub fn filter(self: Self, filter_fn: fn (self: Self) anyerror!Self) Self {
     return result;
 }
 
-//pub fn finalize(self: Self) !Wave {}
+pub fn finalize(self: Self) Wave {
+    const data = std.mem.concat(self.allocator, f32, &[_][]const f32{ self.attack, self.decay, self.sustain, self.release }) catch @panic("Out of memory");
+    defer self.allocator.free(data);
+
+    return Wave.init(data, self.allocator, .{
+        .sample_rate = self.sample_rate,
+        .channels = self.channels,
+        .bits = self.bits,
+    });
+}
 
 test "init & deinit" {
     const allocator = testing.allocator;
@@ -136,4 +145,25 @@ fn filter_fn_for_test(self: Self) !Self {
         .channels = self.channels,
         .bits = self.bits,
     };
+}
+
+test "init -> finalize -> deinit" {
+    const allocator = testing.allocator;
+    const synth = Self.init(allocator, .{
+        .attack = &[_]f32{},
+        .decay = &[_]f32{ 0.1 },
+        .sustain = &[_]f32{},
+        .release = &[_]f32{ 1.0 },
+
+        .sample_rate = 44100,
+        .channels = 1,
+        .bits = 16,
+    });
+    defer synth.deinit();
+
+    const result: Wave = synth.finalize();
+    defer result.deinit();
+
+    try testing.expectApproxEqAbs(result.data[0], 0.1, 0.001);
+    try testing.expectApproxEqAbs(result.data[1], 1.0, 0.001);
 }
