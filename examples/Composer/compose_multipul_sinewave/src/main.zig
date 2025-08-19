@@ -2,10 +2,11 @@ const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
 const Composer = lightmix.Composer;
+const WaveInfo = Composer.WaveInfo;
 const allocator = std.heap.page_allocator;
 
 pub fn main() !void {
-    const composer = try Composer.init(allocator, .{
+    const composer = Composer.init(allocator, .{
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,
@@ -23,10 +24,10 @@ pub fn main() !void {
     const decayed_wave: Wave = wave.filter(decay);
     defer decayed_wave.deinit();
 
-    var append_list = std.ArrayList(Wave).init(allocator);
+    var append_list = std.ArrayList(WaveInfo).init(allocator);
     defer append_list.deinit();
-    try append_list.append(decayed_wave);
-    try append_list.append(decayed_wave);
+    try append_list.append(.{ .wave = decayed_wave, .start_point = 0 });
+    try append_list.append(.{ .wave = decayed_wave, .start_point = 44100 });
 
     const appended_composer = try composer.appendSlice(append_list.items);
     defer appended_composer.deinit();
