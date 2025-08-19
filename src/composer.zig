@@ -72,15 +72,16 @@ pub fn init_with(info: []const WaveInfo, allocator: std.mem.Allocator, options: 
     };
 }
 
-pub fn append(self: Self, wave: WaveInfo) !Self {
+pub fn append(self: Self, waveinfo: WaveInfo) Self {
     var d = std.ArrayList(WaveInfo).init(self.allocator);
-    try d.appendSlice(self.info);
+    d.appendSlice(self.info) catch @panic("Out of memory");
+    d.append(waveinfo) catch @panic("Out of memory");
 
-    try d.append(wave);
+    const result: []const WaveInfo = d.toOwnedSlice() catch @panic("Out of memory");
 
     return Self{
         .allocator = self.allocator,
-        .info = try d.toOwnedSlice(),
+        .info = result,
 
         .sample_rate = self.sample_rate,
         .channels = self.channels,
@@ -88,15 +89,16 @@ pub fn append(self: Self, wave: WaveInfo) !Self {
     };
 }
 
-pub fn appendSlice(self: Self, append_list: []const WaveInfo) !Self {
+pub fn appendSlice(self: Self, append_list: []const WaveInfo) Self {
     var d = std.ArrayList(WaveInfo).init(self.allocator);
-    try d.appendSlice(self.info);
+    d.appendSlice(self.info) catch @panic("Out of memory");
+    d.appendSlice(append_list) catch @panic("Out of memory");
 
-    try d.appendSlice(append_list);
+    const result: []const WaveInfo = d.toOwnedSlice() catch @panic("Out of memory");
 
     return Self{
         .allocator = self.allocator,
-        .info = try d.toOwnedSlice(),
+        .info = result,
 
         .sample_rate = self.sample_rate,
         .channels = self.channels,
