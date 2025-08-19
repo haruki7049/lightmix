@@ -6,7 +6,7 @@ const Wave = @import("./root.zig").Wave;
 
 const Self = @This();
 
-const WaveInfo = struct {
+pub const WaveInfo = struct {
     wave: Wave,
     start_point: usize,
 
