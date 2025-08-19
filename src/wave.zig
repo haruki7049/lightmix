@@ -35,7 +35,7 @@ pub fn init(data: []const f32, allocator: std.mem.Allocator, options: initOption
     };
 }
 
-pub fn mix(self: Self, other: Self) !Self {
+pub fn mix(self: Self, other: Self) Self {
     std.debug.assert(self.data.len == other.data.len);
     std.debug.assert(self.sample_rate == other.sample_rate);
     std.debug.assert(self.channels == other.channels);
@@ -51,14 +51,16 @@ pub fn mix(self: Self, other: Self) !Self {
             .bits = self.bits,
         };
 
-    var result = std.ArrayList(f32).init(self.allocator);
+    var data = std.ArrayList(f32).init(self.allocator);
 
     for (0..self.data.len) |i| {
-        try result.append(self.data[i] + other.data[i]);
+        data.append(self.data[i] + other.data[i]) catch @panic("Out of memory");
     }
 
+    const result: []const f32 = data.toOwnedSlice() catch @panic("Out of memory");
+
     return Self{
-        .data = try result.toOwnedSlice(),
+        .data = result,
         .allocator = self.allocator,
 
         .sample_rate = self.sample_rate,
@@ -310,7 +312,7 @@ test "mix" {
     });
     defer wave.deinit();
 
-    const result: Self = try wave.mix(wave);
+    const result: Self = wave.mix(wave);
     defer result.deinit();
 
     try testing.expectEqual(wave.sample_rate, 44100);
