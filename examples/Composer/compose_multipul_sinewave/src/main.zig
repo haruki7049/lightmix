@@ -29,10 +29,10 @@ pub fn main() !void {
     try append_list.append(.{ .wave = decayed_wave, .start_point = 0 });
     try append_list.append(.{ .wave = decayed_wave, .start_point = 44100 });
 
-    const appended_composer = try composer.appendSlice(append_list.items);
+    const appended_composer = composer.appendSlice(append_list.items);
     defer appended_composer.deinit();
 
-    const result: Wave = try appended_composer.finalize();
+    const result: Wave = appended_composer.finalize();
     defer result.deinit();
 
     var file = try std.fs.cwd().createFile("result.wav", .{});
