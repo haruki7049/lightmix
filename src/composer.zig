@@ -267,7 +267,7 @@ test "append" {
     const wave = try Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
     defer wave.deinit();
 
-    const appended_composer = try composer.append(.{ .wave = wave, .start_point = 0 });
+    const appended_composer = composer.append(.{ .wave = wave, .start_point = 0 });
     defer appended_composer.deinit();
 
     try testing.expectEqualSlices(WaveInfo, appended_composer.info, &[_]WaveInfo{ .{ .wave = wave, .start_point = 0 } });
@@ -290,7 +290,7 @@ test "appendSlice" {
     try append_list.append(.{ .wave = wave, .start_point = 0 });
     try append_list.append(.{ .wave = wave, .start_point = 0 });
 
-    const appended_composer = try composer.appendSlice(append_list.items);
+    const appended_composer = composer.appendSlice(append_list.items);
     defer appended_composer.deinit();
 
     try testing.expectEqualSlices(WaveInfo, appended_composer.info, &[_]WaveInfo{ .{ .wave = wave, .start_point = 0 }, .{ .wave = wave, .start_point = 0 } });
@@ -324,7 +324,7 @@ test "finalize" {
     try append_list.append(.{ .wave = wave, .start_point = 0 });
     try append_list.append(.{ .wave = wave, .start_point = 44100 });
 
-    const appended_composer = try composer.appendSlice(append_list.items);
+    const appended_composer = composer.appendSlice(append_list.items);
     defer appended_composer.deinit();
 
     const result: Wave = try appended_composer.finalize();
