@@ -246,7 +246,7 @@ test "init & deinit" {
 test "init_with & deinit" {
     const allocator = testing.allocator;
 
-    const wave = try Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
+    const wave = Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
     defer wave.deinit();
 
     const info: []const WaveInfo = &[_]WaveInfo{ .{ .wave = wave, .start_point = 0 }, .{ .wave = wave, .start_point = 0 } };
@@ -268,7 +268,7 @@ test "append" {
     });
     defer composer.deinit();
 
-    const wave = try Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
+    const wave = Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
     defer wave.deinit();
 
     const appended_composer = composer.append(.{ .wave = wave, .start_point = 0 });
@@ -286,7 +286,7 @@ test "appendSlice" {
     });
     defer composer.deinit();
 
-    const wave = try Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
+    const wave = Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
     defer wave.deinit();
 
     var append_list = std.ArrayList(WaveInfo).init(allocator);
