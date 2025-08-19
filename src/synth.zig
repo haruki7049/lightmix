@@ -71,33 +71,11 @@ const Part = enum {
     release,
 };
 
-pub fn set(self: Self, part: Part, data: []const f32) Self {
-    switch (part) {
-        .attack => self.allocator.free(self.attack),
-        .decay => self.allocator.free(self.decay),
-        .sustain => self.allocator.free(self.sustain),
-        .release => self.allocator.free(self.release),
-    }
-
-    const owned_data = self.allocator.alloc(f32, data.len) catch @panic("Out of memory");
-    @memcpy(owned_data, data);
-
-    var result: Self = self;
-
-    switch (part) {
-        .attack => {
-            result.attack = owned_data;
-        },
-        .decay => {
-            result.decay = owned_data;
-        },
-        .sustain => {
-            result.sustain = owned_data;
-        },
-        .release => {
-            result.release = owned_data;
-        },
-    }
+pub fn filter(self: Self, filter_fn: fn (self: Self) anyerror!Self) Self {
+    const result: Self = filter_fn(self) catch |err| {
+        std.debug.print("{any}\n", .{err});
+        @panic("Error happend in filter function...");
+    };
 
     return result;
 }
@@ -119,7 +97,7 @@ test "init & deinit" {
     defer empty_synth.deinit();
 }
 
-test "init -> set -> deinit" {
+test "init -> filter -> deinit" {
     const allocator = testing.allocator;
     const empty_synth = Self.init(allocator, .{
         .attack = &[_]f32{},
@@ -133,10 +111,29 @@ test "init -> set -> deinit" {
     });
     defer empty_synth.deinit();
 
-    const result: Self = empty_synth.set(.release, &[_]f32{ 0.0, 0.0, 0.0 });
+    const result: Self = empty_synth.filter(filter_fn_for_test);
     defer result.deinit();
 
     for (0..result.release.len) |i| {
         try testing.expectApproxEqAbs(result.release[i], 0.0, 0.001);
     }
+}
+
+fn filter_fn_for_test(self: Self) !Self {
+    const release: []const f32 = &[_]f32{ 0.0, 0.0, 0.0 };
+    const owned_release = try self.allocator.alloc(f32, release.len);
+    @memcpy(owned_release, release);
+
+    return Self{
+        .attack = &[_]f32{},
+        .decay = &[_]f32{},
+        .sustain = &[_]f32{},
+        .release = owned_release,
+
+        .allocator = self.allocator,
+
+        .sample_rate = self.sample_rate,
+        .channels = self.channels,
+        .bits = self.bits,
+    };
 }
