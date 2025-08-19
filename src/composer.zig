@@ -6,7 +6,7 @@ const Wave = @import("./root.zig").Wave;
 
 const Self = @This();
 
-data: []const Wave,
+info: []const Wave,
 allocator: std.mem.Allocator,
 
 sample_rate: usize,
@@ -22,7 +22,7 @@ pub const initOptions = struct {
 pub fn init(allocator: std.mem.Allocator, options: initOptions) Self {
     return Self{
         .allocator = allocator,
-        .data = &[_]Wave{},
+        .info = &[_]Wave{},
 
         .sample_rate = options.sample_rate,
         .channels = options.channels,
@@ -31,16 +31,16 @@ pub fn init(allocator: std.mem.Allocator, options: initOptions) Self {
 }
 
 pub fn deinit(self: Self) void {
-    self.allocator.free(self.data);
+    self.allocator.free(self.info);
 }
 
-pub fn init_with(data: []const Wave, allocator: std.mem.Allocator, options: initOptions) Self {
+pub fn init_with(info: []const Wave, allocator: std.mem.Allocator, options: initOptions) Self {
     var list = std.ArrayList(Wave).init(allocator);
-    list.appendSlice(data) catch @panic("Out of memory");
+    list.appendSlice(info) catch @panic("Out of memory");
 
     return Self{
         .allocator = allocator,
-        .data = list.toOwnedSlice() catch @panic("Out of memory"),
+        .info = list.toOwnedSlice() catch @panic("Out of memory"),
 
         .sample_rate = options.sample_rate,
         .channels = options.channels,
@@ -50,13 +50,13 @@ pub fn init_with(data: []const Wave, allocator: std.mem.Allocator, options: init
 
 pub fn append(self: Self, wave: Wave) !Self {
     var d = std.ArrayList(Wave).init(self.allocator);
-    try d.appendSlice(self.data);
+    try d.appendSlice(self.info);
 
     try d.append(wave);
 
     return Self{
         .allocator = self.allocator,
-        .data = try d.toOwnedSlice(),
+        .info = try d.toOwnedSlice(),
 
         .sample_rate = self.sample_rate,
         .channels = self.channels,
@@ -66,13 +66,13 @@ pub fn append(self: Self, wave: Wave) !Self {
 
 pub fn appendSlice(self: Self, append_list: []const Wave) !Self {
     var d = std.ArrayList(Wave).init(self.allocator);
-    try d.appendSlice(self.data);
+    try d.appendSlice(self.info);
 
     try d.appendSlice(append_list);
 
     return Self{
         .allocator = self.allocator,
-        .data = try d.toOwnedSlice(),
+        .info = try d.toOwnedSlice(),
 
         .sample_rate = self.sample_rate,
         .channels = self.channels,
@@ -83,12 +83,12 @@ pub fn appendSlice(self: Self, append_list: []const Wave) !Self {
 pub fn finalize(self: Self) !Wave {
     var d = std.ArrayList(f32).init(self.allocator);
 
-    for (self.data) |wave| {
-        try d.appendSlice(wave.data);
+    for (self.info) |wave| {
+        try d.appendSlice(wave.info);
     }
 
     return Wave{
-        .data = try d.toOwnedSlice(),
+        .info = try d.toOwnedSlice(),
         .allocator = self.allocator,
 
         .sample_rate = self.sample_rate,
@@ -113,9 +113,9 @@ test "init_with & deinit" {
     const wave = try Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
     defer wave.deinit();
 
-    const data: []const Wave = &[_]Wave{ wave, wave };
+    const info: []const Wave = &[_]Wave{ wave, wave };
 
-    const composer = Self.init_with(data, allocator, .{
+    const composer = Self.init_with(info, allocator, .{
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,
@@ -138,7 +138,7 @@ test "append" {
     const appended_composer = try composer.append(wave);
     defer appended_composer.deinit();
 
-    try testing.expectEqualSlices(Wave, appended_composer.data, &[_]Wave{ wave });
+    try testing.expectEqualSlices(Wave, appended_composer.info, &[_]Wave{ wave });
 }
 
 test "appendSlice" {
@@ -161,7 +161,7 @@ test "appendSlice" {
     const appended_composer = try composer.appendSlice(append_list.items);
     defer appended_composer.deinit();
 
-    try testing.expectEqualSlices(Wave, appended_composer.data, &[_]Wave{ wave, wave });
+    try testing.expectEqualSlices(Wave, appended_composer.info, &[_]Wave{ wave, wave });
 }
 
 test "finalize" {
@@ -173,14 +173,14 @@ test "finalize" {
     });
     defer composer.deinit();
 
-    var data: []f32 = try allocator.alloc(f32, 44100);
-    defer allocator.free(data);
+    var info: []f32 = try allocator.alloc(f32, 44100);
+    defer allocator.free(info);
 
-    for (0 .. data.len) |i| {
-        data[i] = 0.0;
+    for (0 .. info.len) |i| {
+        info[i] = 0.0;
     }
 
-    const wave = Wave.init(data, allocator, .{
+    const wave = Wave.init(info, allocator, .{
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,
@@ -198,7 +198,7 @@ test "finalize" {
     const result: Wave = try appended_composer.finalize();
     defer result.deinit();
 
-    try testing.expectEqual(result.data.len, 88200);
+    try testing.expectEqual(result.info.len, 88200);
 
     try testing.expectEqual(result.sample_rate, 44100);
     try testing.expectEqual(result.channels, 1);
