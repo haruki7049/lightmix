@@ -1,0 +1,16 @@
+.{
+    .name = .init_synth,
+    .version = "0.0.0",
+    .fingerprint = 0x92b42ecbb899d05f,
+    .minimum_zig_version = "0.14.1",
+
+    .dependencies = .{
+        .lightmix = .{ .path = "../../.." },
+    },
+
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
