@@ -170,11 +170,15 @@ pub fn debug_play(self: Self) !void {
         @panic("Wave.debug_play called without 'with_debug_features' flag. Please turn on the flag.");
 
     const cache_dir: std.fs.Dir = try known_folders.open(self.allocator, .cache, .{}) orelse @panic("XDG cache dir is null");
+    cache_dir.access("lightmix", .{}) catch {
+        try cache_dir.makeDir("lightmix");
+    };
+
     const path: []const u8 = blk: {
         const cache_dir_path: []const u8 = try known_folders.getPath(self.allocator, .cache) orelse @panic("XDG cache dir is null");
         const now: std.time.Instant = try std.time.Instant.now();
-        const result: []const u8 = try std.fmt.allocPrint(self.allocator, "{s}/lightmix/result-{d}.{d}.wav", .{ cache_dir_path, now.timestamp.sec, now.timestamp.nsec });
 
+        const result: []const u8 = try std.fmt.allocPrint(self.allocator, "{s}/lightmix/result-{d}.{d}.wav", .{ cache_dir_path, now.timestamp.sec, now.timestamp.nsec });
         break :blk result;
     };
     defer self.allocator.free(path);
