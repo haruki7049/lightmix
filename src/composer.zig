@@ -1,4 +1,6 @@
-//! Composer
+//! # Composer
+//!
+//! Composer is used to combine multipul `Wave`.
 
 const std = @import("std");
 const testing = std.testing;
