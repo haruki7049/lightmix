@@ -1,4 +1,6 @@
-//! Wave
+//! # Wave
+//!
+//! Contains a wave data.
 
 const std = @import("std");
 const build_options = @import("build_options");
@@ -8,11 +10,19 @@ const testing = std.testing;
 
 const Self = @This();
 
+/// A wave data, expressed by array contains f32.
 data: []const f32,
+
+/// An allocator
 allocator: std.mem.Allocator,
 
+/// This wave's sample rate.
 sample_rate: usize,
+
+/// This wave's channels.
 channels: usize,
+
+/// This wave's bits.
 bits: usize,
 
 pub const initOptions = struct {
@@ -21,6 +31,7 @@ pub const initOptions = struct {
     bits: usize,
 };
 
+/// Initialize a Wave with wave data (`[]const f32`).
 pub fn init(data: []const f32, allocator: std.mem.Allocator, options: initOptions) Self {
     const owned_data = allocator.alloc(f32, data.len) catch @panic("Out of memory");
     @memcpy(owned_data, data);
@@ -35,6 +46,9 @@ pub fn init(data: []const f32, allocator: std.mem.Allocator, options: initOption
     };
 }
 
+/// Mix a wave and the other wave.
+/// The each wave data's length, sample_rate, channels, and bits must be same.
+/// That's because we cannot ajust the timing for every users which the each wave should be played.
 pub fn mix(self: Self, other: Self) Self {
     std.debug.assert(self.data.len == other.data.len);
     std.debug.assert(self.sample_rate == other.sample_rate);
@@ -150,12 +164,15 @@ pub fn from_file_content(content: []const u8, allocator: std.mem.Allocator) Self
     };
 }
 
+/// Writes down the wave data to `std.fs.File`.
 pub fn write(self: Self, file: std.fs.File) !void {
     var encoder = try lightmix_wav.encoder(i16, file.writer(), file.seekableStream(), self.sample_rate, self.channels);
     try encoder.write(f32, self.data);
     try encoder.finalize();
 }
 
+/// Filters a zig function.
+/// `fn (self: Self) anyerror!Self` can be received.
 pub fn filter(self: Self, filter_fn: fn (self: Self) anyerror!Self) Self {
     const result: Self = filter_fn(self) catch |err| {
         std.debug.print("{any}\n", .{err});
@@ -165,6 +182,8 @@ pub fn filter(self: Self, filter_fn: fn (self: Self) anyerror!Self) Self {
     return result;
 }
 
+/// Plays the wave instantly.
+/// You must enable `with_debug_features` in `build.zig`.
 pub fn debug_play(self: Self) !void {
     if (!build_options.with_debug_features)
         @panic("Wave.debug_play called without 'with_debug_features' flag. Please turn on the flag.");
