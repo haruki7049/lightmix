@@ -37,6 +37,43 @@ const wave: lightmix.Wave = Wave.init(data, allocator, .{
 defer wave.deinit(); // Wave.data is owned data by passed allocator, then you must `free` this wave.
 ```
 
+You can write your `Wave` to your wave file, such as `result.wav`.
+
+```zig
+// First, create your `Wave`.
+const wave: lightmix.Wave = generate_wave();
+
+// Second, you must create a file, typed as `std.fs.File`.
+var file = try std.fs.cwd().createFile("result.wav", .{});
+defer file.close();
+
+// Then, write down your wave!!
+try wave.write(file);
+```
+
+### `Composer`
+
+Contains a `Composer.WaveInfo` array, which contains a `Wave` and the timing when it plays.
+
+```zig
+const allocator = std.heap.page_allocator; // Use your allocator
+const wave: lightmix.Wave = generate_wave();
+
+const info: []const lightmix.Composer.WaveInfo = &[_]WaveInfo{
+    .{ .wave = wave, .start_point = 0 },
+    .{ .wave = wave, .start_point = 44100 },
+};
+const composer: lightmix.Composer = Composer.init_with(info, allocator, .
+    .sample_rate = 44100, // Samples per second.
+    .channels = 1, // Channels for the Wave. If this composer have two channels, it means the wave is stereo.
+    .bits = 16, // Bits for the wave.
+});
+defer composer.deinit(); // Composer.info is also owned data by passed allocator, then you must `free` this wave.
+
+const wave: lightmix.Wave = composer.finalize(); // Let's finalize to create a `Wave`!!
+defer wave.deinit(); // Don't forget to free the `Wave` data.
+```
+
 ## Zig version
 
 0.14.1
