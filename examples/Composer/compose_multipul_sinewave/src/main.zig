@@ -75,4 +75,3 @@ fn decay(original_wave: Wave) !Wave {
         .bits = original_wave.bits,
     };
 }
-

@@ -4,9 +4,7 @@
     .fingerprint = 0x9abf981241297e1a,
     .minimum_zig_version = "0.14.1",
 
-    .dependencies = .{
-        .lightmix = .{ .path = "../../.." }
-    },
+    .dependencies = .{ .lightmix = .{ .path = "../../.." } },
 
     .paths = .{
         "build.zig",

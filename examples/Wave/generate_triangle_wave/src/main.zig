@@ -32,9 +32,9 @@ fn generate_triangle_wave_data() [44100]f32 {
     while (i < result.len) : (i += 1) {
         const phase = @as(f32, @floatFromInt(i % @as(usize, @intFromFloat(period)))) / period;
         const triangle_value = if (phase < 0.5)
-            (phase * 4.0) - 1.0       // 前半
+            (phase * 4.0) - 1.0 // 前半
         else
-            3.0 - (phase * 4.0);      // 後半
+            3.0 - (phase * 4.0); // 後半
 
         result[i] = triangle_value;
     }

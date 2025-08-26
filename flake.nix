@@ -31,7 +31,7 @@
             programs.nixfmt.enable = true;
 
             # Rust
-            programs.rustfmt.enable = true;
+            programs.zig.enable = true;
 
             # TOML
             programs.taplo.enable = true;

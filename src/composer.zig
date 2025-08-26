@@ -272,7 +272,7 @@ test "append" {
     const appended_composer = composer.append(.{ .wave = wave, .start_point = 0 });
     defer appended_composer.deinit();
 
-    try testing.expectEqualSlices(WaveInfo, appended_composer.info, &[_]WaveInfo{ .{ .wave = wave, .start_point = 0 } });
+    try testing.expectEqualSlices(WaveInfo, appended_composer.info, &[_]WaveInfo{.{ .wave = wave, .start_point = 0 }});
 }
 
 test "appendSlice" {
@@ -310,7 +310,7 @@ test "finalize" {
     var data: []f32 = try allocator.alloc(f32, 44100);
     defer allocator.free(data);
 
-    for (0 .. data.len) |i| {
+    for (0..data.len) |i| {
         data[i] = 1.0;
     }
 
