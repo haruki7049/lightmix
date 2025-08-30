@@ -426,20 +426,17 @@ test "filter_with" {
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,
-    });
+    }).filter_with(ArgsForTesting, test_filter_with_args, .{ .samples = 3 });
     defer wave.deinit();
 
-    const filtered_wave: Self = wave.filter_with(ArgsForTesting, test_filter_with_args, .{ .samples = 3 });
-    defer filtered_wave.deinit();
+    try testing.expectEqual(wave.sample_rate, 44100);
+    try testing.expectEqual(wave.channels, 1);
+    try testing.expectEqual(wave.bits, 16);
 
-    try testing.expectEqual(filtered_wave.sample_rate, 44100);
-    try testing.expectEqual(filtered_wave.channels, 1);
-    try testing.expectEqual(filtered_wave.bits, 16);
-
-    try testing.expectEqual(filtered_wave.data.len, 3);
-    try testing.expectEqual(filtered_wave.data[0], 0.0);
-    try testing.expectEqual(filtered_wave.data[1], 0.0);
-    try testing.expectEqual(filtered_wave.data[2], 0.0);
+    try testing.expectEqual(wave.data.len, 3);
+    try testing.expectEqual(wave.data[0], 0.0);
+    try testing.expectEqual(wave.data[1], 0.0);
+    try testing.expectEqual(wave.data[2], 0.0);
 }
 
 fn test_filter_with_args(
@@ -472,22 +469,19 @@ test "filter" {
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,
-    });
+    }).filter(test_filter_withour_args);
     defer wave.deinit();
 
-    const filtered_wave: Self = wave.filter(test_filter_withour_args);
-    defer filtered_wave.deinit();
+    try testing.expectEqual(wave.sample_rate, 44100);
+    try testing.expectEqual(wave.channels, 1);
+    try testing.expectEqual(wave.bits, 16);
 
-    try testing.expectEqual(filtered_wave.sample_rate, 44100);
-    try testing.expectEqual(filtered_wave.channels, 1);
-    try testing.expectEqual(filtered_wave.bits, 16);
-
-    try testing.expectEqual(filtered_wave.data.len, 5);
-    try testing.expectEqual(filtered_wave.data[0], 0.0);
-    try testing.expectEqual(filtered_wave.data[1], 0.0);
-    try testing.expectEqual(filtered_wave.data[2], 0.0);
-    try testing.expectEqual(filtered_wave.data[3], 0.0);
-    try testing.expectEqual(filtered_wave.data[4], 0.0);
+    try testing.expectEqual(wave.data.len, 5);
+    try testing.expectEqual(wave.data[0], 0.0);
+    try testing.expectEqual(wave.data[1], 0.0);
+    try testing.expectEqual(wave.data[2], 0.0);
+    try testing.expectEqual(wave.data[3], 0.0);
+    try testing.expectEqual(wave.data[4], 0.0);
 }
 
 fn test_filter_withour_args(original_wave: Self) !Self {
