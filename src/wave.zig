@@ -172,8 +172,27 @@ pub fn write(self: Self, file: std.fs.File) !void {
 }
 
 /// Filters a zig function.
-/// `fn (self: Self) anyerror!Self` can be received.
-pub fn filter(self: Self, filter_fn: fn (self: Self) anyerror!Self) Self {
+/// Use this function as `wave.filter_with(Args, your_filter, .{ args = 0 });`
+pub fn filter_with(
+    self: Self,
+    comptime args_type: type,
+    filter_fn: fn (self: Self, args: args_type) anyerror!Self,
+    args: args_type,
+) Self {
+    const result: Self = filter_fn(self, args) catch |err| {
+        std.debug.print("{any}\n", .{err});
+        @panic("Error happened in filter_with function...");
+    };
+
+    return result;
+}
+
+/// Filters a zig function.
+/// Use this function as `wave.filter(your_filter);`
+pub fn filter(
+    self: Self,
+    filter_fn: fn (self: Self) anyerror!Self,
+) Self {
     const result: Self = filter_fn(self) catch |err| {
         std.debug.print("{any}\n", .{err});
         @panic("Error happened in filter function...");
@@ -398,4 +417,95 @@ test "fill_zero_to_end" {
     try testing.expectEqual(filled_wave.data[22050], 0.0);
     try testing.expectEqual(filled_wave.data[22051], 0.0);
     try testing.expectEqual(filled_wave.data[44099], 0.0);
+}
+
+test "filter_with" {
+    const allocator = testing.allocator;
+    const data: []const f32 = &[_]f32{};
+    const wave: Self = Self.init(data, allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+        .bits = 16,
+    });
+    defer wave.deinit();
+
+    const filtered_wave: Self = wave.filter_with(ArgsForTesting, test_filter_with_args, .{ .samples = 3 });
+    defer filtered_wave.deinit();
+
+    try testing.expectEqual(filtered_wave.sample_rate, 44100);
+    try testing.expectEqual(filtered_wave.channels, 1);
+    try testing.expectEqual(filtered_wave.bits, 16);
+
+    try testing.expectEqual(filtered_wave.data.len, 3);
+    try testing.expectEqual(filtered_wave.data[0], 0.0);
+    try testing.expectEqual(filtered_wave.data[1], 0.0);
+    try testing.expectEqual(filtered_wave.data[2], 0.0);
+}
+
+fn test_filter_with_args(
+    original_wave: Self,
+    args: ArgsForTesting,
+) !Self {
+    defer original_wave.deinit();
+
+    var result = std.ArrayList(f32).init(original_wave.allocator);
+
+    for (0..args.samples) |_|
+        try result.append(0.0);
+
+    return Self{
+        .data = try result.toOwnedSlice(),
+        .allocator = original_wave.allocator,
+
+        .sample_rate = original_wave.sample_rate,
+        .channels = original_wave.channels,
+        .bits = original_wave.bits,
+    };
+}
+
+const ArgsForTesting = struct {
+    samples: usize,
+};
+
+test "filter" {
+    const allocator = testing.allocator;
+    const data: []const f32 = &[_]f32{};
+    const wave: Self = Self.init(data, allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+        .bits = 16,
+    });
+    defer wave.deinit();
+
+    const filtered_wave: Self = wave.filter(test_filter_withour_args);
+    defer filtered_wave.deinit();
+
+    try testing.expectEqual(filtered_wave.sample_rate, 44100);
+    try testing.expectEqual(filtered_wave.channels, 1);
+    try testing.expectEqual(filtered_wave.bits, 16);
+
+    try testing.expectEqual(filtered_wave.data.len, 5);
+    try testing.expectEqual(filtered_wave.data[0], 0.0);
+    try testing.expectEqual(filtered_wave.data[1], 0.0);
+    try testing.expectEqual(filtered_wave.data[2], 0.0);
+    try testing.expectEqual(filtered_wave.data[3], 0.0);
+    try testing.expectEqual(filtered_wave.data[4], 0.0);
+}
+
+fn test_filter_withour_args(original_wave: Self) !Self {
+    defer original_wave.deinit();
+
+    var result = std.ArrayList(f32).init(original_wave.allocator);
+
+    for (0..5) |_|
+        try result.append(0.0);
+
+    return Self{
+        .data = try result.toOwnedSlice(),
+        .allocator = original_wave.allocator,
+
+        .sample_rate = original_wave.sample_rate,
+        .channels = original_wave.channels,
+        .bits = original_wave.bits,
+    };
 }
