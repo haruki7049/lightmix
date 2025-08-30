@@ -446,8 +446,6 @@ fn test_filter_with_args(
     original_wave: Self,
     args: ArgsForTesting,
 ) !Self {
-    defer original_wave.deinit();
-
     var result = std.ArrayList(f32).init(original_wave.allocator);
 
     for (0..args.samples) |_|
@@ -493,8 +491,6 @@ test "filter" {
 }
 
 fn test_filter_withour_args(original_wave: Self) !Self {
-    defer original_wave.deinit();
-
     var result = std.ArrayList(f32).init(original_wave.allocator);
 
     for (0..5) |_|
