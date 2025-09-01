@@ -294,7 +294,7 @@ const DebugPlayErrors = error{
 
 test "from_file_content & deinit" {
     const allocator = testing.allocator;
-    const wave = Self.from_file_content(@embedFile("./assets/sine.wav"), allocator);
+    const wave = Self.from_file_content(@embedFile("./assets/sine-monaural.wav"), allocator);
     defer wave.deinit();
 
     try testing.expectEqual(wave.data[0], 0.0);
