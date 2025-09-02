@@ -10,8 +10,10 @@ const testing = std.testing;
 
 const Self = @This();
 
+const Data = @import("./wave/data.zig");
+
 /// A wave data, expressed by array contains f32.
-data: []const f32,
+data: Data,
 
 /// An allocator
 allocator: std.mem.Allocator,
@@ -31,13 +33,10 @@ pub const initOptions = struct {
     bits: usize,
 };
 
-/// Initialize a Wave with wave data (`[]const f32`).
-pub fn init(data: []const f32, allocator: std.mem.Allocator, options: initOptions) Self {
-    const owned_data = allocator.alloc(f32, data.len) catch @panic("Out of memory");
-    @memcpy(owned_data, data);
-
+/// Initialize a Wave with wave data (`[]const []const f32`).
+pub fn init(data: []const []const f32, allocator: std.mem.Allocator, options: initOptions) Self {
     return Self{
-        .data = owned_data,
+        .data = Data.init(data, allocator),
         .allocator = allocator,
 
         .sample_rate = options.sample_rate,
@@ -291,6 +290,10 @@ const DebugPlayErrors = error{
     PortaudioFailedToOpenStream,
     PortaudioStartStreamFailed,
 };
+
+test "Import tests" {
+    _ = Data;
+}
 
 test "from_file_content & deinit Mono ver." {
     const allocator = testing.allocator;
