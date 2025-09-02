@@ -292,7 +292,7 @@ const DebugPlayErrors = error{
     PortaudioStartStreamFailed,
 };
 
-test "from_file_content & deinit" {
+test "from_file_content & deinit Mono ver." {
     const allocator = testing.allocator;
     const wave = Self.from_file_content(@embedFile("./assets/sine-monaural.wav"), allocator);
     defer wave.deinit();
@@ -303,6 +303,21 @@ test "from_file_content & deinit" {
 
     try testing.expectEqual(wave.sample_rate, 44100);
     try testing.expectEqual(wave.channels, 1);
+    try testing.expectEqual(wave.bits, 16);
+}
+
+test "from_file_content & deinit Stereo ver." {
+    const allocator = testing.allocator;
+    const wave = Self.from_file_content(@embedFile("./assets/triangle-stereo.wav"), allocator);
+    defer wave.deinit();
+
+    try testing.expectEqual(wave.data[0], -3.0517578e-5);
+    try testing.expectEqual(wave.data[1], 0e0);
+    try testing.expectEqual(wave.data[2], 1.6021729e-2);
+    try testing.expectEqual(wave.data[3], 1.5960693e-2);
+
+    try testing.expectEqual(wave.sample_rate, 44100);
+    try testing.expectEqual(wave.channels, 2);
     try testing.expectEqual(wave.bits, 16);
 }
 
