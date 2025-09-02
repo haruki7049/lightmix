@@ -61,12 +61,12 @@ pub fn deinit(self: Self) void {
 }
 
 pub fn init_with(info: []const WaveInfo, allocator: std.mem.Allocator, options: initOptions) Self {
-    var list = std.ArrayList(WaveInfo).init(allocator);
-    list.appendSlice(info) catch @panic("Out of memory");
+    var list: std.array_list.Aligned(WaveInfo, null) = .empty;
+    list.appendSlice(allocator, info) catch @panic("Out of memory");
 
     return Self{
         .allocator = allocator,
-        .info = list.toOwnedSlice() catch @panic("Out of memory"),
+        .info = list.toOwnedSlice(allocator) catch @panic("Out of memory"),
 
         .sample_rate = options.sample_rate,
         .channels = options.channels,
@@ -75,11 +75,11 @@ pub fn init_with(info: []const WaveInfo, allocator: std.mem.Allocator, options: 
 }
 
 pub fn append(self: Self, waveinfo: WaveInfo) Self {
-    var d = std.ArrayList(WaveInfo).init(self.allocator);
-    d.appendSlice(self.info) catch @panic("Out of memory");
-    d.append(waveinfo) catch @panic("Out of memory");
+    var d: std.array_list.Aligned(WaveInfo, null) = .empty;
+    d.appendSlice(self.allocator, self.info) catch @panic("Out of memory");
+    d.append(self.allocator, waveinfo) catch @panic("Out of memory");
 
-    const result: []const WaveInfo = d.toOwnedSlice() catch @panic("Out of memory");
+    const result: []const WaveInfo = d.toOwnedSlice(self.allocator) catch @panic("Out of memory");
 
     return Self{
         .allocator = self.allocator,
@@ -92,11 +92,11 @@ pub fn append(self: Self, waveinfo: WaveInfo) Self {
 }
 
 pub fn appendSlice(self: Self, append_list: []const WaveInfo) Self {
-    var d = std.ArrayList(WaveInfo).init(self.allocator);
-    d.appendSlice(self.info) catch @panic("Out of memory");
-    d.appendSlice(append_list) catch @panic("Out of memory");
+    var d: std.array_list.Aligned(WaveInfo, null) = .empty;
+    d.appendSlice(self.allocator, self.info) catch @panic("Out of memory");
+    d.appendSlice(self.allocator, append_list) catch @panic("Out of memory");
 
-    const result: []const WaveInfo = d.toOwnedSlice() catch @panic("Out of memory");
+    const result: []const WaveInfo = d.toOwnedSlice(self.allocator) catch @panic("Out of memory");
 
     return Self{
         .allocator = self.allocator,
@@ -119,8 +119,8 @@ pub fn finalize(self: Self) Wave {
             end_point = ep;
     }
 
-    var padded_waveinfo_list = std.ArrayList(WaveInfo).init(self.allocator);
-    defer padded_waveinfo_list.deinit();
+    var padded_waveinfo_list: std.array_list.Aligned(WaveInfo, null) = .empty;
+    defer padded_waveinfo_list.deinit(self.allocator);
 
     // Filter each WaveInfo to append padding both of start and last
     for (self.info) |waveinfo| {
@@ -141,10 +141,10 @@ pub fn finalize(self: Self) Wave {
             .start_point = waveinfo.start_point,
         };
 
-        padded_waveinfo_list.append(wi) catch @panic("Out of memory");
+        padded_waveinfo_list.append(self.allocator, wi) catch @panic("Out of memory");
     }
 
-    const padded_waveinfo_slice: []const WaveInfo = padded_waveinfo_list.toOwnedSlice() catch @panic("Out of memory");
+    const padded_waveinfo_slice: []const WaveInfo = padded_waveinfo_list.toOwnedSlice(self.allocator) catch @panic("Out of memory");
     defer self.allocator.free(padded_waveinfo_slice);
 
     const empty_data: []const f32 = generate_soundless_data(end_point, self.allocator);
@@ -168,17 +168,17 @@ pub fn finalize(self: Self) Wave {
 
 fn padding_for_start(data: []const f32, start_point: usize, allocator: std.mem.Allocator) []const f32 {
     const padding_length: usize = start_point;
-    var padding = std.ArrayList(f32).init(allocator);
-    defer padding.deinit();
+    var padding: std.array_list.Aligned(f32, null) = .empty;
+    defer padding.deinit(allocator);
 
     // Append padding
     for (0..padding_length) |_|
-        padding.append(0.0) catch @panic("Out of memory");
+        padding.append(allocator, 0.0) catch @panic("Out of memory");
 
     // Append data slice
-    padding.appendSlice(data) catch @panic("Out of memory");
+    padding.appendSlice(allocator, data) catch @panic("Out of memory");
 
-    const result: []const f32 = padding.toOwnedSlice() catch @panic("Out of memory");
+    const result: []const f32 = padding.toOwnedSlice(allocator) catch @panic("Out of memory");
 
     return result;
 }
@@ -187,30 +187,30 @@ fn padding_for_last(data: []const f32, end_point: usize, allocator: std.mem.Allo
     std.debug.assert(data.len <= end_point);
 
     const padding_length: usize = end_point - data.len;
-    var padding = std.ArrayList(f32).init(allocator);
-    defer padding.deinit();
+    var padding: std.array_list.Aligned(f32, null) = .empty;
+    defer padding.deinit(allocator);
 
     // Append data slice
-    padding.appendSlice(data) catch @panic("Out of memory");
+    padding.appendSlice(allocator, data) catch @panic("Out of memory");
 
     // Append padding
     for (0..padding_length) |_|
-        padding.append(0.0) catch @panic("Out of memory");
+        padding.append(allocator, 0.0) catch @panic("Out of memory");
 
-    const result: []const f32 = padding.toOwnedSlice() catch @panic("Out of memory");
+    const result: []const f32 = padding.toOwnedSlice(allocator) catch @panic("Out of memory");
 
     return result;
 }
 
 fn generate_soundless_data(length: usize, allocator: std.mem.Allocator) []const f32 {
-    var list = std.ArrayList(f32).init(allocator);
-    defer list.deinit();
+    var list: std.array_list.Aligned(f32, null) = .empty;
+    defer list.deinit(allocator);
 
     // Append empty wave
     for (0..length) |_|
-        list.append(0.0) catch @panic("Out of memory");
+        list.append(allocator, 0.0) catch @panic("Out of memory");
 
-    const result: []const f32 = list.toOwnedSlice() catch @panic("Out of memory");
+    const result: []const f32 = list.toOwnedSlice(allocator) catch @panic("Out of memory");
 
     return result;
 }
@@ -287,10 +287,10 @@ test "appendSlice" {
     const wave = Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
     defer wave.deinit();
 
-    var append_list = std.ArrayList(WaveInfo).init(allocator);
-    defer append_list.deinit();
-    try append_list.append(.{ .wave = wave, .start_point = 0 });
-    try append_list.append(.{ .wave = wave, .start_point = 0 });
+    var append_list: std.array_list.Aligned(WaveInfo, null) = .empty;
+    defer append_list.deinit(allocator);
+    try append_list.append(allocator, .{ .wave = wave, .start_point = 0 });
+    try append_list.append(allocator, .{ .wave = wave, .start_point = 0 });
 
     const appended_composer = composer.appendSlice(append_list.items);
     defer appended_composer.deinit();
@@ -321,10 +321,10 @@ test "finalize" {
     });
     defer wave.deinit();
 
-    var append_list = std.ArrayList(WaveInfo).init(allocator);
-    defer append_list.deinit();
-    try append_list.append(.{ .wave = wave, .start_point = 0 });
-    try append_list.append(.{ .wave = wave, .start_point = 44100 });
+    var append_list: std.array_list.Aligned(WaveInfo, null) = .empty;
+    defer append_list.deinit(allocator);
+    try append_list.append(allocator, .{ .wave = wave, .start_point = 0 });
+    try append_list.append(allocator, .{ .wave = wave, .start_point = 44100 });
 
     const appended_composer = composer.appendSlice(append_list.items);
     defer appended_composer.deinit();
