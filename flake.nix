@@ -30,7 +30,7 @@
             # Nix
             programs.nixfmt.enable = true;
 
-            # Rust
+            # Zig
             programs.zig.enable = true;
 
             # TOML
