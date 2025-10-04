@@ -6,7 +6,7 @@
 
     .dependencies = .{
         .lightmix_wav = .{
-            .url = "https://github.com/haruki7049/lightmix_wav/archive/84be09713b92fb38c709135da61960db29ef563b.tar.gz",
+            .url = "https://github.com/haruki7049/lightmix_wav/archive/66719a914b2068caedc02606f838b777138062b2.tar.gz",
             .hash = "lightmix_wav-0.1.0-IIrulngMVQC55IcOI-mT_AaVmzwKIgt8ITcJ6Lr7DF5c",
         },
         .known_folders = .{
