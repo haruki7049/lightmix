@@ -22,15 +22,15 @@ pub fn main() !void {
 }
 
 fn to_half_freq(original_wave: Wave) !Wave {
-    var result = std.ArrayList(f32).init(original_wave.allocator);
+    var result: std.array_list.Aligned(f32, null) = .empty;
 
     for (original_wave.data) |data| {
-        try result.append(data);
-        try result.append(data);
+        try result.append(original_wave.allocator, data);
+        try result.append(original_wave.allocator, data);
     }
 
     return Wave{
-        .data = try result.toOwnedSlice(),
+        .data = try result.toOwnedSlice(original_wave.allocator),
         .allocator = original_wave.allocator,
 
         .sample_rate = original_wave.sample_rate,
