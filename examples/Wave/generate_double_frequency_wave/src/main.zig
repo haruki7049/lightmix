@@ -3,7 +3,8 @@ const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
 const allocator = std.heap.page_allocator;
 
-pub fn main() !void { const data: [44100]f32 = generate_sinewave_data();
+pub fn main() !void {
+    const data: [44100]f32 = generate_sinewave_data();
     const sinewave: Wave = Wave.init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
