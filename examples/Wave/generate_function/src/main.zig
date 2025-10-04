@@ -17,15 +17,15 @@ pub fn main() !void {
 }
 
 fn generate_function(original_wave: Wave) !Wave {
-    var result = std.ArrayList(f32).init(original_wave.allocator);
+    var result: std.array_list.Aligned(f32, null) = .empty;
 
     for (original_wave.data) |data| {
         const new_data = data * 2;
-        try result.append(new_data);
+        try result.append(original_wave.allocator, new_data);
     }
 
     return Wave{
-        .data = try result.toOwnedSlice(),
+        .data = try result.toOwnedSlice(original_wave.allocator),
         .allocator = original_wave.allocator,
 
         .sample_rate = original_wave.sample_rate,
