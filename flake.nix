@@ -32,25 +32,19 @@
 
             # Zig
             programs.zig.enable = true;
-
-            # TOML
-            programs.taplo.enable = true;
+            settings.formatter.zig.command = lib.getExe pkgs.zig_0_15;
 
             # GitHub Actions
             programs.actionlint.enable = true;
 
             # Markdown
             programs.mdformat.enable = true;
-
-            # ShellScript
-            programs.shellcheck.enable = true;
-            programs.shfmt.enable = true;
           };
 
           devShells.default = pkgs.mkShell {
             nativeBuildInputs = [
               # Compiler
-              pkgs.zig_0_14
+              pkgs.zig_0_15
 
               # C library manager
               pkgs.pkg-config

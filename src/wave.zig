@@ -65,13 +65,13 @@ pub fn mix(self: Self, other: Self) Self {
             .bits = self.bits,
         };
 
-    var data = std.ArrayList(f32).init(self.allocator);
+    var data: std.array_list.Aligned(f32, null) = .empty;
 
     for (0..self.data.len) |i| {
-        data.append(self.data[i] + other.data[i]) catch @panic("Out of memory");
+        data.append(self.allocator, self.data[i] + other.data[i]) catch @panic("Out of memory");
     }
 
-    const result: []const f32 = data.toOwnedSlice() catch @panic("Out of memory");
+    const result: []const f32 = data.toOwnedSlice(self.allocator) catch @panic("Out of memory");
 
     return Self{
         .data = result,
@@ -85,8 +85,8 @@ pub fn mix(self: Self, other: Self) Self {
 
 pub fn fill_zero_to_end(self: Self, start: usize, end: usize) !Self {
     // Initialization
-    var result = std.ArrayList(f32).init(self.allocator);
-    try result.appendSlice(self.data);
+    var result: std.array_list.Aligned(f32, null) = .empty;
+    try result.appendSlice(self.allocator, self.data);
 
     const delete_count: usize = result.items.len - start;
 
@@ -97,13 +97,13 @@ pub fn fill_zero_to_end(self: Self, start: usize, end: usize) !Self {
     std.debug.assert(start == result.items.len);
 
     for (delete_count..end) |_| {
-        try result.append(0.0);
+        try result.append(self.allocator, 0.0);
     }
 
     std.debug.assert(result.items.len == end);
 
     return Self{
-        .data = try result.toOwnedSlice(),
+        .data = try result.toOwnedSlice(self.allocator),
         .allocator = self.allocator,
 
         .sample_rate = self.sample_rate,
@@ -130,7 +130,7 @@ pub fn from_file_content(content: []const u8, allocator: std.mem.Allocator) Self
     };
 
     var buf: [64]f32 = undefined;
-    var arraylist = std.ArrayList(f32).init(allocator);
+    var arraylist: std.array_list.Aligned(f32, null) = .empty;
 
     while (true) {
         // Read samples as f32. Channels are interleaved.
@@ -141,14 +141,14 @@ pub fn from_file_content(content: []const u8, allocator: std.mem.Allocator) Self
         };
 
         // < ------ Do something with samples in buf. ------ >
-        arraylist.appendSlice(&buf) catch @panic("Out of memory");
+        arraylist.appendSlice(allocator, &buf) catch @panic("Out of memory");
 
         if (samples_read < buf.len) {
             break;
         }
     }
 
-    const result: []const f32 = arraylist.toOwnedSlice() catch @panic("Out of memory");
+    const result: []const f32 = arraylist.toOwnedSlice(allocator) catch @panic("Out of memory");
 
     const sample_rate: usize = decoder.sampleRate();
     const channels: usize = decoder.channels();
@@ -166,7 +166,7 @@ pub fn from_file_content(content: []const u8, allocator: std.mem.Allocator) Self
 
 /// Writes down the wave data to `std.fs.File`.
 pub fn write(self: Self, file: std.fs.File) !void {
-    var encoder = try lightmix_wav.encoder(i16, file.writer(), file.seekableStream(), self.sample_rate, self.channels);
+    var encoder = try lightmix_wav.encoder(i16, file, self.sample_rate, self.channels);
     try encoder.write(f32, self.data);
     try encoder.finalize();
 }
@@ -443,13 +443,13 @@ fn test_filter_with_args(
     original_wave: Self,
     args: ArgsForTesting,
 ) !Self {
-    var result = std.ArrayList(f32).init(original_wave.allocator);
+    var result: std.array_list.Aligned(f32, null) = .empty;
 
     for (0..args.samples) |_|
-        try result.append(0.0);
+        try result.append(original_wave.allocator, 0.0);
 
     return Self{
-        .data = try result.toOwnedSlice(),
+        .data = try result.toOwnedSlice(original_wave.allocator),
         .allocator = original_wave.allocator,
 
         .sample_rate = original_wave.sample_rate,
@@ -469,7 +469,7 @@ test "filter" {
         .sample_rate = 44100,
         .channels = 1,
         .bits = 16,
-    }).filter(test_filter_withour_args);
+    }).filter(test_filter_without_args);
     defer wave.deinit();
 
     try testing.expectEqual(wave.sample_rate, 44100);
@@ -484,14 +484,14 @@ test "filter" {
     try testing.expectEqual(wave.data[4], 0.0);
 }
 
-fn test_filter_withour_args(original_wave: Self) !Self {
-    var result = std.ArrayList(f32).init(original_wave.allocator);
+fn test_filter_without_args(original_wave: Self) !Self {
+    var result: std.array_list.Aligned(f32, null) = .empty;
 
     for (0..5) |_|
-        try result.append(0.0);
+        try result.append(original_wave.allocator, 0.0);
 
     return Self{
-        .data = try result.toOwnedSlice(),
+        .data = try result.toOwnedSlice(original_wave.allocator),
         .allocator = original_wave.allocator,
 
         .sample_rate = original_wave.sample_rate,

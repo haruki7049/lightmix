@@ -24,10 +24,10 @@ pub fn main() !void {
     const decayed_wave: Wave = wave.filter(decay);
     defer decayed_wave.deinit();
 
-    var append_list = std.ArrayList(WaveInfo).init(allocator);
-    defer append_list.deinit();
-    try append_list.append(.{ .wave = decayed_wave, .start_point = 0 });
-    try append_list.append(.{ .wave = decayed_wave, .start_point = 44100 });
+    var append_list: std.array_list.Aligned(WaveInfo, null) = .empty;
+    defer append_list.deinit(allocator);
+    try append_list.append(allocator, .{ .wave = decayed_wave, .start_point = 0 });
+    try append_list.append(allocator, .{ .wave = decayed_wave, .start_point = 44100 });
 
     const appended_composer = composer.appendSlice(append_list.items);
     defer appended_composer.deinit();
@@ -56,18 +56,18 @@ fn generate_sinewave_data() [44100]f32 {
 }
 
 fn decay(original_wave: Wave) !Wave {
-    var result = std.ArrayList(f32).init(original_wave.allocator);
+    var result: std.array_list.Aligned(f32, null) = .empty;
 
     for (original_wave.data, 0..) |data, n| {
         const i = original_wave.data.len - n;
         const volume: f32 = @as(f32, @floatFromInt(i)) * (1.0 / @as(f32, @floatFromInt(original_wave.data.len)));
 
         const new_data = data * volume;
-        try result.append(new_data);
+        try result.append(allocator, new_data);
     }
 
     return Wave{
-        .data = try result.toOwnedSlice(),
+        .data = try result.toOwnedSlice(original_wave.allocator),
         .allocator = original_wave.allocator,
 
         .sample_rate = original_wave.sample_rate,

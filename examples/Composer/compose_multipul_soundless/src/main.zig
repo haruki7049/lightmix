@@ -23,10 +23,10 @@ pub fn main() !void {
     });
     defer wave.deinit();
 
-    var append_list = std.ArrayList(WaveInfo).init(allocator);
-    defer append_list.deinit();
-    try append_list.append(.{ .wave = wave, .start_point = 0 });
-    try append_list.append(.{ .wave = wave, .start_point = 0 });
+    var append_list: std.array_list.Aligned(WaveInfo, null) = .empty;
+    defer append_list.deinit(allocator);
+    try append_list.append(allocator, .{ .wave = wave, .start_point = 0 });
+    try append_list.append(allocator, .{ .wave = wave, .start_point = 0 });
 
     const appended_composer = composer.appendSlice(append_list.items);
     defer appended_composer.deinit();
@@ -41,14 +41,13 @@ pub fn main() !void {
 }
 
 fn generate_soundless_data(length: usize, allocator: std.mem.Allocator) []const f32 {
-    var list = std.ArrayList(f32).init(allocator);
-    defer list.deinit();
+    var list: std.array_list.Aligned(f32, null) = .empty;
 
     // Append empty wave
     for (0..length) |_|
-        list.append(0.0) catch @panic("Out of memory");
+        list.append(allocator, 0.0) catch @panic("Out of memory");
 
-    const result: []const f32 = list.toOwnedSlice() catch @panic("Out of memory");
+    const result: []const f32 = list.toOwnedSlice(allocator) catch @panic("Out of memory");
 
     return result;
 }
