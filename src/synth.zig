@@ -151,9 +151,9 @@ test "init -> finalize -> deinit" {
     const allocator = testing.allocator;
     const synth = Self.init(allocator, .{
         .attack = &[_]f32{},
-        .decay = &[_]f32{ 0.1 },
+        .decay = &[_]f32{0.1},
         .sustain = &[_]f32{},
-        .release = &[_]f32{ 1.0 },
+        .release = &[_]f32{1.0},
 
         .sample_rate = 44100,
         .channels = 1,
