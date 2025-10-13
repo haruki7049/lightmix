@@ -2,7 +2,7 @@
     .name = .generate_half_frequency_wave,
     .version = "0.0.0",
     .fingerprint = 0xa13ef7d4c5c0e072,
-    .minimum_zig_version = "0.14.1",
+    .minimum_zig_version = "0.15.1",
 
     .dependencies = .{ .lightmix = .{ .path = "../../.." } },
 

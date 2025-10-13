@@ -2,7 +2,7 @@
     .name = .generate_sawtooth_wave,
     .version = "0.0.0",
     .fingerprint = 0x9abf981241297e1a,
-    .minimum_zig_version = "0.14.1",
+    .minimum_zig_version = "0.15.1",
 
     .dependencies = .{ .lightmix = .{ .path = "../../.." } },
 
