@@ -179,6 +179,10 @@ pub fn filter_with(
     filter_fn: fn (self: Self, args: args_type) anyerror!Self,
     args: args_type,
 ) Self {
+    // To destroy original data array
+    // If we don't do this, we may catch some memory leaks by not to free original data array
+    defer self.deinit();
+
     const result: Self = filter_fn(self, args) catch |err| {
         std.debug.print("{any}\n", .{err});
         @panic("Error happened in filter_with function...");
@@ -193,6 +197,10 @@ pub fn filter(
     self: Self,
     filter_fn: fn (self: Self) anyerror!Self,
 ) Self {
+    // To destroy original data array
+    // If we don't do this, we may catch some memory leaks by not to free original data array
+    defer self.deinit();
+
     const result: Self = filter_fn(self) catch |err| {
         std.debug.print("{any}\n", .{err});
         @panic("Error happened in filter function...");
