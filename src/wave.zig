@@ -173,6 +173,7 @@ pub fn write(self: Self, file: std.fs.File) !void {
 
 /// Filters a zig function.
 /// Use this function as `wave.filter_with(Args, your_filter, .{ args = 0 });`
+/// This function uses self.deinit() to avoid the memory leaks by not free the data arrays
 pub fn filter_with(
     self: Self,
     comptime args_type: type,
@@ -193,6 +194,7 @@ pub fn filter_with(
 
 /// Filters a zig function.
 /// Use this function as `wave.filter(your_filter);`
+/// This function uses self.deinit() to avoid the memory leaks by not free the data arrays
 pub fn filter(
     self: Self,
     filter_fn: fn (self: Self) anyerror!Self,
