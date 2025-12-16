@@ -499,3 +499,29 @@ fn test_filter_without_args(original_wave: Self) !Self {
         .bits = original_wave.bits,
     };
 }
+
+test "filter memory leaks' check" {
+    const allocator = testing.allocator;
+    const data: []const f32 = &[_]f32{};
+    const wave: Self = Self.init(data, allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+        .bits = 16,
+    })
+        .filter(test_filter_without_args)
+        .filter(test_filter_without_args)
+        .filter(test_filter_without_args)
+        .filter(test_filter_without_args);
+    defer wave.deinit();
+
+    try testing.expectEqual(wave.sample_rate, 44100);
+    try testing.expectEqual(wave.channels, 1);
+    try testing.expectEqual(wave.bits, 16);
+
+    try testing.expectEqual(wave.data.len, 5);
+    try testing.expectEqual(wave.data[0], 0.0);
+    try testing.expectEqual(wave.data[1], 0.0);
+    try testing.expectEqual(wave.data[2], 0.0);
+    try testing.expectEqual(wave.data[3], 0.0);
+    try testing.expectEqual(wave.data[4], 0.0);
+}
