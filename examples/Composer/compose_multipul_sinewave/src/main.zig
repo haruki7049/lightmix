@@ -3,9 +3,13 @@ const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
 const Composer = lightmix.Composer;
 const WaveInfo = Composer.WaveInfo;
-const allocator = std.heap.page_allocator;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+const allocator = gpa.allocator();
 
 pub fn main() !void {
+    defer _ = gpa.detectLeaks();
+
     const composer = Composer.init(allocator, .{
         .sample_rate = 44100,
         .channels = 1,
@@ -21,7 +25,7 @@ pub fn main() !void {
     });
     defer wave.deinit();
 
-    const decayed_wave: Wave = wave.filter(decay);
+    const decayed_wave: Wave = wave.filter(decay).filter(decay).filter(decay);
     defer decayed_wave.deinit();
 
     var append_list: std.array_list.Aligned(WaveInfo, null) = .empty;
