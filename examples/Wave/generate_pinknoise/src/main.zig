@@ -10,7 +10,6 @@ pub fn main() !void {
         .channels = 1,
         .bits = 16,
     });
-    defer pinknoise.deinit();
 
     const decayed_pinknoise: Wave = pinknoise.filter(decay).filter(decay).filter(decay);
     defer decayed_pinknoise.deinit();

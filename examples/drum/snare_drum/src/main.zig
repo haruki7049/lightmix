@@ -4,23 +4,7 @@ const Wave = lightmix.Wave;
 const allocator = std.heap.page_allocator;
 
 pub fn main() !void {
-    const pinknoise_data: [44100]f32 = generate_pink_noise();
-    const pinknoise: Wave = Wave.init(pinknoise_data[0..], allocator, .{
-        .sample_rate = 44100,
-        .channels = 1,
-        .bits = 16,
-    });
-    defer pinknoise.deinit();
-
-    const sine_data: [44100]f32 = generate_sinewave_data();
-    const sinewave: Wave = Wave.init(sine_data[0..], allocator, .{
-        .sample_rate = 44100,
-        .channels = 1,
-        .bits = 16,
-    });
-    defer sinewave.deinit();
-
-    const snare_wave = generate_snare_wave(pinknoise, sinewave);
+    const snare_wave = generate_snare_wave();
     defer snare_wave.deinit();
 
     var file = try std.fs.cwd().createFile("result.wav", .{});
@@ -29,7 +13,21 @@ pub fn main() !void {
     try snare_wave.write(file);
 }
 
-fn generate_snare_wave(pinknoise: Wave, sinewave: Wave) Wave {
+fn generate_snare_wave() Wave {
+    const pinknoise_data: [44100]f32 = generate_pink_noise();
+    const pinknoise: Wave = Wave.init(pinknoise_data[0..], allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+        .bits = 16,
+    });
+
+    const sine_data: [44100]f32 = generate_sinewave_data();
+    const sinewave: Wave = Wave.init(sine_data[0..], allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+        .bits = 16,
+    });
+
     const decayed_pinknoise = pinknoise
         .filter(decay)
         .filter(decay)

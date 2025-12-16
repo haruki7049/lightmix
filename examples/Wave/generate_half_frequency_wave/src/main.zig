@@ -10,7 +10,6 @@ pub fn main() !void {
         .channels = 1,
         .bits = 16,
     });
-    defer sinewave.deinit();
 
     const half_freq_wave: Wave = sinewave.filter(to_half_freq);
     defer half_freq_wave.deinit();

@@ -10,7 +10,6 @@ pub fn main() !void {
         .channels = 1,
         .bits = 16,
     });
-    defer sinewave.deinit();
 
     const double_freq_wave: Wave = sinewave.filter(to_double_freq).filter(decay);
     defer double_freq_wave.deinit();

@@ -10,7 +10,6 @@ pub fn main() !void {
         .channels = 1,
         .bits = 16,
     });
-    defer whitenoise.deinit();
 
     const decayed_whitenoise: Wave = whitenoise.filter(decay).filter(decay).filter(decay);
     defer decayed_whitenoise.deinit();

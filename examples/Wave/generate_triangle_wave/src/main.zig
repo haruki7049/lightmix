@@ -10,7 +10,6 @@ pub fn main() !void {
         .channels = 1,
         .bits = 16,
     });
-    defer triangle_wave.deinit();
 
     const decayed_wave: Wave = triangle_wave.filter(decay);
     defer decayed_wave.deinit();

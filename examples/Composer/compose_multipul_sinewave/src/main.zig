@@ -23,7 +23,6 @@ pub fn main() !void {
         .channels = 1,
         .bits = 16,
     });
-    defer wave.deinit();
 
     const decayed_wave: Wave = wave.filter(decay).filter(decay).filter(decay);
     defer decayed_wave.deinit();

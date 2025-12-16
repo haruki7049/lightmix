@@ -5,7 +5,6 @@ const allocator = std.heap.page_allocator;
 
 pub fn main() !void {
     const sinewave: Wave = Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
-    defer sinewave.deinit();
 
     const decayed_wave: Wave = sinewave.filter(decay).filter(amp);
     defer decayed_wave.deinit();

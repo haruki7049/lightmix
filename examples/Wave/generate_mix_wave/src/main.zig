@@ -10,7 +10,6 @@ pub fn main() !void {
         .channels = 1,
         .bits = 16,
     });
-    defer sinewave.deinit();
 
     const sawtooth_data: [44100]f32 = generate_sawtooth_wave_data();
     const sawtooth_wave: Wave = Wave.init(sawtooth_data[0..], allocator, .{
@@ -18,7 +17,6 @@ pub fn main() !void {
         .channels = 1,
         .bits = 16,
     });
-    defer sawtooth_wave.deinit();
 
     const decayed_sawtooth_wave: Wave = sawtooth_wave
         .filter(decay)

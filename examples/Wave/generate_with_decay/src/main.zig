@@ -9,8 +9,6 @@ pub fn main() !void {
     defer _ = gpa.detectLeaks();
 
     const sinewave: Wave = Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
-    defer sinewave.deinit();
-
     const decayed_wave: Wave = sinewave.filter(decay).filter(amp);
     defer decayed_wave.deinit();
 

@@ -10,7 +10,6 @@ pub fn main() !void {
         .channels = 1,
         .bits = 16,
     });
-    defer sawtooth_wave.deinit();
 
     const decayed_wave: Wave = sawtooth_wave.filter(decay);
     defer decayed_wave.deinit();
