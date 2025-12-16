@@ -1,9 +1,13 @@
 const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
-const allocator = std.heap.page_allocator;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+const allocator = gpa.allocator();
 
 pub fn main() !void {
+    defer _ = gpa.detectLeaks();
+
     const sinewave: Wave = Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
     defer sinewave.deinit();
 
