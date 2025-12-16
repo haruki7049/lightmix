@@ -78,4 +78,4 @@ defer wave.deinit(); // Don't forget to free the `Wave` data.
 
 0.15.1
 
-This project will follows Ziglang's major version.
+This project will follows Ziglang's minor version.
