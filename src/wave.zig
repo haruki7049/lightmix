@@ -213,7 +213,7 @@ pub fn filter(
 
 /// Plays the wave instantly.
 /// You must enable `with_debug_features` in `build.zig`.
-pub fn debug_play(self: Self, bit_type: lightmix_wav.BitType) !void {
+pub fn debug_play(self: Self, comptime bit_type: lightmix_wav.BitType) !void {
     if (!build_options.with_debug_features)
         @panic("Wave.debug_play called without 'with_debug_features' flag. Please turn on the flag.");
 

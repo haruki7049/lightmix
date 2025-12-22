@@ -14,7 +14,7 @@ pub fn main() !void {
 
     try decayed_wave.write(file, .i16);
 
-    try decayed_wave.debug_play();
+    try decayed_wave.debug_play(.i16);
 }
 
 fn decay(original_wave: Wave) !Wave {
