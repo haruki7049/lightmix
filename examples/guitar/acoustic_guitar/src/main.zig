@@ -15,7 +15,7 @@ pub fn main() !void {
     var file = try std.fs.cwd().createFile("result.wav", .{});
     defer file.close();
 
-    try guitar.write(file);
+    try guitar.write(file, .i16);
 }
 
 // By ChatGPT...

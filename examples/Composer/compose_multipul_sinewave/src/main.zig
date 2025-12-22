@@ -41,7 +41,7 @@ pub fn main() !void {
     var file = try std.fs.cwd().createFile("result.wav", .{});
     defer file.close();
 
-    try result.write(file);
+    try result.write(file, .i16);
 }
 
 fn generate_sinewave_data() [44100]f32 {

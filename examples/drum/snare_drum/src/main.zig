@@ -10,7 +10,7 @@ pub fn main() !void {
     var file = try std.fs.cwd().createFile("result.wav", .{});
     defer file.close();
 
-    try snare_wave.write(file);
+    try snare_wave.write(file, .i16);
 }
 
 fn generate_snare_wave() Wave {

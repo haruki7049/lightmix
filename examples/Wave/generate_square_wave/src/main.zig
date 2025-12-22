@@ -17,7 +17,7 @@ pub fn main() !void {
     var file = try std.fs.cwd().createFile("result.wav", .{});
     defer file.close();
 
-    try decayed_wave.write(file);
+    try decayed_wave.write(file, .i16);
 }
 
 fn generate_square_wave_data() [44100]f32 {

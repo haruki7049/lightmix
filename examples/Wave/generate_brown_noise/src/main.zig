@@ -17,7 +17,7 @@ pub fn main() !void {
     var file = try std.fs.cwd().createFile("result.wav", .{});
     defer file.close();
 
-    try decayed_brown_noise.write(file);
+    try decayed_brown_noise.write(file, .i16);
 }
 
 fn generate_brown_noise() [44100]f32 {
