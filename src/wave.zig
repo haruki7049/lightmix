@@ -213,7 +213,7 @@ pub fn filter(
 
 /// Plays the wave instantly.
 /// You must enable `with_debug_features` in `build.zig`.
-pub fn debug_play(self: Self) !void {
+pub fn debug_play(self: Self, bit_type: lightmix_wav.BitType) !void {
     if (!build_options.with_debug_features)
         @panic("Wave.debug_play called without 'with_debug_features' flag. Please turn on the flag.");
 
@@ -233,7 +233,7 @@ pub fn debug_play(self: Self) !void {
 
     const file = try cache_dir.createFile(path, .{});
 
-    try self.write(file);
+    try self.write(file, bit_type);
     std.debug.print("Wave file saved to: {s}\n", .{path});
 
     // Debug-play
