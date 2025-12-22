@@ -8,7 +8,6 @@ pub fn main() !void {
     const sinewave: Wave = Wave.init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
-        .bits = 16,
     });
 
     const half_freq_wave: Wave = sinewave.filter(to_half_freq);
@@ -34,7 +33,6 @@ fn to_half_freq(original_wave: Wave) !Wave {
 
         .sample_rate = original_wave.sample_rate,
         .channels = original_wave.channels,
-        .bits = original_wave.bits,
     };
 }
 

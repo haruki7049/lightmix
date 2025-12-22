@@ -8,7 +8,6 @@ pub fn main() !void {
     const whitenoise: Wave = Wave.init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
-        .bits = 16,
     });
 
     const decayed_whitenoise: Wave = whitenoise.filter(decay).filter(decay).filter(decay);
@@ -52,6 +51,5 @@ fn decay(original_wave: Wave) !Wave {
 
         .sample_rate = original_wave.sample_rate,
         .channels = original_wave.channels,
-        .bits = original_wave.bits,
     };
 }

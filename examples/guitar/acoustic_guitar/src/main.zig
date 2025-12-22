@@ -8,14 +8,13 @@ pub fn main() !void {
     const guitar: Wave = Wave.init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
-        .bits = 16,
     });
     defer guitar.deinit();
 
     var file = try std.fs.cwd().createFile("result.wav", .{});
     defer file.close();
 
-    try guitar.write(file, .i16);
+    try guitar.write(file, .f32);
 }
 
 // By ChatGPT...

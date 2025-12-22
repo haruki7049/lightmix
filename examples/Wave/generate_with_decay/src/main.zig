@@ -8,14 +8,14 @@ const allocator = gpa.allocator();
 pub fn main() !void {
     defer _ = gpa.detectLeaks();
 
-    const sinewave: Wave = Wave.from_file_content(@embedFile("./assets/sine.wav"), allocator);
+    const sinewave: Wave = Wave.from_file_content(.i16, @embedFile("./assets/sine.wav"), allocator);
     const decayed_wave: Wave = sinewave.filter(decay).filter(amp);
     defer decayed_wave.deinit();
 
     var file = try std.fs.cwd().createFile("result.wav", .{});
     defer file.close();
 
-    try decayed_wave.write(file, .i16);
+    try decayed_wave.write(file);
 }
 
 fn decay(original_wave: Wave) !Wave {
@@ -35,7 +35,6 @@ fn decay(original_wave: Wave) !Wave {
 
         .sample_rate = original_wave.sample_rate,
         .channels = original_wave.channels,
-        .bits = original_wave.bits,
     };
 }
 
@@ -55,6 +54,5 @@ fn amp(original_wave: Wave) !Wave {
 
         .sample_rate = original_wave.sample_rate,
         .channels = original_wave.channels,
-        .bits = original_wave.bits,
     };
 }

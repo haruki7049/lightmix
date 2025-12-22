@@ -29,6 +29,5 @@ fn generate_function(original_wave: Wave) !Wave {
 
         .sample_rate = original_wave.sample_rate,
         .channels = original_wave.channels,
-        .bits = original_wave.bits,
     };
 }

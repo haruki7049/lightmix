@@ -22,17 +22,17 @@ sample_rate: usize,
 /// This wave's channels.
 channels: usize,
 
-/// This wave's bits.
-bits: usize,
-
-pub const initOptions = struct {
+pub const Options = struct {
     sample_rate: usize,
     channels: usize,
-    bits: usize,
 };
 
 /// Initialize a Wave with wave data (`[]const f32`).
-pub fn init(data: []const f32, allocator: std.mem.Allocator, options: initOptions) Self {
+pub fn init(
+    data: []const f32,
+    allocator: std.mem.Allocator,
+    options: Options,
+) Self {
     const owned_data = allocator.alloc(f32, data.len) catch @panic("Out of memory");
     @memcpy(owned_data, data);
 
@@ -42,7 +42,6 @@ pub fn init(data: []const f32, allocator: std.mem.Allocator, options: initOption
 
         .sample_rate = options.sample_rate,
         .channels = options.channels,
-        .bits = options.bits,
     };
 }
 
@@ -53,7 +52,6 @@ pub fn mix(self: Self, other: Self) Self {
     std.debug.assert(self.data.len == other.data.len);
     std.debug.assert(self.sample_rate == other.sample_rate);
     std.debug.assert(self.channels == other.channels);
-    std.debug.assert(self.bits == other.bits);
 
     if (self.data.len == 0)
         return Self{
@@ -62,7 +60,6 @@ pub fn mix(self: Self, other: Self) Self {
 
             .sample_rate = self.sample_rate,
             .channels = self.channels,
-            .bits = self.bits,
         };
 
     var data: std.array_list.Aligned(f32, null) = .empty;
@@ -79,7 +76,6 @@ pub fn mix(self: Self, other: Self) Self {
 
         .sample_rate = self.sample_rate,
         .channels = self.channels,
-        .bits = self.bits,
     };
 }
 
@@ -108,7 +104,6 @@ pub fn fill_zero_to_end(self: Self, start: usize, end: usize) !Self {
 
         .sample_rate = self.sample_rate,
         .channels = self.channels,
-        .bits = self.bits,
     };
 }
 
@@ -121,13 +116,19 @@ pub fn deinit(self: Self) void {
 /// The data argument can receive a binary data, as @embedFile("./assets/sine.wav")
 /// Therefore you can use this function as:
 /// const wave = Wave.from_file_content(@embedFile("./asset/sine.wav"), allocator);
-pub fn from_file_content(content: []const u8, allocator: std.mem.Allocator) Self {
+pub fn from_file_content(
+    bit_type: lightmix_wav.BitType,
+    content: []const u8,
+    allocator: std.mem.Allocator,
+) Self {
     var stream = std.io.fixedBufferStream(content);
     var decoder = lightmix_wav.decoder(stream.reader()) catch |err| {
         std.debug.print("In lightmix_wav\n", .{});
         std.debug.print("{any}\n", .{err});
         @panic("Failed to create decoder");
     };
+
+    std.debug.assert(bit_type == decoder.bits());
 
     var buf: [64]f32 = undefined;
     var arraylist: std.array_list.Aligned(f32, null) = .empty;
@@ -152,7 +153,6 @@ pub fn from_file_content(content: []const u8, allocator: std.mem.Allocator) Self
 
     const sample_rate: usize = decoder.sampleRate();
     const channels: usize = decoder.channels();
-    const bits: usize = decoder.bits();
 
     return Self{
         .data = result,
@@ -160,13 +160,12 @@ pub fn from_file_content(content: []const u8, allocator: std.mem.Allocator) Self
 
         .sample_rate = sample_rate,
         .channels = channels,
-        .bits = bits,
     };
 }
 
 /// Writes down the wave data to `std.fs.File`.
-pub fn write(self: Self, file: std.fs.File, comptime bit_type: lightmix_wav.BitType) !void {
-    var encoder = try lightmix_wav.encoder(bit_type, file, self.sample_rate, self.channels);
+pub fn write(self: Self, file: std.fs.File, comptime bits: lightmix_wav.BitType) !void {
+    var encoder = try lightmix_wav.encoder(bits, file, self.sample_rate, self.channels);
     try encoder.write(f32, self.data);
     try encoder.finalize();
 }
@@ -213,7 +212,7 @@ pub fn filter(
 
 /// Plays the wave instantly.
 /// You must enable `with_debug_features` in `build.zig`.
-pub fn debug_play(self: Self, comptime bit_type: lightmix_wav.BitType) !void {
+pub fn debug_play(self: Self, bit_type: lightmix_wav.BitType) !void {
     if (!build_options.with_debug_features)
         @panic("Wave.debug_play called without 'with_debug_features' flag. Please turn on the flag.");
 
@@ -258,7 +257,7 @@ pub fn debug_play(self: Self, comptime bit_type: lightmix_wav.BitType) !void {
 
     var stream: ?*c_headers.PaStream = undefined;
 
-    if (self.bits != 16)
+    if (self.bits != .i16)
         @panic("Debug-playing the others of 16 bits' Wave is not implemented yet.");
 
     if (c_headers.Pa_OpenDefaultStream(
@@ -304,7 +303,7 @@ const DebugPlayErrors = error{
 
 test "from_file_content & deinit" {
     const allocator = testing.allocator;
-    const wave = Self.from_file_content(@embedFile("./assets/sine.wav"), allocator);
+    const wave = Self.from_file_content(.i16, @embedFile("./assets/sine.wav"), allocator);
     defer wave.deinit();
 
     try testing.expectEqual(wave.data[0], 0.0);
@@ -313,7 +312,6 @@ test "from_file_content & deinit" {
 
     try testing.expectEqual(wave.sample_rate, 44100);
     try testing.expectEqual(wave.channels, 1);
-    try testing.expectEqual(wave.bits, 16);
 }
 
 test "init & deinit" {
@@ -339,13 +337,11 @@ test "init & deinit" {
     const wave = Self.init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
-        .bits = 16,
     });
     defer wave.deinit();
 
     try testing.expectEqual(wave.sample_rate, 44100);
     try testing.expectEqual(wave.channels, 1);
-    try testing.expectEqual(wave.bits, 16);
 }
 
 test "mix" {
@@ -370,7 +366,6 @@ test "mix" {
     const wave = Self.init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
-        .bits = 16,
     });
     defer wave.deinit();
 
@@ -379,7 +374,6 @@ test "mix" {
 
     try testing.expectEqual(wave.sample_rate, 44100);
     try testing.expectEqual(wave.channels, 1);
-    try testing.expectEqual(wave.bits, 16);
 
     try testing.expectEqual(result.data[0], 0.0);
     try testing.expectEqual(result.data[1], 6.2648326e-2);
@@ -408,7 +402,6 @@ test "fill_zero_to_end" {
     const wave = Self.init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
-        .bits = 16,
     });
     defer wave.deinit();
 
@@ -417,7 +410,6 @@ test "fill_zero_to_end" {
 
     try testing.expectEqual(filled_wave.sample_rate, 44100);
     try testing.expectEqual(filled_wave.channels, 1);
-    try testing.expectEqual(filled_wave.bits, 16);
 
     try testing.expectEqual(filled_wave.data[0], 0.0);
     try testing.expectEqual(filled_wave.data[1], 3.1324163e-2);
@@ -432,16 +424,15 @@ test "fill_zero_to_end" {
 test "filter_with" {
     const allocator = testing.allocator;
     const data: []const f32 = &[_]f32{};
-    const wave: Self = Self.init(data, allocator, .{
+    const wave = Self.init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
-        .bits = 16,
-    }).filter_with(ArgsForTesting, test_filter_with_args, .{ .samples = 3 });
+    })
+        .filter_with(ArgsForTesting, test_filter_with_args, .{ .samples = 3 });
     defer wave.deinit();
 
     try testing.expectEqual(wave.sample_rate, 44100);
     try testing.expectEqual(wave.channels, 1);
-    try testing.expectEqual(wave.bits, 16);
 
     try testing.expectEqual(wave.data.len, 3);
     try testing.expectEqual(wave.data[0], 0.0);
@@ -464,7 +455,6 @@ fn test_filter_with_args(
 
         .sample_rate = original_wave.sample_rate,
         .channels = original_wave.channels,
-        .bits = original_wave.bits,
     };
 }
 
@@ -475,16 +465,15 @@ const ArgsForTesting = struct {
 test "filter" {
     const allocator = testing.allocator;
     const data: []const f32 = &[_]f32{};
-    const wave: Self = Self.init(data, allocator, .{
+    const wave = Self.init(data, allocator, .{
         .sample_rate = 44100,
         .channels = 1,
-        .bits = 16,
-    }).filter(test_filter_without_args);
+    })
+        .filter(test_filter_without_args);
     defer wave.deinit();
 
     try testing.expectEqual(wave.sample_rate, 44100);
     try testing.expectEqual(wave.channels, 1);
-    try testing.expectEqual(wave.bits, 16);
 
     try testing.expectEqual(wave.data.len, 5);
     try testing.expectEqual(wave.data[0], 0.0);
@@ -506,17 +495,15 @@ fn test_filter_without_args(original_wave: Self) !Self {
 
         .sample_rate = original_wave.sample_rate,
         .channels = original_wave.channels,
-        .bits = original_wave.bits,
     };
 }
 
 test "filter memory leaks' check" {
     const allocator = testing.allocator;
     const data: []const f32 = &[_]f32{};
-    const wave: Self = Self.init(data, allocator, .{
+    const wave = Self.init(data, allocator, .{
         .sample_rate = 44100,
         .channels = 1,
-        .bits = 16,
     })
         .filter(test_filter_without_args)
         .filter(test_filter_without_args)
@@ -526,7 +513,6 @@ test "filter memory leaks' check" {
 
     try testing.expectEqual(wave.sample_rate, 44100);
     try testing.expectEqual(wave.channels, 1);
-    try testing.expectEqual(wave.bits, 16);
 
     try testing.expectEqual(wave.data.len, 5);
     try testing.expectEqual(wave.data[0], 0.0);

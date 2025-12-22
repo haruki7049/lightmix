@@ -5,17 +5,13 @@ const allocator = std.heap.page_allocator;
 
 pub fn main() !void {
     const data: [44100]f32 = generate_sinewave_data();
-    const sinewave: Wave = Wave.init(data[0..], allocator, .{
-        .sample_rate = 44100,
-        .channels = 1,
-        .bits = 16,
-    });
+    const sinewave: Wave = Wave.init(data[0..], allocator, 44100, 1, .f32);
     defer sinewave.deinit();
 
     var file = try std.fs.cwd().createFile("result.wav", .{});
     defer file.close();
 
-    try sinewave.write(file, .f32);
+    try sinewave.write(file);
 }
 
 const c_5: f32 = 523.251;
