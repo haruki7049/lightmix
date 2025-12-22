@@ -121,13 +121,19 @@ pub fn deinit(self: Self) void {
 /// The data argument can receive a binary data, as @embedFile("./assets/sine.wav")
 /// Therefore you can use this function as:
 /// const wave = Wave.from_file_content(@embedFile("./asset/sine.wav"), allocator);
-pub fn from_file_content(content: []const u8, allocator: std.mem.Allocator) Self {
+pub fn from_file_content(
+    comptime bit_type: lightmix_wav.BitType,
+    content: []const u8,
+    allocator: std.mem.Allocator,
+) Self {
     var stream = std.io.fixedBufferStream(content);
     var decoder = lightmix_wav.decoder(stream.reader()) catch |err| {
         std.debug.print("In lightmix_wav\n", .{});
         std.debug.print("{any}\n", .{err});
         @panic("Failed to create decoder");
     };
+
+    std.debug.assert(bit_type == decoder.bits());
 
     var buf: [64]f32 = undefined;
     var arraylist: std.array_list.Aligned(f32, null) = .empty;
@@ -152,7 +158,6 @@ pub fn from_file_content(content: []const u8, allocator: std.mem.Allocator) Self
 
     const sample_rate: usize = decoder.sampleRate();
     const channels: usize = decoder.channels();
-    const bits: lightmix_wav.BitType = decoder.bits();
 
     return Self{
         .data = result,
@@ -160,7 +165,7 @@ pub fn from_file_content(content: []const u8, allocator: std.mem.Allocator) Self
 
         .sample_rate = sample_rate,
         .channels = channels,
-        .bits = bits,
+        .bits = bit_type,
     };
 }
 
