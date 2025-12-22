@@ -32,7 +32,6 @@ const data: []const f32 = &[_]{ 0.0, 0.0, 0.0 }; // This array contains 3 float 
 const wave: lightmix.Wave = Wave.init(data, allocator, .{
     .sample_rate = 44100, // Samples per second.
     .channels = 1, // Channels for this Wave. If this wave have two channels, it means this wave is stereo.
-    .bits = 16, // Bits for this wave.
 });
 defer wave.deinit(); // Wave.data is owned data by passed allocator, then you must `free` this wave.
 ```
@@ -63,10 +62,9 @@ const info: []const lightmix.Composer.WaveInfo = &[_]WaveInfo{
     .{ .wave = wave, .start_point = 0 },
     .{ .wave = wave, .start_point = 44100 },
 };
-const composer: lightmix.Composer = Composer.init_with(info, allocator, .
+const composer: lightmix.Composer = Composer.init_with(info, allocator, .{
     .sample_rate = 44100, // Samples per second.
     .channels = 1, // Channels for the Wave. If this composer have two channels, it means the wave is stereo.
-    .bits = 16, // Bits for the wave.
 });
 defer composer.deinit(); // Composer.info is also owned data by passed allocator, then you must `free` this wave.
 

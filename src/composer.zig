@@ -1,6 +1,6 @@
 //! # Composer
 //!
-//! Composer is used to combine multipul `Wave`.
+//! Composer is used to combine multiple `Wave`.
 
 const std = @import("std");
 const lightmix_wav = @import("lightmix_wav");

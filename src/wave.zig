@@ -46,8 +46,8 @@ pub fn init(
 }
 
 /// Mix a wave and the other wave.
-/// The each wave data's length, sample_rate, channels, and bits must be same.
-/// That's because we cannot ajust the timing for every users which the each wave should be played.
+/// The each wave data's length, sample_rate, and channels must be same.
+/// That's because we cannot adjust the timing for every users which the each wave should be played.
 pub fn mix(self: Self, other: Self) Self {
     std.debug.assert(self.data.len == other.data.len);
     std.debug.assert(self.sample_rate == other.sample_rate);
