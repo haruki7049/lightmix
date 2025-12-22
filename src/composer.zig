@@ -26,7 +26,6 @@ pub const WaveInfo = struct {
         const result: Wave = Wave.init(data, allocator, .{
             .sample_rate = self.wave.sample_rate,
             .channels = self.wave.channels,
-            .bits = self.wave.bits,
         });
 
         return result;
@@ -38,21 +37,22 @@ allocator: std.mem.Allocator,
 
 sample_rate: usize,
 channels: usize,
-comptime bits: lightmix_wav.BitType = .i16,
+
+pub const Options = struct {
+    sample_rate: usize,
+    channels: usize,
+};
 
 pub fn init(
     allocator: std.mem.Allocator,
-    s: usize,
-    c: usize,
-    comptime b: lightmix_wav.BitType,
+    options: Options,
 ) Self {
     return Self{
         .allocator = allocator,
         .info = &[_]WaveInfo{},
 
-        .sample_rate = s,
-        .channels = c,
-        .bits = b,
+        .sample_rate = options.sample_rate,
+        .channels = options.channels,
     };
 }
 
@@ -63,9 +63,7 @@ pub fn deinit(self: Self) void {
 pub fn init_with(
     info: []const WaveInfo,
     allocator: std.mem.Allocator,
-    s: usize,
-    c: usize,
-    comptime b: lightmix_wav.BitType,
+    options: Options,
 ) Self {
     var list: std.array_list.Aligned(WaveInfo, null) = .empty;
     list.appendSlice(allocator, info) catch @panic("Out of memory");
@@ -74,9 +72,8 @@ pub fn init_with(
         .allocator = allocator,
         .info = list.toOwnedSlice(allocator) catch @panic("Out of memory"),
 
-        .sample_rate = s,
-        .channels = c,
-        .bits = b,
+        .sample_rate = options.sample_rate,
+        .channels = options.channels,
     };
 }
 
@@ -93,7 +90,6 @@ pub fn append(self: Self, waveinfo: WaveInfo) Self {
 
         .sample_rate = self.sample_rate,
         .channels = self.channels,
-        .bits = self.bits,
     };
 }
 
@@ -110,7 +106,6 @@ pub fn appendSlice(self: Self, append_list: []const WaveInfo) Self {
 
         .sample_rate = self.sample_rate,
         .channels = self.channels,
-        .bits = self.bits,
     };
 }
 
@@ -136,13 +131,10 @@ pub fn finalize(self: Self) Wave {
         const padded_at_start_and_last: []const f32 = padding_for_last(padded_at_start, end_point, self.allocator);
         defer self.allocator.free(padded_at_start_and_last);
 
-        const wave: Wave = Wave.init(
-            padded_at_start_and_last,
-            self.allocator,
-            self.sample_rate,
-            self.channels,
-            self.bits,
-        );
+        const wave: Wave = Wave.init(padded_at_start_and_last, self.allocator, .{
+            .sample_rate = self.sample_rate,
+            .channels = self.channels,
+        });
 
         const wi: WaveInfo = WaveInfo{
             .wave = wave,
@@ -158,13 +150,10 @@ pub fn finalize(self: Self) Wave {
     const empty_data: []const f32 = generate_soundless_data(end_point, self.allocator);
     defer self.allocator.free(empty_data);
 
-    var result: Wave = Wave.init(
-        empty_data,
-        self.allocator,
-        self.sample_rate,
-        self.channels,
-        self.bits,
-    );
+    var result: Wave = Wave.init(empty_data, self.allocator, .{
+        .sample_rate = self.sample_rate,
+        .channels = self.channels,
+    });
 
     for (padded_waveinfo_slice) |waveinfo| {
         const wave = result.mix(waveinfo.wave);
@@ -243,7 +232,10 @@ test "padding_for_start" {
 
 test "init & deinit" {
     const allocator = testing.allocator;
-    const composer = Self.init(allocator, 44100, 1, .i16);
+    const composer = Self.init(allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+    });
     defer composer.deinit();
 }
 
@@ -255,13 +247,19 @@ test "init_with & deinit" {
 
     const info: []const WaveInfo = &[_]WaveInfo{ .{ .wave = wave, .start_point = 0 }, .{ .wave = wave, .start_point = 0 } };
 
-    const composer = Self.init_with(info, allocator, 44100, 1, .i16);
+    const composer = Self.init_with(info, allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+    });
     defer composer.deinit();
 }
 
 test "append" {
     const allocator = testing.allocator;
-    const composer = Self.init(allocator, 44100, 1, .i16);
+    const composer = Self.init(allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+    });
     defer composer.deinit();
 
     const wave = Wave.from_file_content(.i16, @embedFile("./assets/sine.wav"), allocator);
@@ -275,7 +273,10 @@ test "append" {
 
 test "appendSlice" {
     const allocator = testing.allocator;
-    const composer = Self.init(allocator, 44100, 1, .i16);
+    const composer = Self.init(allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+    });
     defer composer.deinit();
 
     const wave = Wave.from_file_content(.i16, @embedFile("./assets/sine.wav"), allocator);
@@ -294,7 +295,10 @@ test "appendSlice" {
 
 test "finalize" {
     const allocator = testing.allocator;
-    const composer = Self.init(allocator, 44100, 1, .i16);
+    const composer = Self.init(allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+    });
     defer composer.deinit();
 
     var data: []f32 = try allocator.alloc(f32, 44100);
@@ -304,7 +308,10 @@ test "finalize" {
         data[i] = 1.0;
     }
 
-    const wave = Wave.init(data, allocator, 44100, 1, .i16);
+    const wave = Wave.init(data, allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+    });
     defer wave.deinit();
 
     var append_list: std.array_list.Aligned(WaveInfo, null) = .empty;
@@ -322,5 +329,4 @@ test "finalize" {
 
     try testing.expectEqual(result.sample_rate, 44100);
     try testing.expectEqual(result.channels, 1);
-    try testing.expectEqual(result.bits, .i16);
 }

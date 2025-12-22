@@ -8,14 +8,12 @@ pub fn main() !void {
     const sinewave: Wave = Wave.init(sine_data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
-        .bits = 16,
     });
 
     const sawtooth_data: [44100]f32 = generate_sawtooth_wave_data();
     const sawtooth_wave: Wave = Wave.init(sawtooth_data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
-        .bits = 16,
     });
 
     const decayed_sawtooth_wave: Wave = sawtooth_wave
@@ -81,6 +79,5 @@ fn decay(original_wave: Wave) !Wave {
 
         .sample_rate = original_wave.sample_rate,
         .channels = original_wave.channels,
-        .bits = original_wave.bits,
     };
 }

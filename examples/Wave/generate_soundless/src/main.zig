@@ -10,7 +10,6 @@ pub fn main() !void {
     const soundless_wave: Wave = Wave.init(data, allocator, .{
         .sample_rate = 44100,
         .channels = 1,
-        .bits = 16,
     });
     defer soundless_wave.deinit();
 

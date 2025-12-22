@@ -8,7 +8,6 @@ pub fn main() !void {
     const brown_noise: Wave = Wave.init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
-        .bits = 16,
     });
 
     const decayed_brown_noise: Wave = brown_noise.filter(decay).filter(decay).filter(decay);
@@ -61,6 +60,5 @@ fn decay(original_wave: Wave) !Wave {
 
         .sample_rate = original_wave.sample_rate,
         .channels = original_wave.channels,
-        .bits = original_wave.bits,
     };
 }

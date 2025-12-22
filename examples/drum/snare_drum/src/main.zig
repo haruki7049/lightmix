@@ -18,14 +18,12 @@ fn generate_snare_wave() Wave {
     const pinknoise: Wave = Wave.init(pinknoise_data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
-        .bits = 16,
     });
 
     const sine_data: [44100]f32 = generate_sinewave_data();
     const sinewave: Wave = Wave.init(sine_data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
-        .bits = 16,
     });
 
     const decayed_pinknoise = pinknoise
@@ -105,7 +103,6 @@ fn decay(original_wave: Wave) !Wave {
 
         .sample_rate = original_wave.sample_rate,
         .channels = original_wave.channels,
-        .bits = original_wave.bits,
     };
 }
 
@@ -122,6 +119,5 @@ fn half_volume(original_wave: Wave) !Wave {
 
         .sample_rate = original_wave.sample_rate,
         .channels = original_wave.channels,
-        .bits = original_wave.bits,
     };
 }

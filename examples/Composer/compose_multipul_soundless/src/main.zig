@@ -9,7 +9,6 @@ pub fn main() !void {
     const composer: Composer = Composer.init(allocator, .{
         .sample_rate = 44100,
         .channels = 1,
-        .bits = 16,
     });
     defer composer.deinit();
 
@@ -19,7 +18,6 @@ pub fn main() !void {
     const wave = Wave.init(data, allocator, .{
         .sample_rate = 44100,
         .channels = 1,
-        .bits = 16,
     });
     defer wave.deinit();
 
