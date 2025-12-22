@@ -6,8 +6,8 @@
 
     .dependencies = .{
         .lightmix_wav = .{
-            .url = "https://github.com/haruki7049/lightmix_wav/archive/refs/tags/0.3.1.tar.gz",
-            .hash = "lightmix_wav-0.3.1-IIrulu0NVQD63ltuAf6NMZLh0knKO43BeIN4Cd72LqO8",
+            .url = "https://github.com/haruki7049/lightmix_wav/archive/f900079d0a35b9b2e1dd05ae73672b9fa3b5bb60.tar.gz",
+            .hash = "lightmix_wav-0.3.1-IIrulq8SVQBKRhsbT9UUerd7IWOsyBtapAHw04j3hHlf",
         },
         .known_folders = .{
             .url = "https://github.com/ziglibs/known-folders/archive/ab5cf5feb936fa3b72c95d3ad0c0c67791937ba1.tar.gz",

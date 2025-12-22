@@ -10,19 +10,11 @@ const allocator = gpa.allocator();
 pub fn main() !void {
     defer _ = gpa.detectLeaks();
 
-    const composer = Composer.init(allocator, .{
-        .sample_rate = 44100,
-        .channels = 1,
-        .bits = 16,
-    });
+    const composer = Composer.init(allocator, 44100, 1, .i16);
     defer composer.deinit();
 
     const data: [44100]f32 = generate_sinewave_data();
-    const wave = Wave.init(data[0..], allocator, .{
-        .sample_rate = 44100,
-        .channels = 1,
-        .bits = 16,
-    });
+    const wave = Wave.init(data[0..], allocator, 44100, 1, .i16);
 
     const decayed_wave: Wave = wave.filter(decay).filter(decay).filter(decay);
     defer decayed_wave.deinit();
@@ -41,7 +33,7 @@ pub fn main() !void {
     var file = try std.fs.cwd().createFile("result.wav", .{});
     defer file.close();
 
-    try result.write(file, .i16);
+    try result.write(file);
 }
 
 fn generate_sinewave_data() [44100]f32 {

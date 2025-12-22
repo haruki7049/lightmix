@@ -15,7 +15,7 @@ pub fn main() !void {
     var file = try std.fs.cwd().createFile("result.wav", .{});
     defer file.close();
 
-    try decayed_wave.write(file, .i16);
+    try decayed_wave.write(file);
 }
 
 fn decay(original_wave: Wave) !Wave {
