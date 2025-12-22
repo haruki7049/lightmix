@@ -15,7 +15,7 @@ pub fn main() !void {
     var file = try std.fs.cwd().createFile("result.wav", .{});
     defer file.close();
 
-    try sinewave.write(file);
+    try sinewave.write(file, .f32);
 }
 
 const c_5: f32 = 523.251;

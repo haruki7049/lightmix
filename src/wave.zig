@@ -165,8 +165,8 @@ pub fn from_file_content(content: []const u8, allocator: std.mem.Allocator) Self
 }
 
 /// Writes down the wave data to `std.fs.File`.
-pub fn write(self: Self, file: std.fs.File) !void {
-    var encoder = try lightmix_wav.encoder(i16, file, self.sample_rate, self.channels);
+pub fn write(self: Self, file: std.fs.File, comptime bit_type: lightmix_wav.BitType) !void {
+    var encoder = try lightmix_wav.encoder(bit_type, file, self.sample_rate, self.channels);
     try encoder.write(f32, self.data);
     try encoder.finalize();
 }
