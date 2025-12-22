@@ -212,7 +212,7 @@ pub fn filter(
 
 /// Plays the wave instantly.
 /// You must enable `with_debug_features` in `build.zig`.
-pub fn debug_play(self: Self, bit_type: lightmix_wav.BitType) !void {
+pub fn debug_play(self: Self, comptime bit_type: lightmix_wav.BitType) !void {
     if (!build_options.with_debug_features)
         @panic("Wave.debug_play called without 'with_debug_features' flag. Please turn on the flag.");
 
@@ -256,9 +256,6 @@ pub fn debug_play(self: Self, bit_type: lightmix_wav.BitType) !void {
     defer _ = c_headers.Pa_Terminate();
 
     var stream: ?*c_headers.PaStream = undefined;
-
-    if (self.bits != .i16)
-        @panic("Debug-playing the others of 16 bits' Wave is not implemented yet.");
 
     if (c_headers.Pa_OpenDefaultStream(
         &stream,
