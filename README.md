@@ -48,7 +48,7 @@ var file = try std.fs.cwd().createFile("result.wav", .{});
 defer file.close();
 
 // Then, write down your wave!!
-try wave.write(file);
+try wave.write(file, .i16);
 ```
 
 ### `Composer`
