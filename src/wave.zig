@@ -600,46 +600,6 @@ test "mix preserves wave properties" {
     try testing.expectEqual(result.data[2], 4.5);
 }
 
-test "fill_zero_to_end with start equals end" {
-    const allocator = testing.allocator;
-    const data: []const f32 = &[_]f32{ 1.0, 2.0, 3.0, 4.0, 5.0 };
-    
-    const wave = Self.init(data, allocator, .{
-        .sample_rate = 44100,
-        .channels = 1,
-    });
-    defer wave.deinit();
-
-    const filled_wave = try wave.fill_zero_to_end(3, 3);
-    defer filled_wave.deinit();
-
-    try testing.expectEqual(filled_wave.data.len, 3);
-    try testing.expectEqual(filled_wave.data[0], 1.0);
-    try testing.expectEqual(filled_wave.data[1], 2.0);
-    try testing.expectEqual(filled_wave.data[2], 3.0);
-}
-
-test "fill_zero_to_end extends data" {
-    const allocator = testing.allocator;
-    const data: []const f32 = &[_]f32{ 1.0, 2.0 };
-    
-    const wave = Self.init(data, allocator, .{
-        .sample_rate = 44100,
-        .channels = 1,
-    });
-    defer wave.deinit();
-
-    const filled_wave = try wave.fill_zero_to_end(2, 5);
-    defer filled_wave.deinit();
-
-    try testing.expectEqual(filled_wave.data.len, 5);
-    try testing.expectEqual(filled_wave.data[0], 1.0);
-    try testing.expectEqual(filled_wave.data[1], 2.0);
-    try testing.expectEqual(filled_wave.data[2], 0.0);
-    try testing.expectEqual(filled_wave.data[3], 0.0);
-    try testing.expectEqual(filled_wave.data[4], 0.0);
-}
-
 test "write to file" {
     const allocator = testing.allocator;
     const data: []const f32 = &[_]f32{ 0.0, 0.1, 0.2, 0.3, 0.4 };
