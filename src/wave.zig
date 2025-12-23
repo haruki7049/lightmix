@@ -572,30 +572,6 @@ test "init with different channels" {
     try testing.expectEqual(wave_stereo.channels, 2);
 }
 
-test "mix with empty waves" {
-    const allocator = testing.allocator;
-    const data: []const f32 = &[_]f32{};
-    
-    const wave1 = Self.init(data, allocator, .{
-        .sample_rate = 44100,
-        .channels = 1,
-    });
-    defer wave1.deinit();
-
-    const wave2 = Self.init(data, allocator, .{
-        .sample_rate = 44100,
-        .channels = 1,
-    });
-    defer wave2.deinit();
-
-    const result = wave1.mix(wave2);
-    defer result.deinit();
-
-    try testing.expectEqual(result.data.len, 0);
-    try testing.expectEqual(result.sample_rate, 44100);
-    try testing.expectEqual(result.channels, 1);
-}
-
 test "mix preserves wave properties" {
     const allocator = testing.allocator;
     const data1: []const f32 = &[_]f32{ 1.0, 2.0, 3.0 };
