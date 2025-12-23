@@ -518,3 +518,185 @@ test "filter memory leaks' check" {
     try testing.expectEqual(wave.data[3], 0.0);
     try testing.expectEqual(wave.data[4], 0.0);
 }
+
+test "init with empty data" {
+    const allocator = testing.allocator;
+    const data: []const f32 = &[_]f32{};
+    const wave = Self.init(data, allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+    });
+    defer wave.deinit();
+
+    try testing.expectEqual(wave.data.len, 0);
+    try testing.expectEqual(wave.sample_rate, 44100);
+    try testing.expectEqual(wave.channels, 1);
+}
+
+test "init creates deep copy of data" {
+    const allocator = testing.allocator;
+    var original_data = [_]f32{ 1.0, 2.0, 3.0 };
+    const wave = Self.init(&original_data, allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+    });
+    defer wave.deinit();
+
+    // Modify original data
+    original_data[0] = 999.0;
+
+    // Wave data should be unchanged (deep copy was made)
+    try testing.expectEqual(wave.data[0], 1.0);
+    try testing.expectEqual(wave.data[1], 2.0);
+    try testing.expectEqual(wave.data[2], 3.0);
+}
+
+test "init with different channels" {
+    const allocator = testing.allocator;
+    const data: []const f32 = &[_]f32{ 1.0, 2.0, 3.0, 4.0 };
+    
+    // Mono
+    const wave_mono = Self.init(data, allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+    });
+    defer wave_mono.deinit();
+    try testing.expectEqual(wave_mono.channels, 1);
+
+    // Stereo
+    const wave_stereo = Self.init(data, allocator, .{
+        .sample_rate = 44100,
+        .channels = 2,
+    });
+    defer wave_stereo.deinit();
+    try testing.expectEqual(wave_stereo.channels, 2);
+}
+
+test "mix with empty waves" {
+    const allocator = testing.allocator;
+    const data: []const f32 = &[_]f32{};
+    
+    const wave1 = Self.init(data, allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+    });
+    defer wave1.deinit();
+
+    const wave2 = Self.init(data, allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+    });
+    defer wave2.deinit();
+
+    const result = wave1.mix(wave2);
+    defer result.deinit();
+
+    try testing.expectEqual(result.data.len, 0);
+    try testing.expectEqual(result.sample_rate, 44100);
+    try testing.expectEqual(result.channels, 1);
+}
+
+test "mix preserves wave properties" {
+    const allocator = testing.allocator;
+    const data1: []const f32 = &[_]f32{ 1.0, 2.0, 3.0 };
+    const data2: []const f32 = &[_]f32{ 0.5, 1.0, 1.5 };
+
+    const wave1 = Self.init(data1, allocator, .{
+        .sample_rate = 48000,
+        .channels = 2,
+    });
+    defer wave1.deinit();
+
+    const wave2 = Self.init(data2, allocator, .{
+        .sample_rate = 48000,
+        .channels = 2,
+    });
+    defer wave2.deinit();
+
+    const result = wave1.mix(wave2);
+    defer result.deinit();
+
+    try testing.expectEqual(result.sample_rate, 48000);
+    try testing.expectEqual(result.channels, 2);
+    try testing.expectEqual(result.data.len, 3);
+    try testing.expectEqual(result.data[0], 1.5);
+    try testing.expectEqual(result.data[1], 3.0);
+    try testing.expectEqual(result.data[2], 4.5);
+}
+
+test "fill_zero_to_end with start equals end" {
+    const allocator = testing.allocator;
+    const data: []const f32 = &[_]f32{ 1.0, 2.0, 3.0, 4.0, 5.0 };
+    
+    const wave = Self.init(data, allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+    });
+    defer wave.deinit();
+
+    const filled_wave = try wave.fill_zero_to_end(3, 3);
+    defer filled_wave.deinit();
+
+    try testing.expectEqual(filled_wave.data.len, 3);
+    try testing.expectEqual(filled_wave.data[0], 1.0);
+    try testing.expectEqual(filled_wave.data[1], 2.0);
+    try testing.expectEqual(filled_wave.data[2], 3.0);
+}
+
+test "fill_zero_to_end extends data" {
+    const allocator = testing.allocator;
+    const data: []const f32 = &[_]f32{ 1.0, 2.0 };
+    
+    const wave = Self.init(data, allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+    });
+    defer wave.deinit();
+
+    const filled_wave = try wave.fill_zero_to_end(2, 5);
+    defer filled_wave.deinit();
+
+    try testing.expectEqual(filled_wave.data.len, 5);
+    try testing.expectEqual(filled_wave.data[0], 1.0);
+    try testing.expectEqual(filled_wave.data[1], 2.0);
+    try testing.expectEqual(filled_wave.data[2], 0.0);
+    try testing.expectEqual(filled_wave.data[3], 0.0);
+    try testing.expectEqual(filled_wave.data[4], 0.0);
+}
+
+test "write to file" {
+    const allocator = testing.allocator;
+    const data: []const f32 = &[_]f32{ 0.0, 0.1, 0.2, 0.3, 0.4 };
+    
+    const wave = Self.init(data, allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+    });
+    defer wave.deinit();
+
+    // Create a temporary file
+    const test_dir = testing.tmpDir(.{});
+    const test_file = try test_dir.dir.createFile("test_wave.wav", .{});
+    defer {
+        test_file.close();
+        test_dir.cleanup();
+    }
+
+    // Write wave to file
+    try wave.write(test_file, .i16);
+
+    // Verify file was created and has content
+    const file_stat = try test_file.stat();
+    try testing.expect(file_stat.size > 0);
+}
+
+test "from_file_content with different sample rates" {
+    const allocator = testing.allocator;
+    const wave = Self.from_file_content(.i16, @embedFile("./assets/sine.wav"), allocator);
+    defer wave.deinit();
+
+    // Verify the wave has valid properties
+    try testing.expect(wave.sample_rate > 0);
+    try testing.expect(wave.channels > 0);
+    try testing.expect(wave.data.len > 0);
+}
