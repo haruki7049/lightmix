@@ -621,9 +621,6 @@ test "write to file" {
     // Write wave to file
     try wave.write(test_file, .i16);
 
-    // Sync file to ensure data is written
-    try test_file.sync();
-
     // Verify file was created and has content
     const file_stat = try test_file.stat();
     try testing.expect(file_stat.size > 0);
