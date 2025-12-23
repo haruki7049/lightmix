@@ -554,7 +554,7 @@ test "init creates deep copy of data" {
 test "init with different channels" {
     const allocator = testing.allocator;
     const data: []const f32 = &[_]f32{ 1.0, 2.0, 3.0, 4.0 };
-    
+
     // Mono
     const wave_mono = Self.init(data, allocator, .{
         .sample_rate = 44100,
@@ -603,7 +603,7 @@ test "mix preserves wave properties" {
 test "write to file" {
     const allocator = testing.allocator;
     const data: []const f32 = &[_]f32{ 0.0, 0.1, 0.2, 0.3, 0.4 };
-    
+
     const wave = Self.init(data, allocator, .{
         .sample_rate = 44100,
         .channels = 1,
