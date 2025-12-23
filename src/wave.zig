@@ -611,7 +611,7 @@ test "write to file" {
     defer wave.deinit();
 
     // Create a temporary file
-    const test_dir = testing.tmpDir(.{});
+    var test_dir = testing.tmpDir(.{});
     const test_file = try test_dir.dir.createFile("test_wave.wav", .{});
     defer {
         test_file.close();
