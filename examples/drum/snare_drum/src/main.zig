@@ -42,7 +42,7 @@ fn generate_snare_wave() Wave {
         .filter(half_volume);
     defer decayed_sinewave.deinit();
 
-    const result = decayed_pinknoise.mix(decayed_sinewave);
+    const result = decayed_pinknoise.mix(decayed_sinewave, .{});
     return result;
 }
 

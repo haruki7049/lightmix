@@ -109,7 +109,7 @@ pub fn appendSlice(self: Self, append_list: []const WaveInfo) Self {
     };
 }
 
-pub fn finalize(self: Self) Wave {
+pub fn finalize(self: Self, options: Wave.mixOptions) Wave {
     var end_point: usize = 0;
 
     // Calculate the length for emitted wave
@@ -156,7 +156,7 @@ pub fn finalize(self: Self) Wave {
     });
 
     for (padded_waveinfo_slice) |waveinfo| {
-        const wave = result.mix(waveinfo.wave);
+        const wave = result.mix(waveinfo.wave, options);
         result.deinit();
         waveinfo.wave.deinit();
         result = wave;
@@ -322,7 +322,7 @@ test "finalize" {
     const appended_composer = composer.appendSlice(append_list.items);
     defer appended_composer.deinit();
 
-    const result: Wave = appended_composer.finalize();
+    const result: Wave = appended_composer.finalize(.{});
     defer result.deinit();
 
     try testing.expectEqual(result.data.len, 88200);

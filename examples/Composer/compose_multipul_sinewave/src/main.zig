@@ -33,7 +33,7 @@ pub fn main() !void {
     const appended_composer = composer.appendSlice(append_list.items);
     defer appended_composer.deinit();
 
-    const result: Wave = appended_composer.finalize();
+    const result: Wave = appended_composer.finalize(.{});
     defer result.deinit();
 
     var file = try std.fs.cwd().createFile("result.wav", .{});
