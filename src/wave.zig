@@ -602,7 +602,7 @@ test "mix preserves wave properties" {
     });
     defer wave2.deinit();
 
-    const result = wave1.mix(wave2);
+    const result = wave1.mix(wave2, .{});
     defer result.deinit();
 
     try testing.expectEqual(result.sample_rate, 48000);
