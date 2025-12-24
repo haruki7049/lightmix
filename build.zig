@@ -46,6 +46,10 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_lib_unit_tests.step);
 
+    // Examples step - compile and run all examples
+    const examples_step = b.step("examples", "Build and run all examples");
+    addExamples(b, examples_step, target, optimize);
+
     // Docs
     const docs_step = b.step("docs", "Emit docs");
     const docs_install = b.addInstallDirectory(.{
@@ -54,4 +58,79 @@ pub fn build(b: *std.Build) void {
         .install_subdir = "share/lightmix/docs",
     });
     docs_step.dependOn(&docs_install.step);
+}
+
+fn addExamples(b: *std.Build, examples_step: *std.Build.Step, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode) void {
+    const example_dirs = [_][]const u8{
+        "examples/Composer/compose_multipul_sinewave",
+        "examples/Composer/compose_multipul_soundless",
+        "examples/Wave/generate_brown_noise",
+        "examples/Wave/generate_double_frequency_wave",
+        "examples/Wave/generate_function",
+        "examples/Wave/generate_half_frequency_wave",
+        "examples/Wave/generate_mix_wave",
+        "examples/Wave/generate_pinknoise",
+        "examples/Wave/generate_sawtooth_wave",
+        "examples/Wave/generate_sinewave",
+        "examples/Wave/generate_soundless",
+        "examples/Wave/generate_square_wave",
+        "examples/Wave/generate_triangle_wave",
+        "examples/Wave/generate_whitenoise",
+        "examples/Wave/generate_with_debug_play",
+        "examples/Wave/generate_with_decay",
+        "examples/drum/snare_drum",
+        "examples/guitar/acoustic_guitar",
+    };
+
+    for (example_dirs) |example_dir| {
+        const example_name = std.fs.path.basename(example_dir);
+        addExample(b, examples_step, example_dir, example_name, target, optimize);
+    }
+}
+
+fn addExample(
+    b: *std.Build,
+    examples_step: *std.Build.Step,
+    example_dir: []const u8,
+    example_name: []const u8,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+) void {
+    const main_path = b.fmt("{s}/src/main.zig", .{example_dir});
+
+    // Create module for the example
+    const example_mod = b.createModule(.{
+        .root_source_file = b.path(main_path),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    // Add lightmix import to the example module
+    const lightmix_mod = b.modules.get("lightmix") orelse {
+        std.debug.print("lightmix module not found\n", .{});
+        return;
+    };
+    example_mod.addImport("lightmix", lightmix_mod);
+
+    // Create executable for the example
+    const example_exe = b.addExecutable(.{
+        .name = example_name,
+        .root_module = example_mod,
+    });
+
+    // Add to install step
+    const install_example = b.addInstallArtifact(example_exe, .{
+        .dest_dir = .{ .override = .{ .custom = b.fmt("examples/{s}", .{example_name}) } },
+    });
+    examples_step.dependOn(&install_example.step);
+
+    // Add run step for the example
+    const run_example = b.addRunArtifact(example_exe);
+    run_example.step.dependOn(&install_example.step);
+
+    // Set working directory to a temporary directory for each example
+    const example_output_dir = b.fmt("zig-out/examples/{s}", .{example_name});
+    run_example.setCwd(.{ .cwd_relative = example_output_dir });
+
+    examples_step.dependOn(&run_example.step);
 }
