@@ -45,10 +45,19 @@ pub fn init(
     };
 }
 
+pub const mixOptions = struct {
+    expression: fn (f32, f32) f32 = default_mixing_expression,
+};
+
+pub fn default_mixing_expression(left: f32, right: f32) f32 {
+    const result: f32 = left + right;
+    return result;
+}
+
 /// Mix a wave and the other wave.
 /// The each wave data's length, sample_rate, and channels must be same.
 /// That's because we cannot adjust the timing for every users which the each wave should be played.
-pub fn mix(self: Self, other: Self) Self {
+pub fn mix(self: Self, other: Self, options: mixOptions) Self {
     std.debug.assert(self.data.len == other.data.len);
     std.debug.assert(self.sample_rate == other.sample_rate);
     std.debug.assert(self.channels == other.channels);
@@ -65,7 +74,11 @@ pub fn mix(self: Self, other: Self) Self {
     var data: std.array_list.Aligned(f32, null) = .empty;
 
     for (0..self.data.len) |i| {
-        data.append(self.allocator, self.data[i] + other.data[i]) catch @panic("Out of memory");
+        const left: f32 = self.data[i];
+        const right: f32 = other.data[i];
+        const result: f32 = options.expression(left, right);
+
+        data.append(self.allocator, result) catch @panic("Out of memory");
     }
 
     const result: []const f32 = data.toOwnedSlice(self.allocator) catch @panic("Out of memory");
@@ -366,7 +379,7 @@ test "mix" {
     });
     defer wave.deinit();
 
-    const result: Self = wave.mix(wave);
+    const result: Self = wave.mix(wave, .{});
     defer result.deinit();
 
     try testing.expectEqual(wave.sample_rate, 44100);
