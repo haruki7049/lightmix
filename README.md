@@ -19,6 +19,14 @@ lib_mod.addImport("lightmix", lightmix.module("lightmix")); // Add lightmix to y
 
 You can find some examples in [./examples](./examples) directory. If you want to copy a example, edit `.lightmix = .{ .path = "../../.." }` on it's `build.zig.zon`.
 
+To build and run all examples automatically, use:
+
+```bash
+zig build examples
+```
+
+This will compile and execute all example programs in the `examples/` directory.
+
 ## lightmix's types
 
 ### `Wave`
