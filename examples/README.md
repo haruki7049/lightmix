@@ -15,7 +15,7 @@ From the root of the repository, you can build and run all examples automaticall
 zig build examples
 ```
 
-This will compile and execute all example programs. The output `.wav` files will be generated in `zig-out/examples/<example_name>/` directories.
+This will compile and execute all example programs. The output `.wav` files will be generated in the current working directory where the command is run.
 
 ### Run a specific example
 

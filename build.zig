@@ -48,7 +48,7 @@ pub fn build(b: *std.Build) void {
 
     // Examples step - compile and run all examples
     const examples_step = b.step("examples", "Build and run all examples");
-    addExamples(b, examples_step, target, optimize);
+    addExamples(b, examples_step, lib_mod, target, optimize);
 
     // Docs
     const docs_step = b.step("docs", "Emit docs");
@@ -60,7 +60,7 @@ pub fn build(b: *std.Build) void {
     docs_step.dependOn(&docs_install.step);
 }
 
-fn addExamples(b: *std.Build, examples_step: *std.Build.Step, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode) void {
+fn addExamples(b: *std.Build, examples_step: *std.Build.Step, lightmix_mod: *std.Build.Module, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode) void {
     const example_dirs = [_][]const u8{
         "examples/Composer/compose_multipul_sinewave",
         "examples/Composer/compose_multipul_soundless",
@@ -84,13 +84,14 @@ fn addExamples(b: *std.Build, examples_step: *std.Build.Step, target: std.Build.
 
     for (example_dirs) |example_dir| {
         const example_name = std.fs.path.basename(example_dir);
-        addExample(b, examples_step, example_dir, example_name, target, optimize);
+        addExample(b, examples_step, lightmix_mod, example_dir, example_name, target, optimize);
     }
 }
 
 fn addExample(
     b: *std.Build,
     examples_step: *std.Build.Step,
+    lightmix_mod: *std.Build.Module,
     example_dir: []const u8,
     example_name: []const u8,
     target: std.Build.ResolvedTarget,
@@ -106,10 +107,6 @@ fn addExample(
     });
 
     // Add lightmix import to the example module
-    const lightmix_mod = b.modules.get("lightmix") orelse {
-        std.debug.print("lightmix module not found\n", .{});
-        return;
-    };
     example_mod.addImport("lightmix", lightmix_mod);
 
     // Create executable for the example
@@ -127,10 +124,6 @@ fn addExample(
     // Add run step for the example
     const run_example = b.addRunArtifact(example_exe);
     run_example.step.dependOn(&install_example.step);
-
-    // Set working directory to a temporary directory for each example
-    const example_output_dir = b.fmt("zig-out/examples/{s}", .{example_name});
-    run_example.setCwd(.{ .cwd_relative = example_output_dir });
 
     examples_step.dependOn(&run_example.step);
 }
