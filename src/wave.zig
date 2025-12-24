@@ -46,7 +46,7 @@ pub fn init(
 }
 
 pub const mixOptions = struct {
-    expression: fn (f32, f32) f32 = default_mixing_expression,
+    mixer: fn (f32, f32) f32 = default_mixing_expression,
 };
 
 pub fn default_mixing_expression(left: f32, right: f32) f32 {
@@ -76,7 +76,7 @@ pub fn mix(self: Self, other: Self, options: mixOptions) Self {
     for (0..self.data.len) |i| {
         const left: f32 = self.data[i];
         const right: f32 = other.data[i];
-        const result: f32 = options.expression(left, right);
+        const result: f32 = options.mixer(left, right);
 
         data.append(self.allocator, result) catch @panic("Out of memory");
     }
