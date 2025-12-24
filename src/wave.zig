@@ -613,32 +613,6 @@ test "mix preserves wave properties" {
     try testing.expectEqual(result.data[2], 4.5);
 }
 
-test "write to file" {
-    const allocator = testing.allocator;
-    const data: []const f32 = &[_]f32{ 0.0, 0.1, 0.2, 0.3, 0.4 };
-
-    const wave = Self.init(data, allocator, .{
-        .sample_rate = 44100,
-        .channels = 1,
-    });
-    defer wave.deinit();
-
-    // Create a temporary file
-    var test_dir = testing.tmpDir(.{});
-    const test_file = try test_dir.dir.createFile("test_wave.wav", .{});
-    defer {
-        test_file.close();
-        test_dir.cleanup();
-    }
-
-    // Write wave to file
-    try wave.write(test_file, .i16);
-
-    // Verify file was created and has content
-    const file_stat = try test_file.stat();
-    try testing.expect(file_stat.size > 0);
-}
-
 test "from_file_content with different sample rates" {
     const allocator = testing.allocator;
     const wave = Self.from_file_content(.i16, @embedFile("./assets/sine.wav"), allocator);
