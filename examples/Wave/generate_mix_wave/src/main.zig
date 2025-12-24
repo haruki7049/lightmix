@@ -23,7 +23,7 @@ pub fn main() !void {
         .filter(decay)
         .filter(decay);
 
-    const mixed_wave: Wave = sinewave.mix(decayed_sawtooth_wave);
+    const mixed_wave: Wave = sinewave.mix(decayed_sawtooth_wave, .{});
     defer mixed_wave.deinit();
 
     var file = try std.fs.cwd().createFile("result.wav", .{});
