@@ -32,7 +32,7 @@
 //!     const sample_rate: f32 = 44100.0;
 //!     const frequency: f32 = 440.0;
 //!     const radians_per_sec: f32 = frequency * 2.0 * std.math.pi;
-//!     
+//!
 //!     var data: [44100]f32 = undefined;
 //!     for (data, 0..) |*sample, i| {
 //!         const t = @as(f32, @floatFromInt(i)) / sample_rate;
@@ -60,7 +60,7 @@
 //!
 //! fn applyDecay(original_wave: Wave) !Wave {
 //!     var result: std.array_list.Aligned(f32, null) = .empty;
-//!     
+//!
 //!     for (original_wave.data, 0..) |sample, n| {
 //!         const i = original_wave.data.len - n;
 //!         const decay_factor = @as(f32, @floatFromInt(i)) * (1.0 / @as(f32, @floatFromInt(original_wave.data.len)));
