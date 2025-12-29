@@ -4,7 +4,14 @@
 
 ## Why I create this
 
--
+I created this project because I felt a disconnect between existing audio synthesis environments and the standard software development workflow I use every day.
+
+- **From "Recording" to "Building"**:
+  In many existing tools, exporting audio feels like a manual task. I often had to click a record button or write specific code to manage recording buffers, essentially capturing the output in real-time. I wanted a workflow where audio is treated as a build artifact—where running `zig build` (or `zig build run`) instantly produces a WAV file, just as it would a binary executable.
+- **Integration with the Modern Toolchain**:
+  I found it cumbersome to set up dedicated runtimes or specialized IDEs just to generate sound. I wanted to use my preferred editor and the standard Zig toolchain without any external dependencies or complex server setups.
+
+**lightmix** is my attempt to bridge these two worlds. It allows me to "build" sound with the same precision, automation, and simplicity that I expect from any other software project.
 
 ## How to use
 
