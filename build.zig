@@ -63,16 +63,20 @@ pub fn addWaveInstallFile(
     wave: Wave,
     comptime options: EmitWaveOptions,
 ) !*std.Build.Step.InstallFile {
+    // Create .zig-cache/lightmix directory
     b.cache_root.handle.access("lightmix", .{}) catch {
         try b.cache_root.handle.makeDir("lightmix");
     };
 
+    // Create a wave file in .zig-cache/lightmix
     const tmp_path: []const u8 = try std.fs.path.join(b.allocator, &[_][]const u8{ "lightmix", options.wave.name });
     var file = try b.cache_root.handle.createFile(tmp_path, .{});
     defer file.close();
 
+    // Write the Wave data to the wave file
     try wave.write(file, options.wave.bit_type);
 
+    // Create *std.Build.Step.InstallFile
     const src_path: []const u8 = try std.fs.path.join(b.allocator, &[_][]const u8{ ".zig-cache", "lightmix", options.wave.name });
     const dest_path: []const u8 = try std.fs.path.join(b.allocator, &[_][]const u8{ options.path, options.wave.name });
     const result = b.addInstallFile(b.path(src_path), dest_path);
