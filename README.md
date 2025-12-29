@@ -2,6 +2,10 @@
 
 `lightmix` is an audio processing library written by Zig-lang.
 
+## Why I create this
+
+-
+
 ## How to use
 
 In `build.zig`, import lightmix from `build.zig.zon` using `b.dependency()`:
