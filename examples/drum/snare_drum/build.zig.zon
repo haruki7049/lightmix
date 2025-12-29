@@ -2,7 +2,7 @@
     .name = .generate_snare_drum,
     .version = "0.0.0",
     .fingerprint = 0x99c92069736f5bdb,
-    .minimum_zig_version = "0.15.1",
+    .minimum_zig_version = "0.15.2",
 
     .dependencies = .{ .lightmix = .{ .path = "../../.." } },
 

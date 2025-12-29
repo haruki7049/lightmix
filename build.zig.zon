@@ -2,7 +2,7 @@
     .name = .lightmix,
     .version = "0.8.0",
     .fingerprint = 0xe48269dbca8904a,
-    .minimum_zig_version = "0.15.1",
+    .minimum_zig_version = "0.15.2",
 
     .dependencies = .{
         .lightmix_wav = .{

@@ -2,7 +2,7 @@
     .name = .generate_sinewave,
     .version = "0.0.0",
     .fingerprint = 0x67afc43683928479,
-    .minimum_zig_version = "0.15.1",
+    .minimum_zig_version = "0.15.2",
 
     .dependencies = .{ .lightmix = .{ .path = "../../.." } },
 
