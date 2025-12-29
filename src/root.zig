@@ -46,6 +46,7 @@
 //!     });
 //!
 //!     // Apply a decay filter to create a fade-out effect
+//!     // Note: filter() automatically frees the original wave, so no defer needed for 'wave'
 //!     const decayed_wave = wave.filter(applyDecay);
 //!     defer decayed_wave.deinit();
 //!
@@ -60,8 +61,9 @@
 //! fn applyDecay(original_wave: Wave) !Wave {
 //!     var result: std.array_list.Aligned(f32, null) = .empty;
 //!     
-//!     for (original_wave.data, 0..) |sample, i| {
-//!         const decay_factor = 1.0 - (@as(f32, @floatFromInt(i)) / @as(f32, @floatFromInt(original_wave.data.len)));
+//!     for (original_wave.data, 0..) |sample, n| {
+//!         const i = original_wave.data.len - n;
+//!         const decay_factor = @as(f32, @floatFromInt(i)) * (1.0 / @as(f32, @floatFromInt(original_wave.data.len)));
 //!         const decayed_sample = sample * decay_factor;
 //!         try result.append(original_wave.allocator, decayed_sample);
 //!     }
