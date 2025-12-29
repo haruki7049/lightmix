@@ -1,6 +1,6 @@
 .{
     .name = .lightmix,
-    .version = "0.8.1",
+    .version = "0.9.1",
     .fingerprint = 0xe48269dbca8904a,
     .minimum_zig_version = "0.15.2",
 
