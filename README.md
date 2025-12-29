@@ -77,3 +77,7 @@ defer wave.deinit(); // Don't forget to free the `Wave` data.
 0.15.1
 
 This project will follows Ziglang's minor version.
+
+## API Documentations
+
+https://haruki7049.github.io/lightmix
