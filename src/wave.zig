@@ -37,6 +37,9 @@
 //! ## Mixing Waves
 //!
 //! ```zig
+//! const data1: []const f32 = &[_]f32{ 0.5, 0.3, 0.1 };
+//! const data2: []const f32 = &[_]f32{ 0.2, 0.4, 0.3 };
+//!
 //! const wave1 = Wave.init(data1, allocator, .{ .sample_rate = 44100, .channels = 1 });
 //! defer wave1.deinit();
 //!
