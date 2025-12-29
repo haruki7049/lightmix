@@ -58,6 +58,28 @@ pub fn build(b: *std.Build) void {
     docs_step.dependOn(&docs_install.step);
 }
 
+/// Creates a build step to install a Wave file to the output directory.
+///
+/// This function writes a Wave object to a temporary file in `.zig-cache/lightmix/`,
+/// then creates an InstallFile step to copy it to the specified destination.
+///
+/// ## Parameters
+/// - `b`: The Build instance
+/// - `wave`: The Wave object to be written to a file
+/// - `options`: Configuration options for the wave file generation
+///
+/// ## Returns
+/// Returns a pointer to the InstallFile step that can be added to the build graph.
+///
+/// ## Example
+/// ```zig
+/// const wave: lightmix.Wave = try generateWave();
+/// const wave_install_file = try lightmix.addWaveInstallFile(b, wave, .{
+///     .wave = .{ .name = "output.wav", .bit_type = .i16 },
+///     .path = "share",
+/// });
+/// b.default_step = &wave_install_file.step;
+/// ```
 pub fn addWaveInstallFile(
     b: *std.Build,
     wave: Wave,
@@ -83,13 +105,24 @@ pub fn addWaveInstallFile(
     return result;
 }
 
+/// Options for emitting a Wave file during the build process.
+///
+/// This struct configures how a Wave file should be generated and installed.
 pub const EmitWaveOptions = struct {
+    /// Configuration for the wave file (name and bit type)
     wave: WavefileOptions,
+    /// Destination path relative to the install prefix (e.g., "share", "bin")
     path: []const u8 = "",
+    /// Name of the generator function (used for legacy purposes)
     fn_name: []const u8 = "generate",
 };
 
+/// Options for configuring a wave file's properties.
+///
+/// This struct specifies the output filename and bit depth for the wave file.
 pub const WavefileOptions = struct {
+    /// The output filename for the wave file
     name: []const u8 = "result.wav",
+    /// The bit depth for the wave file (e.g., .i16, .i32)
     bit_type: l_wav.BitType,
 };
