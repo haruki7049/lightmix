@@ -40,7 +40,7 @@
 //!     }
 //!
 //!     // Create a Wave from the generated data
-//!     const wave = Wave.init(&data, allocator, .{
+//!     const wave = Wave.init(data[0..], allocator, .{
 //!         .sample_rate = 44100,
 //!         .channels = 1,
 //!     });
@@ -58,7 +58,7 @@
 //! }
 //!
 //! fn applyDecay(original_wave: Wave) !Wave {
-//!     var result = std.array_list.Aligned(f32, null){};
+//!     var result: std.array_list.Aligned(f32, null) = .empty;
 //!     
 //!     for (original_wave.data, 0..) |sample, i| {
 //!         const decay_factor = 1.0 - (@as(f32, @floatFromInt(i)) / @as(f32, @floatFromInt(original_wave.data.len)));
@@ -77,16 +77,9 @@
 //!
 //! ## Getting Started
 //!
-//! To use lightmix in your project, add it as a dependency in your `build.zig.zon`:
-//!
-//! ```zig
-//! .dependencies = .{
-//!     .lightmix = .{
-//!         .url = "https://github.com/haruki7049/lightmix/archive/<commit-hash>.tar.gz",
-//!         .hash = "<hash>",
-//!     },
-//! },
-//! ```
+//! To use lightmix in your project, add it as a dependency in your `build.zig.zon`.
+//! You can find the specific commit hash and hash value from the releases page or
+//! by using `zig fetch` command with the repository URL.
 //!
 //! Then import it in your `build.zig`:
 //!
