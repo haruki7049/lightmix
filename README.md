@@ -19,6 +19,48 @@ lib_mod.addImport("lightmix", lightmix.module("lightmix")); // Add lightmix to y
 
 You can find some examples in [./examples](./examples) directory. If you want to copy a example, edit `.lightmix = .{ .path = "../../.." }` on it's `build.zig.zon`.
 
+## Build-time Wave file generation
+
+lightmix provides a helper function `addWaveInstallFile` in `build.zig` that allows you to generate and install Wave files during the build process.
+
+### `addWaveInstallFile`
+
+This function writes a `Wave` object to a file and creates an install step to copy it to the output directory.
+
+```zig
+const std = @import("std");
+const lightmix = @import("lightmix");
+
+pub fn build(b: *std.Build) !void {
+    const root = @import("./src/root.zig");
+
+    // Generate your wave
+    const wave: lightmix.Wave = try root.generate(.{ .example_option = 7 });
+
+    // Create an install step for the wave file
+    const wave_install_file = try lightmix.addWaveInstallFile(b, wave, .{
+        .wave = .{ 
+            .name = "result.wav",  // Output filename
+            .bit_type = .i16,       // Bit depth (e.g., .i16, .i32)
+        },
+        .path = "share",            // Install path relative to prefix
+    });
+
+    // Add to default build step
+    b.default_step = &wave_install_file.step;
+}
+```
+
+The function accepts the following options via `EmitWaveOptions`:
+- `wave`: A `WavefileOptions` struct containing:
+  - `name`: The output filename (default: `"result.wav"`)
+  - `bit_type`: The bit depth for the wave file (e.g., `.i16`, `.i32`)
+- `path`: Destination path relative to the install prefix (default: `""`)
+
+The wave file is first written to `.zig-cache/lightmix/` and then installed to the specified output directory when you run `zig build`.
+
+You can find a complete example in [./examples/Wave/generate_by_build_zig](./examples/Wave/generate_by_build_zig).
+
 ## lightmix's types
 
 ### `Wave`
