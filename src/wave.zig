@@ -85,7 +85,7 @@ pub const Options = struct {
 };
 
 /// Initialize a Wave with wave data (`[]const f32`).
-/// 
+///
 /// This function creates a deep copy of the provided data, so the original
 /// data can be safely modified or freed after initialization.
 ///
@@ -105,14 +105,14 @@ pub const Options = struct {
 ///
 /// pub fn main() !void {
 ///     const allocator = std.heap.page_allocator;
-///     
+///
 ///     // Generate a simple sine wave
 ///     var data: [44100]f32 = undefined;
 ///     for (0..data.len) |i| {
 ///         const t = @as(f32, @floatFromInt(i)) / 44100.0;
 ///         data[i] = @sin(t * 440.0 * 2.0 * std.math.pi);
 ///     }
-///     
+///
 ///     const wave = Wave.init(&data, allocator, .{
 ///         .sample_rate = 44100,
 ///         .channels = 1,
@@ -184,7 +184,7 @@ pub fn default_mixing_expression(left: f32, right: f32) f32 {
 ///
 /// pub fn main() !void {
 ///     const allocator = std.heap.page_allocator;
-///     
+///
 ///     // Create two simple waves
 ///     const data1: []const f32 = &[_]f32{ 0.5, 0.7, 0.3 };
 ///     const wave1 = Wave.init(data1, allocator, .{
@@ -192,14 +192,14 @@ pub fn default_mixing_expression(left: f32, right: f32) f32 {
 ///         .channels = 1,
 ///     });
 ///     defer wave1.deinit();
-///     
+///
 ///     const data2: []const f32 = &[_]f32{ 0.3, 0.2, 0.4 };
 ///     const wave2 = Wave.init(data2, allocator, .{
 ///         .sample_rate = 44100,
 ///         .channels = 1,
 ///     });
 ///     defer wave2.deinit();
-///     
+///
 ///     // Mix them together
 ///     const mixed = wave1.mix(wave2, .{});
 ///     defer mixed.deinit();
@@ -273,14 +273,14 @@ pub fn mix(self: Self, other: Self, options: mixOptions) Self {
 ///
 /// pub fn main() !void {
 ///     const allocator = std.heap.page_allocator;
-///     
+///
 ///     const data: []const f32 = &[_]f32{ 1.0, 2.0, 3.0, 4.0, 5.0 };
 ///     const wave = Wave.init(data, allocator, .{
 ///         .sample_rate = 44100,
 ///         .channels = 1,
 ///     });
 ///     defer wave.deinit();
-///     
+///
 ///     // Fill from index 2 to 5 with zeros
 ///     const modified = try wave.fill_zero_to_end(2, 5);
 ///     defer modified.deinit();
@@ -355,7 +355,7 @@ pub fn deinit(self: Self) void {
 ///
 /// pub fn main() !void {
 ///     const allocator = std.heap.page_allocator;
-///     
+///
 ///     // Load a WAV file at compile time
 ///     const wave = Wave.from_file_content(
 ///         .i16,
@@ -363,7 +363,7 @@ pub fn deinit(self: Self) void {
 ///         allocator
 ///     );
 ///     defer wave.deinit();
-///     
+///
 ///     std.debug.print("Sample rate: {}\n", .{wave.sample_rate});
 ///     std.debug.print("Channels: {}\n", .{wave.channels});
 ///     std.debug.print("Samples: {}\n", .{wave.data.len});
@@ -374,14 +374,14 @@ pub fn deinit(self: Self) void {
 /// ```zig
 /// pub fn main() !void {
 ///     const allocator = std.heap.page_allocator;
-///     
+///
 ///     // Read a WAV file at runtime
 ///     const file = try std.fs.cwd().openFile("audio.wav", .{});
 ///     defer file.close();
-///     
+///
 ///     const content = try file.readToEndAlloc(allocator, 10 * 1024 * 1024);
 ///     defer allocator.free(content);
-///     
+///
 ///     const wave = Wave.from_file_content(.i16, content, allocator);
 ///     defer wave.deinit();
 /// }
@@ -451,7 +451,7 @@ pub fn from_file_content(
 ///
 /// pub fn main() !void {
 ///     const allocator = std.heap.page_allocator;
-///     
+///
 ///     // Create a wave
 ///     const data: []const f32 = &[_]f32{ 0.0, 0.5, 1.0, 0.5, 0.0 };
 ///     const wave = Wave.init(data, allocator, .{
@@ -459,11 +459,11 @@ pub fn from_file_content(
 ///         .channels = 1,
 ///     });
 ///     defer wave.deinit();
-///     
+///
 ///     // Write to file
 ///     const file = try std.fs.cwd().createFile("output.wav", .{});
 ///     defer file.close();
-///     
+///
 ///     try wave.write(file, .i16);
 /// }
 /// ```
@@ -505,11 +505,11 @@ pub fn write(self: Self, file: std.fs.File, comptime bits: lightmix_wav.BitType)
 ///
 /// fn apply_gain(wave: Wave, args: GainArgs) !Wave {
 ///     var result: std.array_list.Aligned(f32, null) = .empty;
-///     
+///
 ///     for (wave.data) |sample| {
 ///         try result.append(wave.allocator, sample * args.gain);
 ///     }
-///     
+///
 ///     return Wave{
 ///         .data = try result.toOwnedSlice(wave.allocator),
 ///         .allocator = wave.allocator,
@@ -520,7 +520,7 @@ pub fn write(self: Self, file: std.fs.File, comptime bits: lightmix_wav.BitType)
 ///
 /// pub fn main() !void {
 ///     const allocator = std.heap.page_allocator;
-///     
+///
 ///     const data: []const f32 = &[_]f32{ 1.0, 0.5, 0.25 };
 ///     const wave = Wave.init(data, allocator, .{
 ///         .sample_rate = 44100,
@@ -578,13 +578,13 @@ pub fn filter_with(
 ///     for (wave.data) |sample| {
 ///         max_val = @max(max_val, @abs(sample));
 ///     }
-///     
+///
 ///     var result: std.array_list.Aligned(f32, null) = .empty;
 ///     for (wave.data) |sample| {
 ///         const normalized = if (max_val > 0.0) sample / max_val else sample;
 ///         try result.append(wave.allocator, normalized);
 ///     }
-///     
+///
 ///     return Wave{
 ///         .data = try result.toOwnedSlice(wave.allocator),
 ///         .allocator = wave.allocator,
@@ -595,7 +595,7 @@ pub fn filter_with(
 ///
 /// pub fn main() !void {
 ///     const allocator = std.heap.page_allocator;
-///     
+///
 ///     const data: []const f32 = &[_]f32{ 0.5, 1.0, 2.0, 1.5 };
 ///     const wave = Wave.init(data, allocator, .{
 ///         .sample_rate = 44100,
@@ -660,20 +660,20 @@ pub fn filter(
 ///
 /// pub fn main() !void {
 ///     const allocator = std.heap.page_allocator;
-///     
+///
 ///     // Generate a 440 Hz sine wave
 ///     var data: [44100]f32 = undefined;
 ///     for (0..data.len) |i| {
 ///         const t = @as(f32, @floatFromInt(i)) / 44100.0;
 ///         data[i] = @sin(t * 440.0 * 2.0 * std.math.pi) * 0.5;
 ///     }
-///     
+///
 ///     const wave = Wave.init(&data, allocator, .{
 ///         .sample_rate = 44100,
 ///         .channels = 1,
 ///     });
 ///     defer wave.deinit();
-///     
+///
 ///     // Play the wave (requires -Dwith_debug_features=true)
 ///     try wave.debug_play(.i16);
 /// }
