@@ -60,18 +60,9 @@ pub fn build(b: *std.Build) void {
 
 pub fn addWaveInstallFile(
     b: *std.Build,
-    comptime mod: type,
-    comptime T: ?type,
-    comptime options: EmitWaveOptions(T),
+    wave: Wave,
+    comptime options: EmitWaveOptions,
 ) !*std.Build.Step.InstallFile {
-    var wave: Wave = undefined;
-
-    if (T == null) {
-        wave = try @field(mod, options.fn_name)();
-    } else {
-        wave = try @field(mod, options.fn_name)(options.args);
-    }
-
     b.cache_root.handle.access("lightmix", .{}) catch {
         try b.cache_root.handle.makeDir("lightmix");
     };
@@ -88,22 +79,11 @@ pub fn addWaveInstallFile(
     return result;
 }
 
-pub fn EmitWaveOptions(comptime T: ?type) type {
-    if (T == null) {
-        return struct {
-            wave: WavefileOptions,
-            path: []const u8 = "",
-            fn_name: []const u8 = "generate",
-        };
-    } else {
-        return struct {
-            args: T.?,
-            wave: WavefileOptions,
-            path: []const u8 = "",
-            fn_name: []const u8 = "generate",
-        };
-    }
-}
+pub const EmitWaveOptions = struct {
+    wave: WavefileOptions,
+    path: []const u8 = "",
+    fn_name: []const u8 = "generate",
+};
 
 pub const WavefileOptions = struct {
     name: []const u8 = "result.wav",
