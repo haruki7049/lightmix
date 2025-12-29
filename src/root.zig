@@ -47,7 +47,7 @@
 //!
 //!     // Apply a decay filter to create a fade-out effect
 //!     // Note: filter() automatically frees the original wave, so no defer needed for 'wave'
-//!     const decayed_wave = wave.filter(applyDecay);
+//!     const decayed_wave = wave.filter(decay);
 //!     defer decayed_wave.deinit();
 //!
 //!     // Write the result to a WAV file
@@ -58,7 +58,7 @@
 //!     std.debug.print("Audio file created successfully!\n", .{});
 //! }
 //!
-//! fn applyDecay(original_wave: Wave) !Wave {
+//! fn decay(original_wave: Wave) !Wave {
 //!     var result: std.array_list.Aligned(f32, null) = .empty;
 //!
 //!     for (original_wave.data, 0..) |sample, n| {
