@@ -8,7 +8,7 @@
 //! - **Wave**: Generate and manipulate PCM audio data with support for multiple channels and sample rates
 //! - **Composer**: Compose multiple audio waves with precise timing control
 //! - **Audio Filters**: Apply transformations to audio data using custom filter functions
-//! - **WAV File I/O**: Read and write WAV files with various bit depths (i16, i24, f32)
+//! - **WAV File I/O**: Read and write WAV files with various bit depths (u8, i16, i24, f32)
 //! - **Audio Mixing**: Mix multiple audio sources together with customizable mixing functions
 //! - **Debug Playback**: Instantly play audio for testing and debugging (when enabled)
 //!
