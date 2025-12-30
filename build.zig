@@ -93,7 +93,7 @@ pub fn addDebugPlayStep(
 
     var file = try b.cache_root.handle.createFile(tmp_path, .{});
     defer file.close();
-    //
+
     // Write the Wave data to the wave file
     try wave.write(file, options.wave.bit_type);
 
