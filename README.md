@@ -122,7 +122,7 @@ const composer: lightmix.Composer = Composer.init_with(info, allocator, .{
 });
 defer composer.deinit(); // Composer.info is also owned data by passed allocator, then you must `free` this wave.
 
-const wave: lightmix.Wave = composer.finalize(); // Let's finalize to create a `Wave`!!
+const wave: lightmix.Wave = composer.finalize(.{}); // Let's finalize to create a `Wave`!!
 defer wave.deinit(); // Don't forget to free the `Wave` data.
 ```
 
