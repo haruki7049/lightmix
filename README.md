@@ -39,7 +39,7 @@ pub fn build(b: *std.Build) !void {
 
     // Create an install step for the wave file
     const wave_install_file = try lightmix.addWaveInstallFile(b, wave, .{
-        .wave = .{ 
+        .wave = .{
             .name = "result.wav",  // Output filename
             .bit_type = .i16,       // Bit depth (e.g., .i16, .i32)
         },
@@ -52,6 +52,7 @@ pub fn build(b: *std.Build) !void {
 ```
 
 The function accepts the following options via `EmitWaveOptions`:
+
 - `wave`: A `WavefileOptions` struct containing:
   - `name`: The output filename (default: `"result.wav"`)
   - `bit_type`: The bit depth for the wave file (e.g., `.i16`, `.i32`)
