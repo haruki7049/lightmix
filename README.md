@@ -52,7 +52,7 @@ pub fn build(b: *std.Build) !void {
     const wave_install_file = try lightmix.addWaveInstallFile(b, wave, .{
         .wave = .{
             .name = "result.wav",  // Output filename
-            .bit_type = .i16,       // Bit depth (e.g., .i16, .i32)
+            .bit_type = .i16,       // Bit depth (e.g., .i16, .f32)
         },
         .path = "share",            // Install path relative to prefix
     });
@@ -66,7 +66,7 @@ The function accepts the following options via `EmitWaveOptions`:
 
 - `wave`: A `WavefileOptions` struct containing:
   - `name`: The output filename (default: `"result.wav"`)
-  - `bit_type`: The bit depth for the wave file (e.g., `.i16`, `.i32`)
+  - `bit_type`: The bit depth for the wave file (e.g., `.i16`, `.f32`)
 - `path`: Destination path relative to the install prefix (default: `""`)
 
 The wave file is first written to `.zig-cache/lightmix/` and then installed to the specified output directory when you run `zig build`.
