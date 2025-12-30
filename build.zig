@@ -76,7 +76,8 @@ pub fn build(b: *std.Build) void {
 /// const wave: lightmix.Wave = try generateWave();
 /// const wave_install_file = try lightmix.addWaveInstallFile(b, wave, .{
 ///     .wave = .{ .name = "output.wav", .bit_type = .i16 },
-///     .path = "share",
+///     .path = .{ .custom = "share" }, // I like this path to install Wave file. This value is the default
+///     //.path = .prefix, // You can customize it by following std.Build.InstallDir type
 /// });
 /// b.default_step = &wave_install_file.step;
 /// ```
@@ -100,8 +101,7 @@ pub fn addWaveInstallFile(
 
     // Create *std.Build.Step.InstallFile
     const src_path: []const u8 = try std.fs.path.join(b.allocator, &[_][]const u8{ ".zig-cache", "lightmix", options.wave.name });
-    const dest_path: []const u8 = try std.fs.path.join(b.allocator, &[_][]const u8{ options.path, options.wave.name });
-    const result = b.addInstallFile(b.path(src_path), dest_path);
+    const result = b.addInstallFileWithDir(b.path(src_path), options.path, options.wave.name);
     return result;
 }
 
@@ -111,8 +111,8 @@ pub fn addWaveInstallFile(
 pub const EmitWaveOptions = struct {
     /// Configuration for the wave file (name and bit type)
     wave: WavefileOptions,
-    /// Destination path relative to the install prefix (e.g., "share", "bin")
-    path: []const u8 = "",
+    /// Destination path relative to the install prefix
+    path: std.Build.InstallDir = .{ .custom = "share" },
     /// Name of the generator function (used for legacy purposes)
     fn_name: []const u8 = "generate",
 };

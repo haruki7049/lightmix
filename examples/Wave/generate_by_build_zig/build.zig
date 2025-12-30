@@ -9,7 +9,7 @@ pub fn build(b: *std.Build) !void {
 
     const wave_install_file: *std.Build.Step.InstallFile = try lightmix.addWaveInstallFile(b, wave, .{
         .wave = .{ .name = "result.wav", .bit_type = .i16 },
-        .path = "share",
+        .path = .{ .custom = "share" },
     });
 
     b.default_step = &wave_install_file.step;
