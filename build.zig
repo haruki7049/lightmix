@@ -1,7 +1,8 @@
 const std = @import("std");
+const l_wav = @import("lightmix_wav");
+
 pub const Wave = @import("./src/wave.zig");
 pub const Composer = @import("./src/composer.zig");
-const l_wav = @import("lightmix_wav");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
