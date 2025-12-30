@@ -28,7 +28,7 @@ const lib_mod = b.createModule(.{
 lib_mod.addImport("lightmix", lightmix.module("lightmix")); // Add lightmix to your library or executable module.
 ```
 
-You can find some examples in [./examples](./examples) directory. If you want to copy a example, edit `.lightmix = .{ .path = "../../.." }` on it's `build.zig.zon`.
+You can find some examples in [./examples](./examples) directory. If you want to copy an example, edit `.lightmix = .{ .path = "../../.." }` in its `build.zig.zon`.
 
 ## Build-time Wave file generation
 
