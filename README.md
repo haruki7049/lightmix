@@ -81,11 +81,11 @@ Contains a PCM audio source.
 
 ```zig
 const allocator = std.heap.page_allocator; // Use your allocator
-const data: []const f32 = &[_]{ 0.0, 0.0, 0.0 }; // This array contains 3 float number, then this wave will make from 3 samples.
+const data: []const f32 = &[_]f32{ 0.0, 0.0, 0.0 }; // This array contains 3 float number, then this wave will make from 3 samples.
 
 const wave: lightmix.Wave = Wave.init(data, allocator, .{
     .sample_rate = 44100, // Samples per second.
-    .channels = 1, // Channels for this Wave. If this wave have two channels, it means this wave is stereo.
+    .channels = 1, // Channels for this Wave. If this wave has two channels, it means this wave is stereo.
 });
 defer wave.deinit(); // Wave.data is owned data by passed allocator, then you must `free` this wave.
 ```
@@ -112,18 +112,18 @@ Contains a `Composer.WaveInfo` array, which contains a `Wave` and the timing whe
 const allocator = std.heap.page_allocator; // Use your allocator
 const wave: lightmix.Wave = generate_wave();
 
-const info: []const lightmix.Composer.WaveInfo = &[_]WaveInfo{
+const info: []const lightmix.Composer.WaveInfo = &[_]lightmix.Composer.WaveInfo{
     .{ .wave = wave, .start_point = 0 },
     .{ .wave = wave, .start_point = 44100 },
 };
 const composer: lightmix.Composer = Composer.init_with(info, allocator, .{
     .sample_rate = 44100, // Samples per second.
-    .channels = 1, // Channels for the Wave. If this composer have two channels, it means the wave is stereo.
+    .channels = 1, // Channels for the Wave. If this composer has two channels, it means the wave is stereo.
 });
 defer composer.deinit(); // Composer.info is also owned data by passed allocator, then you must `free` this wave.
 
-const wave: lightmix.Wave = composer.finalize(.{}); // Let's finalize to create a `Wave`!!
-defer wave.deinit(); // Don't forget to free the `Wave` data.
+const result: lightmix.Wave = composer.finalize(.{}); // Let's finalize to create a `Wave`!!
+defer result.deinit(); // Don't forget to free the `Wave` data.
 ```
 
 ## Zig version
