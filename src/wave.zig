@@ -335,7 +335,7 @@ pub fn deinit(self: Self) void {
 /// WAV files at compile time, or with runtime file data.
 ///
 /// ## Parameters
-/// - `bit_type`: The bit depth of the WAV file (e.g., .i16, .i24, .i32)
+/// - `bit_type`: The bit depth of the WAV file (e.g., .i16, .i24, .f32)
 /// - `content`: The raw binary content of the WAV file
 /// - `allocator`: The memory allocator to use
 ///
@@ -438,7 +438,7 @@ pub fn from_file_content(
 /// ## Parameters
 /// - `self`: The wave to write
 /// - `file`: An open file handle to write to
-/// - `bits`: The bit depth to use for encoding (e.g., .i16, .i24, .i32)
+/// - `bits`: The bit depth to use for encoding (e.g., .i16, .i24, .f32)
 ///
 /// ## Returns
 /// An error if encoding or writing fails

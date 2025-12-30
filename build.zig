@@ -123,6 +123,6 @@ pub const EmitWaveOptions = struct {
 pub const WavefileOptions = struct {
     /// The output filename for the wave file
     name: []const u8 = "result.wav",
-    /// The bit depth for the wave file (e.g., .i16, .i32)
+    /// The bit depth for the wave file (e.g., .i16, .f32)
     bit_type: l_wav.BitType,
 };
