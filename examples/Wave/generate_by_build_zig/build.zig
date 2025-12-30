@@ -1,6 +1,5 @@
 const std = @import("std");
 const lightmix = @import("lightmix");
-const RootOptions = @import("./src/root.zig").Options;
 
 pub fn build(b: *std.Build) !void {
     const root = @import("./src/root.zig");
@@ -22,7 +21,3 @@ pub fn build(b: *std.Build) !void {
     debug_play_step.dependOn(&wave_install_file.step);
     b.default_step = &wave_install_file.step;
 }
-
-const Options = struct {
-    option: u8,
-};
