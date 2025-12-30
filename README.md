@@ -54,7 +54,7 @@ pub fn build(b: *std.Build) !void {
             .name = "result.wav",  // Output filename
             .bit_type = .i16,       // Bit depth (e.g., .i16, .f32)
         },
-        .path = "share",            // Install path relative to prefix
+        .path = .{ .custom = "share" },            // Install path relative to prefix
     });
 
     // Add to default build step
