@@ -60,6 +60,41 @@ pub fn build(b: *std.Build) void {
     docs_step.dependOn(&docs_install.step);
 }
 
+pub fn addDebugPlayStep(
+    b: *std.Build,
+    wave: Wave,
+    comptime options: DebugPlayOptions,
+) !*std.Build.Step {
+    // Create a wave file in .zig-cache/lightmix
+    const tmp_path: []const u8 = try std.fs.path.join(b.allocator, &[_][]const u8{ "lightmix", options.wave.name });
+
+    var file = try b.cache_root.handle.createFile(tmp_path, .{});
+    defer file.close();
+    //
+    // Write the Wave data to the wave file
+    try wave.write(file, options.wave.bit_type);
+
+    const tmp_full_path: []const u8 = try b.cache_root.handle.realpathAlloc(b.allocator, tmp_path);
+    const run = b.addSystemCommand(options.command);
+    run.addArg(tmp_full_path);
+
+    const result = b.step(options.step.name, options.step.description);
+    result.dependOn(&run.step);
+
+    return result;
+}
+
+pub const DebugPlayOptions = struct {
+    step: StepOptions,
+    command: []const []const u8,
+    wave: WavefileOptions,
+};
+
+pub const StepOptions = struct {
+    name: []const u8 = "debug-play",
+    description: []const u8 = "Play your wave instantly",
+};
+
 /// Creates a build step to install a Wave file to the output directory.
 ///
 /// This function writes a Wave object to a temporary file in `.zig-cache/lightmix/`,
