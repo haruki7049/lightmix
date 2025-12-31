@@ -19,5 +19,5 @@ pub fn build(b: *std.Build) !void {
     });
 
     debug_play_step.dependOn(&wave_install_file.step);
-    b.default_step = &wave_install_file.step;
+    b.getInstallStep().dependOn(&wave_install_file.step);
 }
