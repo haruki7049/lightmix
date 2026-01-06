@@ -14,7 +14,7 @@ pub fn build(b: *std.Build) void {
     options.addOption(bool, "with_debug_features", with_debug_features);
 
     // Dependencies
-    const lightmix_wav = b.dependency("lightmix_wav", .{});
+    const zigggwavvv = b.dependency("zigggwavvv", .{});
     const known_folders = b.dependency("known_folders", .{});
 
     // Library module declaration
@@ -22,11 +22,12 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
+        .imports = &.{
+            .{ .name = "known-folders", .module = known_folders.module("known-folders") },
+            .{ .name = "zigggwavvv", .module = zigggwavvv.module("zigggwavvv") },
+        },
     });
-    lib_mod.addImport("lightmix_wav", lightmix_wav.module("lightmix_wav"));
-    lib_mod.addImport("known-folders", known_folders.module("known-folders"));
     lib_mod.addOptions("build_options", options);
-    lib_mod.addOptions("with_debug_features", options);
 
     // Library installation
     const lib = b.addLibrary(.{

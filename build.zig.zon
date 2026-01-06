@@ -5,13 +5,13 @@
     .minimum_zig_version = "0.15.2",
 
     .dependencies = .{
-        .lightmix_wav = .{
-            .url = "https://github.com/haruki7049/lightmix_wav/archive/refs/tags/0.5.0.tar.gz",
-            .hash = "lightmix_wav-0.5.0-IIrulooTVQD9sWDdiGai2Ix5sP7uzZ8YrBY1oGt0BhKz",
-        },
         .known_folders = .{
             .url = "https://github.com/ziglibs/known-folders/archive/ab5cf5feb936fa3b72c95d3ad0c0c67791937ba1.tar.gz",
             .hash = "known_folders-0.0.0-Fy-PJtTTAADUOhGKM0sxzG4eMkNQxRvx9e5dfHVyaeA3",
+        },
+        .zigggwavvv = .{
+            .url = "https://github.com/haruki7049/zigggwavvv/archive/4a13912fedcdfbf29d3059b868c1544dcbcff17d.tar.gz",
+            .hash = "zigggwavvv-0.0.0-iR5xWjBQAACvEggjCyVl50o1zxUhM6uBu3KS6N-UD_3A",
         },
     },
 
