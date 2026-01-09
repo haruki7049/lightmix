@@ -12,6 +12,24 @@ pub fn deinit(self: Self) void {
     self.allocator.free(self.data);
 }
 
+pub const initOptions = struct {
+    data: []const f128,
+    allocator: std.mem.Allocator,
+    sample_rate: u32,
+    channels: u16,
+};
+
+pub fn init(
+    options: initOptions,
+) Self {
+    return Self{
+        .data = options.allocator.dupe(f128, options.data) catch @panic("Out of memory"),
+        .allocator = options.allocator,
+        .sample_rate = options.sample_rate,
+        .channels = options.channels,
+    };
+}
+
 pub const mixOptions = struct {
     mixer: fn (f128, f128) f128 = default_mixing_expression,
 };
@@ -58,6 +76,8 @@ pub fn fill_zero_to_end(
     start: usize,
     end: usize,
 ) !Self {
+    defer self.deinit();
+
     // Initialization
     var result: std.array_list.Aligned(f128, null) = .empty;
     try result.appendSlice(self.allocator, self.data);
@@ -218,12 +238,13 @@ test "mix" {
     const allocator = std.testing.allocator;
 
     const data = generate_sine_testdata();
-    const wave = Self{
+    const wave = Self.init(.{
         .allocator = allocator,
         .data = data[0..],
         .sample_rate = 44100,
         .channels = 1,
-    };
+    });
+    defer wave.deinit();
 
     const result: Self = wave.mix(wave, .{});
     defer result.deinit();
@@ -258,12 +279,12 @@ test "fill_zero_to_end" {
     const allocator = std.testing.allocator;
 
     const data = generate_sine_testdata();
-    const wave = Self{
+    const wave = Self.init(.{
         .allocator = allocator,
         .data = data[0..],
         .sample_rate = 44100,
         .channels = 1,
-    };
+    });
 
     const filled_wave: Self = try wave.fill_zero_to_end(22050, 44100);
     defer filled_wave.deinit();
@@ -284,8 +305,7 @@ test "fill_zero_to_end" {
 test "filter_with" {
     const allocator = std.testing.allocator;
     const data: []const f128 = &[_]f128{};
-
-    const wave = (Self{
+    const wave = Self.init(.{
         .allocator = allocator,
         .data = data,
         .sample_rate = 44100,
@@ -325,7 +345,7 @@ const ArgsForTesting = struct {
 test "filter" {
     const allocator = std.testing.allocator;
     const data: []const f128 = &[_]f128{};
-    const wave = (Self{
+    const wave = Self.init(.{
         .allocator = allocator,
         .data = data,
         .sample_rate = 44100,
@@ -362,7 +382,7 @@ fn test_filter_without_args(original_wave: Self) !Self {
 test "filter memory leaks' check" {
     const allocator = std.testing.allocator;
     const data: []const f128 = &[_]f128{};
-    const wave = (Self{
+    const wave = Self.init(.{
         .allocator = allocator,
         .data = data,
         .sample_rate = 44100,
@@ -388,12 +408,12 @@ test "filter memory leaks' check" {
 test "Create Wave with empty data" {
     const allocator = std.testing.allocator;
     const data: []const f128 = &[_]f128{};
-    const wave = Self{
+    const wave = Self.init(.{
         .allocator = allocator,
         .data = data,
         .sample_rate = 44100,
         .channels = 1,
-    };
+    });
     defer wave.deinit();
 
     try std.testing.expectEqual(wave.data.len, 0);
