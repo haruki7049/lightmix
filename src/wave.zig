@@ -214,20 +214,6 @@ fn generate_sine_testdata() []f128 {
     return &result;
 }
 
-test "init & deinit" {
-    const allocator = std.testing.allocator;
-    const data = generate_sine_testdata();
-    const wave = Self{
-        .allocator = allocator,
-        .data = data[0..],
-        .sample_rate = 44100,
-        .channels = 1,
-    };
-
-    try std.testing.expectEqual(wave.sample_rate, 44100);
-    try std.testing.expectEqual(wave.channels, 1);
-}
-
 test "mix" {
     const allocator = std.testing.allocator;
 
@@ -397,20 +383,22 @@ test "filter memory leaks' check" {
     try std.testing.expectEqual(wave.data[4], 0.0);
 }
 
-//test "init with empty data" {
-//    const allocator = std.testing.allocator;
-//    const data: []const f32 = &[_]f32{};
-//    const wave = Self.init(data, allocator, .{
-//        .sample_rate = 44100,
-//        .channels = 1,
-//    });
-//    defer wave.deinit();
-//
-//    try std.testing.expectEqual(wave.data.len, 0);
-//    try std.testing.expectEqual(wave.sample_rate, 44100);
-//    try std.testing.expectEqual(wave.channels, 1);
-//}
-//
+test "Create Wave with empty data" {
+    const allocator = std.testing.allocator;
+    const data: []const f128 = &[_]f128{};
+    const wave = Self{
+        .allocator = allocator,
+        .data = data,
+        .sample_rate = 44100,
+        .channels = 1,
+    };
+    defer wave.deinit();
+
+    try std.testing.expectEqual(wave.data.len, 0);
+    try std.testing.expectEqual(wave.sample_rate, 44100);
+    try std.testing.expectEqual(wave.channels, 1);
+}
+
 //test "init creates deep copy of data" {
 //    const allocator = std.testing.allocator;
 //    var original_data = [_]f32{ 1.0, 2.0, 3.0 };
