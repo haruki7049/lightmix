@@ -204,7 +204,15 @@ channels: u16,
 ///     .channels = 2,          // Stereo
 /// };
 /// ```
-pub const Options = struct {
+pub const initOptions = struct {
+    allocator: std.mem.Allocator,
+    sample_rate: u32,
+    channels: u16,
+};
+
+pub const initWithOptions = struct {
+    info: []const WaveInfo,
+    allocator: std.mem.Allocator,
     sample_rate: u32,
     channels: u16,
 };
@@ -236,13 +244,11 @@ pub const Options = struct {
 /// // Now add waves using append() or appendSlice()
 /// ```
 pub fn init(
-    allocator: std.mem.Allocator,
-    options: Options,
+    options: initOptions,
 ) Self {
     return Self{
-        .allocator = allocator,
         .info = &[_]WaveInfo{},
-
+        .allocator = options.allocator,
         .sample_rate = options.sample_rate,
         .channels = options.channels,
     };
@@ -316,17 +322,14 @@ pub fn deinit(self: Self) void {
 /// defer result.deinit();
 /// ```
 pub fn init_with(
-    info: []const WaveInfo,
-    allocator: std.mem.Allocator,
-    options: Options,
+    options: initWithOptions,
 ) Self {
     var list: std.array_list.Aligned(WaveInfo, null) = .empty;
-    list.appendSlice(allocator, info) catch @panic("Out of memory");
+    list.appendSlice(options.allocator, options.info) catch @panic("Out of memory");
 
     return Self{
-        .allocator = allocator,
-        .info = list.toOwnedSlice(allocator) catch @panic("Out of memory"),
-
+        .info = list.toOwnedSlice(options.allocator) catch @panic("Out of memory"),
+        .allocator = options.allocator,
         .sample_rate = options.sample_rate,
         .channels = options.channels,
     };
