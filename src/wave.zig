@@ -399,24 +399,6 @@ test "Create Wave with empty data" {
     try std.testing.expectEqual(wave.channels, 1);
 }
 
-//test "init creates deep copy of data" {
-//    const allocator = std.testing.allocator;
-//    var original_data = [_]f32{ 1.0, 2.0, 3.0 };
-//    const wave = Self.init(&original_data, allocator, .{
-//        .sample_rate = 44100,
-//        .channels = 1,
-//    });
-//    defer wave.deinit();
-//
-//    // Modify original data
-//    original_data[0] = 999.0;
-//
-//    // Wave data should be unchanged (deep copy was made)
-//    try std.testing.expectEqual(wave.data[0], 1.0);
-//    try std.testing.expectEqual(wave.data[1], 2.0);
-//    try std.testing.expectEqual(wave.data[2], 3.0);
-//}
-//
 //test "init with different channels" {
 //    const allocator = std.testing.allocator;
 //    const data: []const f32 = &[_]f32{ 1.0, 2.0, 3.0, 4.0 };
