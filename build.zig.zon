@@ -10,8 +10,8 @@
             .hash = "known_folders-0.0.0-Fy-PJtTTAADUOhGKM0sxzG4eMkNQxRvx9e5dfHVyaeA3",
         },
         .zigggwavvv = .{
-            .url = "https://github.com/haruki7049/zigggwavvv/archive/refs/tags/0.1.0.tar.gz",
-            .hash = "zigggwavvv-0.1.0-iR5xWuuWAAA9XQXzHP9gzbpTEHQ_hZarfbaF4qCTiIIA",
+            .url = "https://github.com/haruki7049/zigggwavvv/archive/refs/tags/0.1.2.tar.gz",
+            .hash = "zigggwavvv-0.1.2-iR5xWn-tAABVECY7XKnuFAkOXrJtHz4GAXMFFLFKCToS",
         },
     },
 
