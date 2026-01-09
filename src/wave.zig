@@ -447,14 +447,15 @@ test "Create Wave with empty data" {
 //    try std.testing.expectEqual(result.data[1], 3.0);
 //    try std.testing.expectEqual(result.data[2], 4.5);
 //}
-//
-//test "from_file_content with different sample rates" {
-//    const allocator = std.testing.allocator;
-//    const wave = Self.from_file_content(.i16, @embedFile("./assets/sine.wav"), allocator);
-//    defer wave.deinit();
-//
-//    // Verify the wave has valid properties
-//    try std.testing.expect(wave.sample_rate > 0);
-//    try std.testing.expect(wave.channels > 0);
-//    try std.testing.expect(wave.data.len > 0);
-//}
+
+test "from_file_content with different sample rates" {
+    const allocator = std.testing.allocator;
+    var reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
+    const wave = try Self.read(16, .pcm, &reader, allocator);
+    defer wave.deinit();
+
+    // Verify the wave has valid properties
+    try std.testing.expect(wave.sample_rate > 0);
+    try std.testing.expect(wave.channels > 0);
+    try std.testing.expect(wave.data.len > 0);
+}
