@@ -99,9 +99,9 @@
 //! For more examples, see the [examples directory](https://github.com/haruki7049/lightmix/tree/main/examples).
 
 pub const Wave = @import("./wave.zig");
-//pub const Composer = @import("./composer.zig");
+pub const Composer = @import("./composer.zig");
 
 test "Import tests" {
     _ = @import("./wave.zig");
-    //_ = @import("./composer.zig");
+    _ = @import("./composer.zig");
 }

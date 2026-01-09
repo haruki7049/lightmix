@@ -162,14 +162,14 @@ pub const WaveInfo = struct {
     start_point: usize,
 
     fn to_wave(self: WaveInfo, allocator: std.mem.Allocator) Wave {
-        var padding_data: []f32 = allocator.alloc(f32, self.start_point) catch @panic("Out of memory");
+        var padding_data: []f128 = allocator.alloc(f128, self.start_point) catch @panic("Out of memory");
 
         for (0..padding_data.len) |i| {
             padding_data[i] = 0.0;
         }
 
-        const slices: []const []const f32 = &[_][]const f32{ padding_data, self.wave.data };
-        const data = std.mem.concat(allocator, f32, slices);
+        const slices: []const []const f128 = &[_][]const f128{ padding_data, self.wave.data };
+        const data = std.mem.concat(allocator, f128, slices);
 
         const result: Wave = Wave.init(data, allocator, .{
             .sample_rate = self.wave.sample_rate,
@@ -188,11 +188,11 @@ allocator: std.mem.Allocator,
 
 /// Sample rate for the output wave (samples per second).
 /// Common values: 44100 (CD quality), 48000 (professional audio), 22050, etc.
-sample_rate: usize,
+sample_rate: u32,
 
 /// Number of audio channels in the output wave.
 /// 1 = mono, 2 = stereo
-channels: usize,
+channels: u16,
 
 /// Configuration options for creating a Composer.
 ///
@@ -205,8 +205,8 @@ channels: usize,
 /// };
 /// ```
 pub const Options = struct {
-    sample_rate: usize,
-    channels: usize,
+    sample_rate: u32,
+    channels: u16,
 };
 
 /// Initialize a new empty Composer.
@@ -537,13 +537,15 @@ pub fn finalize(self: Self, options: Wave.mixOptions) Wave {
 
     // Filter each WaveInfo to append padding both of start and last
     for (self.info) |waveinfo| {
-        const padded_at_start: []const f32 = padding_for_start(waveinfo.wave.data, waveinfo.start_point, self.allocator);
+        const padded_at_start: []const f128 = padding_for_start(waveinfo.wave.data, waveinfo.start_point, self.allocator);
         defer self.allocator.free(padded_at_start);
 
-        const padded_at_start_and_last: []const f32 = padding_for_last(padded_at_start, end_point, self.allocator);
+        const padded_at_start_and_last: []const f128 = padding_for_last(padded_at_start, end_point, self.allocator);
         defer self.allocator.free(padded_at_start_and_last);
 
-        const wave: Wave = Wave.init(padded_at_start_and_last, self.allocator, .{
+        const wave: Wave = Wave.init(.{
+            .data = padded_at_start_and_last,
+            .allocator = self.allocator,
             .sample_rate = self.sample_rate,
             .channels = self.channels,
         });
@@ -559,10 +561,12 @@ pub fn finalize(self: Self, options: Wave.mixOptions) Wave {
     const padded_waveinfo_slice: []const WaveInfo = padded_waveinfo_list.toOwnedSlice(self.allocator) catch @panic("Out of memory");
     defer self.allocator.free(padded_waveinfo_slice);
 
-    const empty_data: []const f32 = generate_soundless_data(end_point, self.allocator);
+    const empty_data: []const f128 = generate_soundless_data(end_point, self.allocator);
     defer self.allocator.free(empty_data);
 
-    var result: Wave = Wave.init(empty_data, self.allocator, .{
+    var result: Wave = Wave.init(.{
+        .data = empty_data,
+        .allocator = self.allocator,
         .sample_rate = self.sample_rate,
         .channels = self.channels,
     });
@@ -591,9 +595,9 @@ pub fn finalize(self: Self, options: Wave.mixOptions) Wave {
 /// ## Returns
 ///
 /// New slice with silence prepended. Caller must free.
-fn padding_for_start(data: []const f32, start_point: usize, allocator: std.mem.Allocator) []const f32 {
+fn padding_for_start(data: []const f128, start_point: usize, allocator: std.mem.Allocator) []const f128 {
     const padding_length: usize = start_point;
-    var padding: std.array_list.Aligned(f32, null) = .empty;
+    var padding: std.array_list.Aligned(f128, null) = .empty;
     defer padding.deinit(allocator);
 
     // Append padding
@@ -603,7 +607,7 @@ fn padding_for_start(data: []const f32, start_point: usize, allocator: std.mem.A
     // Append data slice
     padding.appendSlice(allocator, data) catch @panic("Out of memory");
 
-    const result: []const f32 = padding.toOwnedSlice(allocator) catch @panic("Out of memory");
+    const result: []const f128 = padding.toOwnedSlice(allocator) catch @panic("Out of memory");
 
     return result;
 }
@@ -622,11 +626,11 @@ fn padding_for_start(data: []const f32, start_point: usize, allocator: std.mem.A
 /// ## Returns
 ///
 /// New slice with silence appended. Caller must free.
-fn padding_for_last(data: []const f32, end_point: usize, allocator: std.mem.Allocator) []const f32 {
+fn padding_for_last(data: []const f128, end_point: usize, allocator: std.mem.Allocator) []const f128 {
     std.debug.assert(data.len <= end_point);
 
     const padding_length: usize = end_point - data.len;
-    var padding: std.array_list.Aligned(f32, null) = .empty;
+    var padding: std.array_list.Aligned(f128, null) = .empty;
     defer padding.deinit(allocator);
 
     // Append data slice
@@ -636,7 +640,7 @@ fn padding_for_last(data: []const f32, end_point: usize, allocator: std.mem.Allo
     for (0..padding_length) |_|
         padding.append(allocator, 0.0) catch @panic("Out of memory");
 
-    const result: []const f32 = padding.toOwnedSlice(allocator) catch @panic("Out of memory");
+    const result: []const f128 = padding.toOwnedSlice(allocator) catch @panic("Out of memory");
 
     return result;
 }
@@ -654,30 +658,30 @@ fn padding_for_last(data: []const f32, end_point: usize, allocator: std.mem.Allo
 /// ## Returns
 ///
 /// Slice of zeros with the specified length. Caller must free.
-fn generate_soundless_data(length: usize, allocator: std.mem.Allocator) []const f32 {
-    var list: std.array_list.Aligned(f32, null) = .empty;
+fn generate_soundless_data(length: usize, allocator: std.mem.Allocator) []const f128 {
+    var list: std.array_list.Aligned(f128, null) = .empty;
     defer list.deinit(allocator);
 
     // Append empty wave
     for (0..length) |_|
         list.append(allocator, 0.0) catch @panic("Out of memory");
 
-    const result: []const f32 = list.toOwnedSlice(allocator) catch @panic("Out of memory");
+    const result: []const f128 = list.toOwnedSlice(allocator) catch @panic("Out of memory");
 
     return result;
 }
 
 test "padding_for_start" {
     const allocator = testing.allocator;
-    const data: []const f32 = &[_]f32{ 1.0, 1.0 };
+    const data: []const f128 = &[_]f128{ 1.0, 1.0 };
     const start_point: usize = 10;
 
-    const result: []const f32 = padding_for_start(data, start_point, allocator);
+    const result: []const f128 = padding_for_start(data, start_point, allocator);
     defer allocator.free(result);
 
     try testing.expectEqual(data.len + start_point, result.len);
 
-    const expected: []const f32 = &[_]f32{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0 };
+    const expected: []const f128 = &[_]f128{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0 };
     for (0..result.len) |i| {
         try testing.expectApproxEqAbs(expected[i], result[i], 0.001);
     }
@@ -695,7 +699,8 @@ test "init & deinit" {
 test "init_with & deinit" {
     const allocator = testing.allocator;
 
-    const wave = Wave.from_file_content(.i16, @embedFile("./assets/sine.wav"), allocator);
+    var reader = std.Io.Reader.fixed(@embedFile("assets/sine.wav"));
+    const wave = Wave.read(&reader, allocator);
     defer wave.deinit();
 
     const info: []const WaveInfo = &[_]WaveInfo{ .{ .wave = wave, .start_point = 0 }, .{ .wave = wave, .start_point = 0 } };
@@ -715,7 +720,8 @@ test "append" {
     });
     defer composer.deinit();
 
-    const wave = Wave.from_file_content(.i16, @embedFile("./assets/sine.wav"), allocator);
+    var reader = std.Io.Reader.fixed(@embedFile("assets/sine.wav"));
+    const wave = Wave.read(&reader, allocator);
     defer wave.deinit();
 
     const appended_composer = composer.append(.{ .wave = wave, .start_point = 0 });
@@ -732,7 +738,8 @@ test "appendSlice" {
     });
     defer composer.deinit();
 
-    const wave = Wave.from_file_content(.i16, @embedFile("./assets/sine.wav"), allocator);
+    var reader = std.Io.Reader.fixed(@embedFile("assets/sine.wav"));
+    const wave = Wave.read(&reader, allocator);
     defer wave.deinit();
 
     var append_list: std.array_list.Aligned(WaveInfo, null) = .empty;
@@ -754,14 +761,16 @@ test "finalize" {
     });
     defer composer.deinit();
 
-    var data: []f32 = try allocator.alloc(f32, 44100);
+    var data: []f128 = try allocator.alloc(f128, 44100);
     defer allocator.free(data);
 
     for (0..data.len) |i| {
         data[i] = 1.0;
     }
 
-    const wave = Wave.init(data, allocator, .{
+    const wave = Wave.init(.{
+        .data = data,
+        .allocator = allocator,
         .sample_rate = 44100,
         .channels = 1,
     });
