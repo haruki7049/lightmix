@@ -27,5 +27,5 @@ test "read sine.wav" {
         0.6153447065645313882869960631122776,
         0.6462599566637165440839869380779442,
     };
-    try std.testing.expectEqualSlices(f128, sine.data[0..16], expected_samples);
+    try std.testing.expectEqualSlices(f128, sine.samples[0..16], expected_samples);
 }

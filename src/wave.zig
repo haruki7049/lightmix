@@ -4,16 +4,16 @@ const zigggwavvv = @import("zigggwavvv");
 const Self = @This();
 
 allocator: std.mem.Allocator,
-data: []const f128,
+samples: []const f128,
 sample_rate: u32,
 channels: u16,
 
 pub fn deinit(self: Self) void {
-    self.allocator.free(self.data);
+    self.allocator.free(self.samples);
 }
 
 pub const initOptions = struct {
-    data: []const f128,
+    samples: []const f128,
     allocator: std.mem.Allocator,
     sample_rate: u32,
     channels: u16,
@@ -23,7 +23,7 @@ pub fn init(
     options: initOptions,
 ) Self {
     return Self{
-        .data = options.allocator.dupe(f128, options.data) catch @panic("Out of memory"),
+        .samples = options.allocator.dupe(f128, options.samples) catch @panic("Out of memory"),
         .allocator = options.allocator,
         .sample_rate = options.sample_rate,
         .channels = options.channels,
@@ -39,33 +39,33 @@ pub fn default_mixing_expression(left: f128, right: f128) f128 {
 }
 
 pub fn mix(self: Self, other: Self, options: mixOptions) Self {
-    std.debug.assert(self.data.len == other.data.len);
+    std.debug.assert(self.samples.len == other.samples.len);
     std.debug.assert(self.sample_rate == other.sample_rate);
     std.debug.assert(self.channels == other.channels);
 
-    if (self.data.len == 0)
+    if (self.samples.len == 0)
         return Self{
             .allocator = self.allocator,
-            .data = &[_]f128{},
+            .samples = &[_]f128{},
             .sample_rate = self.sample_rate,
             .channels = self.channels,
         };
 
-    var data: std.array_list.Aligned(f128, null) = .empty;
+    var samples: std.array_list.Aligned(f128, null) = .empty;
 
-    for (0..self.data.len) |i| {
-        const left: f128 = self.data[i];
-        const right: f128 = other.data[i];
+    for (0..self.samples.len) |i| {
+        const left: f128 = self.samples[i];
+        const right: f128 = other.samples[i];
         const result: f128 = options.mixer(left, right);
 
-        data.append(self.allocator, result) catch @panic("Out of memory");
+        samples.append(self.allocator, result) catch @panic("Out of memory");
     }
 
-    const result = data.toOwnedSlice(self.allocator) catch @panic("Out of memory");
+    const result = samples.toOwnedSlice(self.allocator) catch @panic("Out of memory");
 
     return Self{
         .allocator = self.allocator,
-        .data = result,
+        .samples = result,
         .sample_rate = self.sample_rate,
         .channels = self.channels,
     };
@@ -80,7 +80,7 @@ pub fn fill_zero_to_end(
 
     // Initialization
     var result: std.array_list.Aligned(f128, null) = .empty;
-    result.appendSlice(self.allocator, self.data) catch @panic("Out of memory");
+    result.appendSlice(self.allocator, self.samples) catch @panic("Out of memory");
 
     const delete_count: usize = result.items.len - start;
 
@@ -97,7 +97,7 @@ pub fn fill_zero_to_end(
     std.debug.assert(result.items.len == end);
 
     return Self{
-        .data = result.toOwnedSlice(self.allocator) catch @panic("Out of memory"),
+        .samples = result.toOwnedSlice(self.allocator) catch @panic("Out of memory"),
         .allocator = self.allocator,
         .sample_rate = self.sample_rate,
         .channels = self.channels,
@@ -117,7 +117,7 @@ pub fn read(
         .allocator = allocator,
         .sample_rate = zigggwavvv_wave.sample_rate,
         .channels = zigggwavvv_wave.channels,
-        .data = zigggwavvv_wave.samples,
+        .samples = zigggwavvv_wave.samples,
     };
 }
 
@@ -140,7 +140,7 @@ pub fn write(
 
         .sample_rate = self.sample_rate,
         .channels = self.channels,
-        .data = self.data,
+        .samples = self.samples,
     };
 
     try zigggwavvv.write(zigggwavvv_wave, writer, .{
@@ -155,8 +155,8 @@ pub fn filter(
     self: Self,
     filter_fn: fn (self: Self) anyerror!Self,
 ) Self {
-    // To destroy original data array
-    // If we don't do this, we may catch some memory leaks by not to free original data array
+    // To destroy original samples array
+    // If we don't do this, we may catch some memory leaks by not to free original samples array
     defer self.deinit();
 
     const result: Self = filter_fn(self) catch |err| {
@@ -173,8 +173,8 @@ pub fn filter_with(
     filter_fn: fn (self: Self, args: args_type) anyerror!Self,
     args: args_type,
 ) Self {
-    // To destroy original data array
-    // If we don't do this, we may catch some memory leaks by not to free original data array
+    // To destroy original samples array
+    // If we don't do this, we may catch some memory leaks by not to free original samples array
     defer self.deinit();
 
     const result: Self = filter_fn(self, args) catch |err| {
@@ -192,7 +192,7 @@ test "read & deinit" {
     const wave = Self.read(&reader, allocator);
     defer wave.deinit();
 
-    const expected_data: []const f128 = &[_]f128{
+    const expected_samples: []const f128 = &[_]f128{
         0,
         0.050111392559587389751884517960142825,
         0.1000396740623187963499862666707358,
@@ -210,13 +210,13 @@ test "read & deinit" {
         0.6153447065645313882869960631122776,
         0.6462599566637165440839869380779442,
     };
-    try std.testing.expectEqualSlices(f128, wave.data[0..16], expected_data);
+    try std.testing.expectEqualSlices(f128, wave.samples[0..16], expected_samples);
 
     try std.testing.expectEqual(wave.sample_rate, 44100);
     try std.testing.expectEqual(wave.channels, 1);
 }
 
-fn generate_sine_testdata() []f128 {
+fn generate_sine_test_samples() []f128 {
     const sample_rate: f128 = 44100.0;
     const radins_per_sec: f128 = 440.0 * 2.0 * std.math.pi;
 
@@ -232,10 +232,10 @@ fn generate_sine_testdata() []f128 {
 test "mix" {
     const allocator = std.testing.allocator;
 
-    const data = generate_sine_testdata();
+    const samples = generate_sine_test_samples();
     const wave = Self.init(.{
         .allocator = allocator,
-        .data = data[0..],
+        .samples = samples[0..],
         .sample_rate = 44100,
         .channels = 1,
     });
@@ -247,7 +247,7 @@ test "mix" {
     try std.testing.expectEqual(result.sample_rate, 44100);
     try std.testing.expectEqual(result.channels, 1);
 
-    const expected_data: []const f128 = &[_]f128{
+    const expected_samples: []const f128 = &[_]f128{
         0,
         0.062648324178743691748039168487594,
         0.12505052369452809846173124697088497,
@@ -266,17 +266,17 @@ test "mix" {
         0.8077589696806923846850168047240004,
     };
 
-    for (expected_data, 0..) |expected, i|
-        try std.testing.expectApproxEqAbs(expected, result.data[i], 0.000000001);
+    for (expected_samples, 0..) |expected, i|
+        try std.testing.expectApproxEqAbs(expected, result.samples[i], 0.000000001);
 }
 
 test "fill_zero_to_end" {
     const allocator = std.testing.allocator;
 
-    const data = generate_sine_testdata();
+    const samples = generate_sine_test_samples();
     const wave = Self.init(.{
         .allocator = allocator,
-        .data = data[0..],
+        .samples = samples[0..],
         .sample_rate = 44100,
         .channels = 1,
     });
@@ -287,22 +287,22 @@ test "fill_zero_to_end" {
     try std.testing.expectEqual(filled_wave.sample_rate, 44100);
     try std.testing.expectEqual(filled_wave.channels, 1);
 
-    try std.testing.expectEqual(filled_wave.data[0], 0.0);
-    try std.testing.expectEqual(filled_wave.data[1], 0.031324162089371845874019584243797);
-    try std.testing.expectEqual(filled_wave.data[2], 0.06252526184726404923086562348544248);
+    try std.testing.expectEqual(filled_wave.samples[0], 0.0);
+    try std.testing.expectEqual(filled_wave.samples[1], 0.031324162089371845874019584243797);
+    try std.testing.expectEqual(filled_wave.samples[2], 0.06252526184726404923086562348544248);
 
-    try std.testing.expectEqual(filled_wave.data[22049], -0.03132416208941617846717164752590179);
-    try std.testing.expectEqual(filled_wave.data[22050], 0.0);
-    try std.testing.expectEqual(filled_wave.data[22051], 0.0);
-    try std.testing.expectEqual(filled_wave.data[44099], 0.0);
+    try std.testing.expectEqual(filled_wave.samples[22049], -0.03132416208941617846717164752590179);
+    try std.testing.expectEqual(filled_wave.samples[22050], 0.0);
+    try std.testing.expectEqual(filled_wave.samples[22051], 0.0);
+    try std.testing.expectEqual(filled_wave.samples[44099], 0.0);
 }
 
 test "filter_with" {
     const allocator = std.testing.allocator;
-    const data: []const f128 = &[_]f128{};
+    const samples: []const f128 = &[_]f128{};
     const wave = Self.init(.{
         .allocator = allocator,
-        .data = data,
+        .samples = samples,
         .sample_rate = 44100,
         .channels = 1,
     }).filter_with(ArgsForTesting, test_filter_with_args, .{ .data = 3 });
@@ -311,8 +311,8 @@ test "filter_with" {
     try std.testing.expectEqual(wave.sample_rate, 44100);
     try std.testing.expectEqual(wave.channels, 1);
 
-    try std.testing.expectEqual(wave.data.len, 3);
-    try std.testing.expectEqualSlices(f128, wave.data, &[_]f128{ 0.0, 0.0, 0.0 });
+    try std.testing.expectEqual(wave.samples.len, 3);
+    try std.testing.expectEqualSlices(f128, wave.samples, &[_]f128{ 0.0, 0.0, 0.0 });
 }
 
 fn test_filter_with_args(
@@ -327,7 +327,7 @@ fn test_filter_with_args(
 
     return Self{
         .allocator = original_wave.allocator,
-        .data = try original_wave.allocator.dupe(f128, result),
+        .samples = try original_wave.allocator.dupe(f128, result),
         .sample_rate = original_wave.sample_rate,
         .channels = original_wave.channels,
     };
@@ -339,10 +339,10 @@ const ArgsForTesting = struct {
 
 test "filter" {
     const allocator = std.testing.allocator;
-    const data: []const f128 = &[_]f128{};
+    const samples: []const f128 = &[_]f128{};
     const wave = Self.init(.{
         .allocator = allocator,
-        .data = data,
+        .samples = samples,
         .sample_rate = 44100,
         .channels = 1,
     }).filter(test_filter_without_args);
@@ -351,12 +351,12 @@ test "filter" {
     try std.testing.expectEqual(wave.sample_rate, 44100);
     try std.testing.expectEqual(wave.channels, 1);
 
-    try std.testing.expectEqual(wave.data.len, 5);
-    try std.testing.expectEqual(wave.data[0], 0.0);
-    try std.testing.expectEqual(wave.data[1], 0.0);
-    try std.testing.expectEqual(wave.data[2], 0.0);
-    try std.testing.expectEqual(wave.data[3], 0.0);
-    try std.testing.expectEqual(wave.data[4], 0.0);
+    try std.testing.expectEqual(wave.samples.len, 5);
+    try std.testing.expectEqual(wave.samples[0], 0.0);
+    try std.testing.expectEqual(wave.samples[1], 0.0);
+    try std.testing.expectEqual(wave.samples[2], 0.0);
+    try std.testing.expectEqual(wave.samples[3], 0.0);
+    try std.testing.expectEqual(wave.samples[4], 0.0);
 }
 
 fn test_filter_without_args(original_wave: Self) !Self {
@@ -366,7 +366,7 @@ fn test_filter_without_args(original_wave: Self) !Self {
         try result.append(original_wave.allocator, 0.0);
 
     return Self{
-        .data = try result.toOwnedSlice(original_wave.allocator),
+        .samples = try result.toOwnedSlice(original_wave.allocator),
         .allocator = original_wave.allocator,
 
         .sample_rate = original_wave.sample_rate,
@@ -376,10 +376,10 @@ fn test_filter_without_args(original_wave: Self) !Self {
 
 test "filter memory leaks' check" {
     const allocator = std.testing.allocator;
-    const data: []const f128 = &[_]f128{};
+    const samples: []const f128 = &[_]f128{};
     const wave = Self.init(.{
         .allocator = allocator,
-        .data = data,
+        .samples = samples,
         .sample_rate = 44100,
         .channels = 1,
     })
@@ -392,26 +392,26 @@ test "filter memory leaks' check" {
     try std.testing.expectEqual(wave.sample_rate, 44100);
     try std.testing.expectEqual(wave.channels, 1);
 
-    try std.testing.expectEqual(wave.data.len, 5);
-    try std.testing.expectEqual(wave.data[0], 0.0);
-    try std.testing.expectEqual(wave.data[1], 0.0);
-    try std.testing.expectEqual(wave.data[2], 0.0);
-    try std.testing.expectEqual(wave.data[3], 0.0);
-    try std.testing.expectEqual(wave.data[4], 0.0);
+    try std.testing.expectEqual(wave.samples.len, 5);
+    try std.testing.expectEqual(wave.samples[0], 0.0);
+    try std.testing.expectEqual(wave.samples[1], 0.0);
+    try std.testing.expectEqual(wave.samples[2], 0.0);
+    try std.testing.expectEqual(wave.samples[3], 0.0);
+    try std.testing.expectEqual(wave.samples[4], 0.0);
 }
 
-test "Create Wave with empty data" {
+test "Create Wave with empty samples" {
     const allocator = std.testing.allocator;
-    const data: []const f128 = &[_]f128{};
+    const samples: []const f128 = &[_]f128{};
     const wave = Self.init(.{
         .allocator = allocator,
-        .data = data,
+        .samples = samples,
         .sample_rate = 44100,
         .channels = 1,
     });
     defer wave.deinit();
 
-    try std.testing.expectEqual(wave.data.len, 0);
+    try std.testing.expectEqual(wave.samples.len, 0);
     try std.testing.expectEqual(wave.sample_rate, 44100);
     try std.testing.expectEqual(wave.channels, 1);
 }
@@ -425,5 +425,5 @@ test "from_file_content with different sample rates" {
     // Verify the wave has valid properties
     try std.testing.expect(wave.sample_rate > 0);
     try std.testing.expect(wave.channels > 0);
-    try std.testing.expect(wave.data.len > 0);
+    try std.testing.expect(wave.samples.len > 0);
 }
