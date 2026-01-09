@@ -140,6 +140,10 @@ pub fn filter(
     self: Self,
     filter_fn: fn (self: Self) anyerror!Self,
 ) Self {
+    // To destroy original data array
+    // If we don't do this, we may catch some memory leaks by not to free original data array
+    defer self.deinit();
+
     const result: Self = filter_fn(self) catch |err| {
         std.debug.print("{any}\n", .{err});
         @panic("Error happened in filter function...");
@@ -154,6 +158,10 @@ pub fn filter_with(
     filter_fn: fn (self: Self, args: args_type) anyerror!Self,
     args: args_type,
 ) Self {
+    // To destroy original data array
+    // If we don't do this, we may catch some memory leaks by not to free original data array
+    defer self.deinit();
+
     const result: Self = filter_fn(self, args) catch |err| {
         std.debug.print("{any}\n", .{err});
         @panic("Error happened in filter_with function...");
@@ -326,66 +334,69 @@ const ArgsForTesting = struct {
     data: usize,
 };
 
-//test "filter" {
-//    const allocator = std.testing.allocator;
-//    const data: []const f32 = &[_]f32{};
-//    const wave = Self.init(data, allocator, .{
-//        .sample_rate = 44100,
-//        .channels = 1,
-//    })
-//        .filter(test_filter_without_args);
-//    defer wave.deinit();
-//
-//    try std.testing.expectEqual(wave.sample_rate, 44100);
-//    try std.testing.expectEqual(wave.channels, 1);
-//
-//    try std.testing.expectEqual(wave.data.len, 5);
-//    try std.testing.expectEqual(wave.data[0], 0.0);
-//    try std.testing.expectEqual(wave.data[1], 0.0);
-//    try std.testing.expectEqual(wave.data[2], 0.0);
-//    try std.testing.expectEqual(wave.data[3], 0.0);
-//    try std.testing.expectEqual(wave.data[4], 0.0);
-//}
-//
-//fn test_filter_without_args(original_wave: Self) !Self {
-//    var result: std.array_list.Aligned(f32, null) = .empty;
-//
-//    for (0..5) |_|
-//        try result.append(original_wave.allocator, 0.0);
-//
-//    return Self{
-//        .data = try result.toOwnedSlice(original_wave.allocator),
-//        .allocator = original_wave.allocator,
-//
-//        .sample_rate = original_wave.sample_rate,
-//        .channels = original_wave.channels,
-//    };
-//}
-//
-//test "filter memory leaks' check" {
-//    const allocator = std.testing.allocator;
-//    const data: []const f32 = &[_]f32{};
-//    const wave = Self.init(data, allocator, .{
-//        .sample_rate = 44100,
-//        .channels = 1,
-//    })
-//        .filter(test_filter_without_args)
-//        .filter(test_filter_without_args)
-//        .filter(test_filter_without_args)
-//        .filter(test_filter_without_args);
-//    defer wave.deinit();
-//
-//    try std.testing.expectEqual(wave.sample_rate, 44100);
-//    try std.testing.expectEqual(wave.channels, 1);
-//
-//    try std.testing.expectEqual(wave.data.len, 5);
-//    try std.testing.expectEqual(wave.data[0], 0.0);
-//    try std.testing.expectEqual(wave.data[1], 0.0);
-//    try std.testing.expectEqual(wave.data[2], 0.0);
-//    try std.testing.expectEqual(wave.data[3], 0.0);
-//    try std.testing.expectEqual(wave.data[4], 0.0);
-//}
-//
+test "filter" {
+    const allocator = std.testing.allocator;
+    const data: []const f128 = &[_]f128{};
+    const wave = (Self{
+        .allocator = allocator,
+        .data = data,
+        .sample_rate = 44100,
+        .channels = 1,
+    }).filter(test_filter_without_args);
+    defer wave.deinit();
+
+    try std.testing.expectEqual(wave.sample_rate, 44100);
+    try std.testing.expectEqual(wave.channels, 1);
+
+    try std.testing.expectEqual(wave.data.len, 5);
+    try std.testing.expectEqual(wave.data[0], 0.0);
+    try std.testing.expectEqual(wave.data[1], 0.0);
+    try std.testing.expectEqual(wave.data[2], 0.0);
+    try std.testing.expectEqual(wave.data[3], 0.0);
+    try std.testing.expectEqual(wave.data[4], 0.0);
+}
+
+fn test_filter_without_args(original_wave: Self) !Self {
+    var result: std.array_list.Aligned(f128, null) = .empty;
+
+    for (0..5) |_|
+        try result.append(original_wave.allocator, 0.0);
+
+    return Self{
+        .data = try result.toOwnedSlice(original_wave.allocator),
+        .allocator = original_wave.allocator,
+
+        .sample_rate = original_wave.sample_rate,
+        .channels = original_wave.channels,
+    };
+}
+
+test "filter memory leaks' check" {
+    const allocator = std.testing.allocator;
+    const data: []const f128 = &[_]f128{};
+    const wave = (Self{
+        .allocator = allocator,
+        .data = data,
+        .sample_rate = 44100,
+        .channels = 1,
+    })
+        .filter(test_filter_without_args)
+        .filter(test_filter_without_args)
+        .filter(test_filter_without_args)
+        .filter(test_filter_without_args);
+    defer wave.deinit();
+
+    try std.testing.expectEqual(wave.sample_rate, 44100);
+    try std.testing.expectEqual(wave.channels, 1);
+
+    try std.testing.expectEqual(wave.data.len, 5);
+    try std.testing.expectEqual(wave.data[0], 0.0);
+    try std.testing.expectEqual(wave.data[1], 0.0);
+    try std.testing.expectEqual(wave.data[2], 0.0);
+    try std.testing.expectEqual(wave.data[3], 0.0);
+    try std.testing.expectEqual(wave.data[4], 0.0);
+}
+
 //test "init with empty data" {
 //    const allocator = std.testing.allocator;
 //    const data: []const f32 = &[_]f32{};
