@@ -64,6 +64,19 @@ pub fn build(b: *std.Build) void {
     const run_wave_integration_tests = b.addRunArtifact(wave_integration_test);
     test_step.dependOn(&run_wave_integration_tests.step);
 
+    const composer_integration_test = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tests/composer.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "lightmix", .module = lib_mod },
+            },
+        }),
+    });
+    const run_composer_integration_tests = b.addRunArtifact(composer_integration_test);
+    test_step.dependOn(&run_composer_integration_tests.step);
+
     // Docs
     const docs_step = b.step("docs", "Emit docs");
     const docs_install = b.addInstallDirectory(.{
