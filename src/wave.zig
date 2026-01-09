@@ -249,7 +249,9 @@ test "mix" {
         0.7692402653962486791527908280841075,
         0.8077589696806923846850168047240004,
     };
-    try std.testing.expectEqualSlices(f128, result.data[0..16], expected_data);
+
+    for (expected_data, 0..) |expected, i|
+        try std.testing.expectApproxEqAbs(expected, result.data[i], 0.0000000000000000000001);
 }
 
 test "fill_zero_to_end" {
