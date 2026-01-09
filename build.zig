@@ -14,7 +14,7 @@ pub fn build(b: *std.Build) void {
     options.addOption(bool, "with_debug_features", with_debug_features);
 
     // Dependencies
-    const lightmix_wav = b.dependency("lightmix_wav", .{});
+    const zigggwavvv = b.dependency("zigggwavvv", .{});
     const known_folders = b.dependency("known_folders", .{});
 
     // Library module declaration
@@ -22,11 +22,12 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
+        .imports = &.{
+            .{ .name = "known-folders", .module = known_folders.module("known-folders") },
+            .{ .name = "zigggwavvv", .module = zigggwavvv.module("zigggwavvv") },
+        },
     });
-    lib_mod.addImport("lightmix_wav", lightmix_wav.module("lightmix_wav"));
-    lib_mod.addImport("known-folders", known_folders.module("known-folders"));
     lib_mod.addOptions("build_options", options);
-    lib_mod.addOptions("with_debug_features", options);
 
     // Library installation
     const lib = b.addLibrary(.{
@@ -49,6 +50,32 @@ pub fn build(b: *std.Build) void {
     // Test step
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_lib_unit_tests.step);
+
+    const wave_integration_test = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tests/wave.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "lightmix", .module = lib_mod },
+            },
+        }),
+    });
+    const run_wave_integration_tests = b.addRunArtifact(wave_integration_test);
+    test_step.dependOn(&run_wave_integration_tests.step);
+
+    const composer_integration_test = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tests/composer.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "lightmix", .module = lib_mod },
+            },
+        }),
+    });
+    const run_composer_integration_tests = b.addRunArtifact(composer_integration_test);
+    test_step.dependOn(&run_composer_integration_tests.step);
 
     // Docs
     const docs_step = b.step("docs", "Emit docs");
