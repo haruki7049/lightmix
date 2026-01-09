@@ -399,55 +399,6 @@ test "Create Wave with empty data" {
     try std.testing.expectEqual(wave.channels, 1);
 }
 
-//test "init with different channels" {
-//    const allocator = std.testing.allocator;
-//    const data: []const f32 = &[_]f32{ 1.0, 2.0, 3.0, 4.0 };
-//
-//    // Mono
-//    const wave_mono = Self.init(data, allocator, .{
-//        .sample_rate = 44100,
-//        .channels = 1,
-//    });
-//    defer wave_mono.deinit();
-//    try std.testing.expectEqual(wave_mono.channels, 1);
-//
-//    // Stereo
-//    const wave_stereo = Self.init(data, allocator, .{
-//        .sample_rate = 44100,
-//        .channels = 2,
-//    });
-//    defer wave_stereo.deinit();
-//    try std.testing.expectEqual(wave_stereo.channels, 2);
-//}
-//
-//test "mix preserves wave properties" {
-//    const allocator = std.testing.allocator;
-//    const data1: []const f32 = &[_]f32{ 1.0, 2.0, 3.0 };
-//    const data2: []const f32 = &[_]f32{ 0.5, 1.0, 1.5 };
-//
-//    const wave1 = Self.init(data1, allocator, .{
-//        .sample_rate = 48000,
-//        .channels = 2,
-//    });
-//    defer wave1.deinit();
-//
-//    const wave2 = Self.init(data2, allocator, .{
-//        .sample_rate = 48000,
-//        .channels = 2,
-//    });
-//    defer wave2.deinit();
-//
-//    const result = wave1.mix(wave2, .{});
-//    defer result.deinit();
-//
-//    try std.testing.expectEqual(result.sample_rate, 48000);
-//    try std.testing.expectEqual(result.channels, 2);
-//    try std.testing.expectEqual(result.data.len, 3);
-//    try std.testing.expectEqual(result.data[0], 1.5);
-//    try std.testing.expectEqual(result.data[1], 3.0);
-//    try std.testing.expectEqual(result.data[2], 4.5);
-//}
-
 test "from_file_content with different sample rates" {
     const allocator = std.testing.allocator;
     var reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
