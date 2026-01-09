@@ -75,12 +75,12 @@ pub fn fill_zero_to_end(
     self: Self,
     start: usize,
     end: usize,
-) !Self {
+) Self {
     defer self.deinit();
 
     // Initialization
     var result: std.array_list.Aligned(f128, null) = .empty;
-    try result.appendSlice(self.allocator, self.data);
+    result.appendSlice(self.allocator, self.data) catch @panic("Out of memory");
 
     const delete_count: usize = result.items.len - start;
 
@@ -91,13 +91,13 @@ pub fn fill_zero_to_end(
     std.debug.assert(start == result.items.len);
 
     for (delete_count..end) |_| {
-        try result.append(self.allocator, 0.0);
+        result.append(self.allocator, 0.0) catch @panic("Out of memory");
     }
 
     std.debug.assert(result.items.len == end);
 
     return Self{
-        .data = try result.toOwnedSlice(self.allocator),
+        .data = result.toOwnedSlice(self.allocator) catch @panic("Out of memory"),
         .allocator = self.allocator,
         .sample_rate = self.sample_rate,
         .channels = self.channels,
@@ -281,7 +281,7 @@ test "fill_zero_to_end" {
         .channels = 1,
     });
 
-    const filled_wave: Self = try wave.fill_zero_to_end(22050, 44100);
+    const filled_wave: Self = wave.fill_zero_to_end(22050, 44100);
     defer filled_wave.deinit();
 
     try std.testing.expectEqual(filled_wave.sample_rate, 44100);
