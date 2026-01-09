@@ -6,7 +6,7 @@ test "read sine.wav" {
     const allocator = std.testing.allocator;
     var reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
 
-    const sine: Wave = try Wave.read(16, .pcm, &reader, allocator);
+    const sine: Wave = Wave.read(&reader, allocator);
     defer sine.deinit();
 
     const expected_samples: []const f128 = &[_]f128{

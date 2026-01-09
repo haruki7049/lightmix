@@ -105,18 +105,13 @@ pub fn fill_zero_to_end(
 }
 
 pub fn read(
-    bits: u16,
-    format_code: zigggwavvv.FormatCode,
     reader: anytype,
     allocator: std.mem.Allocator,
-) anyerror!Self {
-    const zigggwavvv_wave = try zigggwavvv.read(allocator, reader);
-
-    if (bits != zigggwavvv_wave.bits)
-        return error.InvalidBits;
-
-    if (format_code != zigggwavvv_wave.format_code)
-        return error.InvalidFormatCode;
+) Self {
+    const zigggwavvv_wave = zigggwavvv.read(allocator, reader) catch |err| {
+        std.debug.print("{any}\n", .{err});
+        @panic("Error happened in zigggwavvv.read() function used in Wave.read function...");
+    };
 
     return Self{
         .allocator = allocator,
@@ -194,7 +189,7 @@ test "read & deinit" {
     const allocator = std.testing.allocator;
 
     var reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
-    const wave = try Self.read(16, .pcm, &reader, allocator);
+    const wave = Self.read(&reader, allocator);
     defer wave.deinit();
 
     const expected_data: []const f128 = &[_]f128{
@@ -424,7 +419,7 @@ test "Create Wave with empty data" {
 test "from_file_content with different sample rates" {
     const allocator = std.testing.allocator;
     var reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
-    const wave = try Self.read(16, .pcm, &reader, allocator);
+    const wave: Self = Self.read(&reader, allocator);
     defer wave.deinit();
 
     // Verify the wave has valid properties
