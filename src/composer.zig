@@ -692,7 +692,8 @@ test "padding_for_start" {
 
 test "init & deinit" {
     const allocator = testing.allocator;
-    const composer = Self.init(allocator, .{
+    const composer = Self.init(.{
+        .allocator = allocator,
         .sample_rate = 44100,
         .channels = 1,
     });
@@ -708,7 +709,9 @@ test "init_with & deinit" {
 
     const info: []const WaveInfo = &[_]WaveInfo{ .{ .wave = wave, .start_point = 0 }, .{ .wave = wave, .start_point = 0 } };
 
-    const composer = Self.init_with(info, allocator, .{
+    const composer = Self.init_with(.{
+        .info = info,
+        .allocator = allocator,
         .sample_rate = 44100,
         .channels = 1,
     });
@@ -717,7 +720,8 @@ test "init_with & deinit" {
 
 test "append" {
     const allocator = testing.allocator;
-    const composer = Self.init(allocator, .{
+    const composer = Self.init(.{
+        .allocator = allocator,
         .sample_rate = 44100,
         .channels = 1,
     });
@@ -735,7 +739,8 @@ test "append" {
 
 test "appendSlice" {
     const allocator = testing.allocator;
-    const composer = Self.init(allocator, .{
+    const composer = Self.init(.{
+        .allocator = allocator,
         .sample_rate = 44100,
         .channels = 1,
     });
@@ -758,7 +763,8 @@ test "appendSlice" {
 
 test "finalize" {
     const allocator = testing.allocator;
-    const composer = Self.init(allocator, .{
+    const composer = Self.init(.{
+        .allocator = allocator,
         .sample_rate = 44100,
         .channels = 1,
     });
