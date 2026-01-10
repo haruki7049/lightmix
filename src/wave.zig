@@ -70,7 +70,7 @@ allocator: std.mem.Allocator,
 
 /// The sample rate in Hz (samples per second).
 /// Common values are 44100 (CD quality), 48000 (professional audio), or 96000 (high-resolution audio).
-sample_rate: usize,
+sample_rate: u32,
 
 /// The number of audio channels.
 /// 1 = mono, 2 = stereo, 6 = 5.1 surround, etc.
@@ -79,7 +79,7 @@ channels: usize,
 /// Options for initializing a Wave.
 pub const Options = struct {
     /// Sample rate in Hz (samples per second)
-    sample_rate: usize,
+    sample_rate: u32,
     /// Number of audio channels (1 = mono, 2 = stereo, etc.)
     channels: usize,
 };
@@ -421,7 +421,7 @@ pub fn from_file_content(
 
     const result: []const f32 = arraylist.toOwnedSlice(allocator) catch @panic("Out of memory");
 
-    const sample_rate: usize = decoder.sampleRate();
+    const sample_rate: u32 = @as(u32, @intCast(decoder.sampleRate()));
     const channels: usize = decoder.channels();
 
     return Self{

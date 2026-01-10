@@ -188,7 +188,7 @@ allocator: std.mem.Allocator,
 
 /// Sample rate for the output wave (samples per second).
 /// Common values: 44100 (CD quality), 48000 (professional audio), 22050, etc.
-sample_rate: usize,
+sample_rate: u32,
 
 /// Number of audio channels in the output wave.
 /// 1 = mono, 2 = stereo
@@ -205,7 +205,7 @@ channels: usize,
 /// };
 /// ```
 pub const Options = struct {
-    sample_rate: usize,
+    sample_rate: u32,
     channels: usize,
 };
 
