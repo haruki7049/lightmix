@@ -22,11 +22,12 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
+        .imports = &.{
+            .{ .name = "known-folders", .module = known_folders.module("known-folders") },
+            .{ .name = "lightmix_wav", .module = lightmix_wav.module("lightmix_wav") },
+        },
     });
-    lib_mod.addImport("lightmix_wav", lightmix_wav.module("lightmix_wav"));
-    lib_mod.addImport("known-folders", known_folders.module("known-folders"));
     lib_mod.addOptions("build_options", options);
-    lib_mod.addOptions("with_debug_features", options);
 
     // Library installation
     const lib = b.addLibrary(.{
