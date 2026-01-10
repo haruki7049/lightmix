@@ -5,9 +5,9 @@
 //!
 //! ## Features
 //!
-//! - **Wave**: Generate and manipulate PCM audio data with support for multiple channels and sample rates
+//! - **Wave**: Generate and manipulate PCM audio samples with support for multiple channels and sample rates
 //! - **Composer**: Compose multiple audio waves with precise timing control
-//! - **Audio Filters**: Apply transformations to audio data using custom filter functions
+//! - **Audio Filters**: Apply transformations to audio samples using custom filter functions
 //! - **WAV File I/O**: Read and write WAV files with various bit depths (u8, i16, i24, f32)
 //! - **Audio Mixing**: Mix multiple audio sources together with customizable mixing functions
 //! - **Debug Playback**: Instantly play audio for testing and debugging (when enabled)
@@ -33,14 +33,14 @@
 //!     const frequency: f32 = 440.0;
 //!     const radians_per_sec: f32 = frequency * 2.0 * std.math.pi;
 //!
-//!     var data: [44100]f32 = undefined;
-//!     for (data, 0..) |*sample, i| {
+//!     var samples: [44100]f32 = undefined;
+//!     for (samples, 0..) |*sample, i| {
 //!         const t = @as(f32, @floatFromInt(i)) / sample_rate;
 //!         sample.* = 0.5 * @sin(radians_per_sec * t);
 //!     }
 //!
-//!     // Create a Wave from the generated data
-//!     const wave = Wave.init(data[0..], allocator, .{
+//!     // Create a Wave from the generated samples
+//!     const wave = Wave.init(samples[0..], allocator, .{
 //!         .sample_rate = 44100,
 //!         .channels = 1,
 //!     });
@@ -61,15 +61,15 @@
 //! fn decay(original_wave: Wave) !Wave {
 //!     var result: std.array_list.Aligned(f32, null) = .empty;
 //!
-//!     for (original_wave.data, 0..) |sample, n| {
-//!         const i = original_wave.data.len - n;
-//!         const decay_factor = @as(f32, @floatFromInt(i)) * (1.0 / @as(f32, @floatFromInt(original_wave.data.len)));
+//!     for (original_wave.samples, 0..) |sample, n| {
+//!         const i = original_wave.samples.len - n;
+//!         const decay_factor = @as(f32, @floatFromInt(i)) * (1.0 / @as(f32, @floatFromInt(original_wave.samples.len)));
 //!         const decayed_sample = sample * decay_factor;
 //!         try result.append(original_wave.allocator, decayed_sample);
 //!     }
 //!
 //!     return Wave{
-//!         .data = try result.toOwnedSlice(original_wave.allocator),
+//!         .samples = try result.toOwnedSlice(original_wave.allocator),
 //!         .allocator = original_wave.allocator,
 //!         .sample_rate = original_wave.sample_rate,
 //!         .channels = original_wave.channels,
