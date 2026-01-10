@@ -36,9 +36,9 @@
 //!     });
 //!     defer composer.deinit();
 //!
-//!     // Create some wave data
-//!     const data: []const f32 = &[_]f32{ 0.5, 0.3, 0.1, -0.1, -0.3, -0.5 };
-//!     const wave = Wave.init(data, allocator, .{
+//!     // Create some wave samples
+//!     const samples: []const f32 = &[_]f32{ 0.5, 0.3, 0.1, -0.1, -0.3, -0.5 };
+//!     const wave = Wave.init(samples, allocator, .{
 //!         .sample_rate = 44100,
 //!         .channels = 1,
 //!     });
@@ -107,14 +107,14 @@
 //!
 //! fn generateTone(freq: f32, duration: f32, sample_rate: usize, allocator: std.mem.Allocator) Wave {
 //!     const samples = @as(usize, @intFromFloat(duration * @as(f32, @floatFromInt(sample_rate))));
-//!     var data = allocator.alloc(f32, samples) catch @panic("Out of memory");
+//!     var samples = allocator.alloc(f32, samples) catch @panic("Out of memory");
 //!
 //!     for (0..samples) |i| {
 //!         const t = @as(f32, @floatFromInt(i)) / @as(f32, @floatFromInt(sample_rate));
-//!         data[i] = 0.5 * @sin(2.0 * std.math.pi * freq * t);
+//!         samples[i] = 0.5 * @sin(2.0 * std.math.pi * freq * t);
 //!     }
 //!
-//!     return Wave.init(data, allocator, .{
+//!     return Wave.init(samples, allocator, .{
 //!         .sample_rate = sample_rate,
 //!         .channels = 1,
 //!     });
@@ -143,7 +143,7 @@ const Self = @This();
 /// ## Example
 ///
 /// ```zig
-/// const wave = Wave.init(data, allocator, .{
+/// const wave = Wave.init(samples, allocator, .{
 ///     .sample_rate = 44100,
 ///     .channels = 1,
 /// });
@@ -162,16 +162,16 @@ pub const WaveInfo = struct {
     start_point: usize,
 
     fn to_wave(self: WaveInfo, allocator: std.mem.Allocator) Wave {
-        var padding_data: []f32 = allocator.alloc(f32, self.start_point) catch @panic("Out of memory");
+        var padding_samples: []f32 = allocator.alloc(f32, self.start_point) catch @panic("Out of memory");
 
-        for (0..padding_data.len) |i| {
-            padding_data[i] = 0.0;
+        for (0..padding_samples.len) |i| {
+            padding_samples[i] = 0.0;
         }
 
-        const slices: []const []const f32 = &[_][]const f32{ padding_data, self.wave.data };
-        const data = std.mem.concat(allocator, f32, slices);
+        const slices: []const []const f32 = &[_][]const f32{ padding_samples, self.wave.samples };
+        const samples = std.mem.concat(allocator, f32, slices);
 
-        const result: Wave = Wave.init(data, allocator, .{
+        const result: Wave = Wave.init(samples, allocator, .{
             .sample_rate = self.wave.sample_rate,
             .channels = self.wave.channels,
         });
@@ -216,7 +216,7 @@ pub const Options = struct {
 ///
 /// ## Parameters
 ///
-/// - `allocator`: Memory allocator for managing internal data structures
+/// - `allocator`: Memory allocator for managing internal samples structures
 /// - `options`: Configuration specifying sample_rate and channels
 ///
 /// ## Returns
@@ -251,7 +251,7 @@ pub fn init(
 /// Free memory allocated by this Composer.
 ///
 /// Call this when you're done with the Composer to prevent memory leaks.
-/// This only frees the Composer's internal data structures, not the Wave objects
+/// This only frees the Composer's internal samples structures, not the Wave objects
 /// referenced by WaveInfo. You must call deinit() on those separately.
 ///
 /// ## Example
@@ -275,7 +275,7 @@ pub fn deinit(self: Self) void {
 /// ## Parameters
 ///
 /// - `info`: Slice of WaveInfo objects to include in the composition
-/// - `allocator`: Memory allocator for managing internal data structures
+/// - `allocator`: Memory allocator for managing internal samples structures
 /// - `options`: Configuration specifying sample_rate and channels
 ///
 /// ## Returns
@@ -288,13 +288,13 @@ pub fn deinit(self: Self) void {
 /// const allocator = std.heap.page_allocator;
 ///
 /// // Create some waves
-/// const wave1 = Wave.init(data1, allocator, .{
+/// const wave1 = Wave.init(samples1, allocator, .{
 ///     .sample_rate = 44100,
 ///     .channels = 1,
 /// });
 /// defer wave1.deinit();
 ///
-/// const wave2 = Wave.init(data2, allocator, .{
+/// const wave2 = Wave.init(samples2, allocator, .{
 ///     .sample_rate = 44100,
 ///     .channels = 1,
 /// });
@@ -356,7 +356,7 @@ pub fn init_with(
 /// });
 /// defer composer.deinit();
 ///
-/// const wave = Wave.init(data, allocator, .{
+/// const wave = Wave.init(samples, allocator, .{
 ///     .sample_rate = 44100,
 ///     .channels = 1,
 /// });
@@ -410,7 +410,7 @@ pub fn append(self: Self, waveinfo: WaveInfo) Self {
 /// });
 /// defer composer.deinit();
 ///
-/// const wave = Wave.init(data, allocator, .{
+/// const wave = Wave.init(samples, allocator, .{
 ///     .sample_rate = 44100,
 ///     .channels = 1,
 /// });
@@ -526,7 +526,7 @@ pub fn finalize(self: Self, options: Wave.mixOptions) Wave {
 
     // Calculate the length for emitted wave
     for (self.info) |waveinfo| {
-        const ep = waveinfo.start_point + waveinfo.wave.data.len;
+        const ep = waveinfo.start_point + waveinfo.wave.samples.len;
 
         if (end_point < ep)
             end_point = ep;
@@ -537,7 +537,7 @@ pub fn finalize(self: Self, options: Wave.mixOptions) Wave {
 
     // Filter each WaveInfo to append padding both of start and last
     for (self.info) |waveinfo| {
-        const padded_at_start: []const f32 = padding_for_start(waveinfo.wave.data, waveinfo.start_point, self.allocator);
+        const padded_at_start: []const f32 = padding_for_start(waveinfo.wave.samples, waveinfo.start_point, self.allocator);
         defer self.allocator.free(padded_at_start);
 
         const padded_at_start_and_last: []const f32 = padding_for_last(padded_at_start, end_point, self.allocator);
@@ -559,10 +559,10 @@ pub fn finalize(self: Self, options: Wave.mixOptions) Wave {
     const padded_waveinfo_slice: []const WaveInfo = padded_waveinfo_list.toOwnedSlice(self.allocator) catch @panic("Out of memory");
     defer self.allocator.free(padded_waveinfo_slice);
 
-    const empty_data: []const f32 = generate_soundless_data(end_point, self.allocator);
-    defer self.allocator.free(empty_data);
+    const empty_samples: []const f32 = generate_soundless_samples(end_point, self.allocator);
+    defer self.allocator.free(empty_samples);
 
-    var result: Wave = Wave.init(empty_data, self.allocator, .{
+    var result: Wave = Wave.init(empty_samples, self.allocator, .{
         .sample_rate = self.sample_rate,
         .channels = self.channels,
     });
@@ -577,21 +577,21 @@ pub fn finalize(self: Self, options: Wave.mixOptions) Wave {
     return result;
 }
 
-/// Internal helper: Pad the start of wave data with silence.
+/// Internal helper: Pad the start of wave samples with silence.
 ///
-/// Prepends `start_point` samples of silence (0.0) to the beginning of the data.
+/// Prepends `start_point` samples of silence (0.0) to the beginning of the samples.
 /// This is used to delay when a wave starts playing in the composition.
 ///
 /// ## Parameters
 ///
-/// - `data`: Original wave data
+/// - `samples`: Original wave samples
 /// - `start_point`: Number of silent samples to prepend
 /// - `allocator`: Allocator for the result
 ///
 /// ## Returns
 ///
 /// New slice with silence prepended. Caller must free.
-fn padding_for_start(data: []const f32, start_point: usize, allocator: std.mem.Allocator) []const f32 {
+fn padding_for_start(samples: []const f32, start_point: usize, allocator: std.mem.Allocator) []const f32 {
     const padding_length: usize = start_point;
     var padding: std.array_list.Aligned(f32, null) = .empty;
     defer padding.deinit(allocator);
@@ -600,37 +600,37 @@ fn padding_for_start(data: []const f32, start_point: usize, allocator: std.mem.A
     for (0..padding_length) |_|
         padding.append(allocator, 0.0) catch @panic("Out of memory");
 
-    // Append data slice
-    padding.appendSlice(allocator, data) catch @panic("Out of memory");
+    // Append samples slice
+    padding.appendSlice(allocator, samples) catch @panic("Out of memory");
 
     const result: []const f32 = padding.toOwnedSlice(allocator) catch @panic("Out of memory");
 
     return result;
 }
 
-/// Internal helper: Pad the end of wave data with silence.
+/// Internal helper: Pad the end of wave samples with silence.
 ///
-/// Appends silence (0.0) to the end of the data to reach the specified end_point.
+/// Appends silence (0.0) to the end of the samples to reach the specified end_point.
 /// This ensures all waves have the same length before mixing.
 ///
 /// ## Parameters
 ///
-/// - `data`: Original wave data (already padded at start if needed)
+/// - `samples`: Original wave samples (already padded at start if needed)
 /// - `end_point`: Target total length
 /// - `allocator`: Allocator for the result
 ///
 /// ## Returns
 ///
 /// New slice with silence appended. Caller must free.
-fn padding_for_last(data: []const f32, end_point: usize, allocator: std.mem.Allocator) []const f32 {
-    std.debug.assert(data.len <= end_point);
+fn padding_for_last(samples: []const f32, end_point: usize, allocator: std.mem.Allocator) []const f32 {
+    std.debug.assert(samples.len <= end_point);
 
-    const padding_length: usize = end_point - data.len;
+    const padding_length: usize = end_point - samples.len;
     var padding: std.array_list.Aligned(f32, null) = .empty;
     defer padding.deinit(allocator);
 
-    // Append data slice
-    padding.appendSlice(allocator, data) catch @panic("Out of memory");
+    // Append samples slice
+    padding.appendSlice(allocator, samples) catch @panic("Out of memory");
 
     // Append padding
     for (0..padding_length) |_|
@@ -643,7 +643,7 @@ fn padding_for_last(data: []const f32, end_point: usize, allocator: std.mem.Allo
 
 /// Internal helper: Generate an array of silent samples.
 ///
-/// Creates a wave data array filled with zeros (silence) of the specified length.
+/// Creates a wave samples array filled with zeros (silence) of the specified length.
 /// Used as the base for mixing all waves together.
 ///
 /// ## Parameters
@@ -654,7 +654,7 @@ fn padding_for_last(data: []const f32, end_point: usize, allocator: std.mem.Allo
 /// ## Returns
 ///
 /// Slice of zeros with the specified length. Caller must free.
-fn generate_soundless_data(length: usize, allocator: std.mem.Allocator) []const f32 {
+fn generate_soundless_samples(length: usize, allocator: std.mem.Allocator) []const f32 {
     var list: std.array_list.Aligned(f32, null) = .empty;
     defer list.deinit(allocator);
 
@@ -669,13 +669,13 @@ fn generate_soundless_data(length: usize, allocator: std.mem.Allocator) []const 
 
 test "padding_for_start" {
     const allocator = testing.allocator;
-    const data: []const f32 = &[_]f32{ 1.0, 1.0 };
+    const samples: []const f32 = &[_]f32{ 1.0, 1.0 };
     const start_point: usize = 10;
 
-    const result: []const f32 = padding_for_start(data, start_point, allocator);
+    const result: []const f32 = padding_for_start(samples, start_point, allocator);
     defer allocator.free(result);
 
-    try testing.expectEqual(data.len + start_point, result.len);
+    try testing.expectEqual(samples.len + start_point, result.len);
 
     const expected: []const f32 = &[_]f32{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0 };
     for (0..result.len) |i| {
@@ -754,14 +754,14 @@ test "finalize" {
     });
     defer composer.deinit();
 
-    var data: []f32 = try allocator.alloc(f32, 44100);
-    defer allocator.free(data);
+    var samples: []f32 = try allocator.alloc(f32, 44100);
+    defer allocator.free(samples);
 
-    for (0..data.len) |i| {
-        data[i] = 1.0;
+    for (0..samples.len) |i| {
+        samples[i] = 1.0;
     }
 
-    const wave = Wave.init(data, allocator, .{
+    const wave = Wave.init(samples, allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
@@ -778,7 +778,7 @@ test "finalize" {
     const result: Wave = appended_composer.finalize(.{});
     defer result.deinit();
 
-    try testing.expectEqual(result.data.len, 88200);
+    try testing.expectEqual(result.samples.len, 88200);
 
     try testing.expectEqual(result.sample_rate, 44100);
     try testing.expectEqual(result.channels, 1);
