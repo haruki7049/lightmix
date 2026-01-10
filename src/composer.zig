@@ -106,10 +106,10 @@
 //! }
 //!
 //! fn generateTone(freq: f32, duration: f32, sample_rate: usize, allocator: std.mem.Allocator) Wave {
-//!     const samples = @as(usize, @intFromFloat(duration * @as(f32, @floatFromInt(sample_rate))));
-//!     var samples = allocator.alloc(f32, samples) catch @panic("Out of memory");
+//!     const num_samples = @as(usize, @intFromFloat(duration * @as(f32, @floatFromInt(sample_rate))));
+//!     var samples = allocator.alloc(f32, num_samples) catch @panic("Out of memory");
 //!
-//!     for (0..samples) |i| {
+//!     for (0..num_samples) |i| {
 //!         const t = @as(f32, @floatFromInt(i)) / @as(f32, @floatFromInt(sample_rate));
 //!         samples[i] = 0.5 * @sin(2.0 * std.math.pi * freq * t);
 //!     }
