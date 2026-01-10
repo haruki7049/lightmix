@@ -252,15 +252,16 @@ pub fn mix(self: Self, other: Self, options: mixOptions) Self {
     };
 }
 
-/// Replace the wave samples from a start position to an end position with zeros.
+/// Replace the wave samples from a start position through the end of the wave with zeros.
 ///
-/// This is useful for applying silence to a portion of a wave, creating fade effects,
-/// or preparing buffers for further processing.
+/// This is useful for applying silence to the tail of a wave, creating fade-out effects,
+/// or preparing buffers for further processing. The `end` parameter should match
+/// the current length of the samples slice and is used for validation.
 ///
 /// ## Parameters
 /// - `self`: The wave to modify
 /// - `start`: The starting sample index (inclusive)
-/// - `end`: The ending sample index (exclusive)
+/// - `end`: The expected total sample length (typically `self.samples.len`)
 ///
 /// ## Returns
 /// A new Wave with the specified region filled with zeros
