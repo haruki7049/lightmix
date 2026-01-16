@@ -4,8 +4,8 @@ const Wave = lightmix.Wave;
 const allocator = std.heap.page_allocator;
 
 pub fn main() !void {
-    const data: [44100]f32 = generate_brown_noise();
-    const brown_noise: Wave = Wave.init(data[0..], allocator, .{
+    const samples: [44100]f32 = generate_brown_noise();
+    const brown_noise: Wave = Wave.init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
@@ -46,16 +46,16 @@ fn generate_brown_noise() [44100]f32 {
 fn decay(original_wave: Wave) !Wave {
     var result: std.array_list.Aligned(f32, null) = .empty;
 
-    for (original_wave.data, 0..) |data, n| {
-        const i = original_wave.data.len - n;
-        const volume: f32 = @as(f32, @floatFromInt(i)) * (1.0 / @as(f32, @floatFromInt(original_wave.data.len)));
+    for (original_wave.samples, 0..) |sample, n| {
+        const i = original_wave.samples.len - n;
+        const volume: f32 = @as(f32, @floatFromInt(i)) * (1.0 / @as(f32, @floatFromInt(original_wave.samples.len)));
 
-        const new_data = data * volume;
-        try result.append(original_wave.allocator, new_data);
+        const new_sample = sample * volume;
+        try result.append(original_wave.allocator, new_sample);
     }
 
     return Wave{
-        .data = try result.toOwnedSlice(original_wave.allocator),
+        .samples = try result.toOwnedSlice(original_wave.allocator),
         .allocator = original_wave.allocator,
 
         .sample_rate = original_wave.sample_rate,

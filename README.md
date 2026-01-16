@@ -58,7 +58,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     // Add to default build step
-    b.default_step = &wave_install_file.step;
+    b.getInstallStep().dependOn(&wave_install_file.step);
 }
 ```
 
