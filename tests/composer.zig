@@ -36,11 +36,21 @@ test "Compose multiple soundless Wave" {
     var tmpDir = std.testing.tmpDir(.{});
     defer tmpDir.cleanup();
 
-    var file = try tmpDir.dir.createFile("result.wave", .{});
+    var file = try tmpDir.dir.createFile("result.wav", .{});
     defer file.close();
 
     // Write Wave into the file
     try result.write(file, .i16);
+
+    // Read the written wave file
+    const result_bytes = try tmpDir.dir.readFileAlloc(allocator, "result.wav", 10 * 1024 * 1024);
+    defer allocator.free(result_bytes);
+
+    // Read the actual file
+    const expected_bytes = try std.fs.cwd().readFileAlloc(allocator, "tests/assets/soundless.wav", 10 * 1024 * 1024);
+    defer allocator.free(expected_bytes);
+
+    try std.testing.expectEqualSlices(u8, expected_bytes, result_bytes);
 }
 
 fn generate_soundless_data(length: usize, allocator: std.mem.Allocator) []const f32 {
