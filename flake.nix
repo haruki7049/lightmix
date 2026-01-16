@@ -89,6 +89,17 @@
               pkgs.libsndfile
             ];
           };
+
+          devShells.website = pkgs.mkShell {
+            nativeBuildInputs = [
+              # Runtime
+              pkgs.bun
+
+              # LSP
+              pkgs.nil # Nix
+              pkgs.typescript-language-server # Typescript
+            ];
+          };
         };
     };
 }
