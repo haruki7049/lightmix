@@ -181,7 +181,7 @@ pub const StepOptions = struct {
 ///     .path = .{ .custom = "share" }, // I like this path to install Wave file. This value is the default
 ///     //.path = .prefix, // You can customize it by following std.Build.InstallDir type
 /// });
-/// b.default_step = &wave_install_file.step;
+/// b.getInstallStep().dependOn(&wave_install_file.step);
 /// ```
 pub fn addWaveInstallFile(
     b: *std.Build,
