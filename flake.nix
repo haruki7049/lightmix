@@ -49,6 +49,9 @@
             programs.zig.enable = true;
             settings.formatter.zig.command = lib.getExe pkgs.zig_0_15;
 
+            # Prettier
+            programs.prettier.enable = true;
+
             # GitHub Actions
             programs.actionlint.enable = true;
 
