@@ -15,8 +15,8 @@ pub fn build(b: *std.Build) !void {
             .{ .name = "lightmix", .module = lightmix.module("lightmix") },
         },
     });
-    const wave: *std.Build.Step = try l.createWave(b, mod, .{ .func_name = "gen", .wave = .{ .bit_type = .i16 } });
-    b.getInstallStep().dependOn(wave);
+    const wave_step: *std.Build.Step = try l.createWave(b, mod, .{ .func_name = "gen", .wave = .{ .bit_type = .i16 } });
+    b.getInstallStep().dependOn(wave_step);
 
     const mod_tests = b.addTest(.{
         .root_module = mod,
