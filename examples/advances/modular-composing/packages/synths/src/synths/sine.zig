@@ -53,7 +53,7 @@ pub fn gen(
     // 各サンプルポイントでサイン波の値を計算
     for (0..samples.len) |i| {
         // 時間 t を計算（秒単位）
-        // t = サンプル番号 / サンプリングレート
+        // t = サンプルインデックス / サンプリングレート
         const t = @as(f32, @floatFromInt(i)) / @as(f32, @floatFromInt(sample_rate));
         
         // サイン波の計算: sin(2πft)
