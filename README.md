@@ -49,15 +49,15 @@ const lightmix = @import("lightmix");
 
 pub fn generate() !lightmix.Wave {
     const allocator = std.heap.page_allocator;
-    
+
     // Generate your audio data (example: 1 second of silence)
     const data: [44100]f32 = [_]f32{0.0} ** 44100;
-    
+
     const wave = lightmix.Wave.init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
-    
+
     return wave;
 }
 ```
@@ -93,7 +93,7 @@ pub fn build(b: *std.Build) !void {
         },
         .path = .{ .custom = "share" },  // Install directory (optional, defaults to "share")
     });
-    
+
     // Add to the install step so it runs during `zig build`
     b.getInstallStep().dependOn(wave_step);
 }
