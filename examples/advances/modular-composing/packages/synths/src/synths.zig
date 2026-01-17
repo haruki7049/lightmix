@@ -1,13 +1,13 @@
 //! Synths Package
 //!
-//! このパッケージは音声合成エンジン（シンセサイザー）を提供します。
-//! 各シンセサイザーは、指定された音程と長さで音声波形を生成します。
+//! This package provides audio synthesis engines (synthesizers).
+//! Each synthesizer generates audio waveforms at specified pitches and durations.
 //!
-//! 現在はサイン波オシレーターのみを提供していますが、将来的には
-//! 矩形波、のこぎり波、三角波などの他の波形も追加できます。
+//! Currently, only a sine wave oscillator is provided, but other waveforms
+//! such as square wave, sawtooth wave, and triangle wave can be added in the future.
 
-/// サイン波シンセサイザー
+/// Sine Wave Synthesizer
 ///
-/// 指定された音程で純粋なサイン波を生成します。
-/// サイン波は最も基本的な波形で、倍音を含まない純音です。
+/// Generates pure sine waves at specified pitches.
+/// A sine wave is the most basic waveform and is a pure tone without harmonics.
 pub const Sine = @import("./synths/sine.zig");

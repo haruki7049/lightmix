@@ -1,8 +1,8 @@
 //! Modular Composing Example
 //!
-//! このモジュールは、lightmixを使用してモジュラー構成で音声を生成する方法を示します。
-//! 独立したパッケージ（temperaments と synths）を組み合わせて、
-//! C4（中央のド）のサイン波を生成します。
+//! This module demonstrates how to generate audio using a modular architecture with lightmix.
+//! It combines independent packages (temperaments and synths) to generate a sine wave
+//! at C4 (middle C).
 
 const std = @import("std");
 const lightmix = @import("lightmix");
@@ -10,26 +10,26 @@ const synths = @import("synths");
 
 const Wave = lightmix.Wave;
 
-/// 音声波形を生成する関数
+/// Generate an audio waveform
 ///
-/// この関数は、C4（中央のド、MIDI番号60、約261.63Hz）の
-/// サイン波を1秒間生成します。
+/// This function generates a sine wave at C4 (middle C, MIDI number 60, approximately 261.63Hz)
+/// for 1 second.
 ///
-/// ## 戻り値
-/// - `Wave`: 生成された音声波形データ
+/// ## Returns
+/// - `Wave`: The generated audio waveform data
 ///
-/// ## エラー
-/// - メモリ割り当てに失敗した場合にエラーを返します
+/// ## Errors
+/// - Returns an error if memory allocation fails
 pub fn gen() !Wave {
-    // ページアロケータを使用してメモリを管理
+    // Use page allocator for memory management
     const allocator = std.heap.page_allocator;
     
-    // synths.Sine.gen を呼び出してサイン波を生成
-    // 引数:
-    //   - allocator: メモリアロケータ
-    //   - length: 44100 サンプル（44.1kHzで1秒）
-    //   - sample_rate: 44100 Hz（CD品質）
-    //   - channels: 1（モノラル）
-    //   - scale: C4（中央のド、オクターブ4）
+    // Call synths.Sine.gen to generate the sine wave
+    // Arguments:
+    //   - allocator: Memory allocator
+    //   - length: 44100 samples (1 second at 44.1kHz)
+    //   - sample_rate: 44100 Hz (CD quality)
+    //   - channels: 1 (mono)
+    //   - scale: C4 (middle C, octave 4)
     return synths.Sine.gen(allocator, 44100, 44100, 1, .{ .code = .c, .octave = 4 });
 }

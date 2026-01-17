@@ -1,16 +1,16 @@
-//! Twelve Equal Temperament (十二平均律)
+//! Twelve Equal Temperament
 //!
-//! このモジュールは十二平均律を実装しています。
-//! 十二平均律は、1オクターブを12の等しい半音に分割する音律システムで、
-//! 各半音の周波数比は2^(1/12)です。これにより、どの調でも同じ音程関係を
-//! 保つことができます（転調が自由）。
+//! This module implements twelve equal temperament.
+//! Twelve equal temperament is a tuning system that divides one octave into 12 equal semitones,
+//! with each semitone having a frequency ratio of 2^(1/12). This allows the same pitch relationships
+//! to be maintained in any key (allowing free transposition).
 //!
-//! ## 使用例
+//! ## Usage Example
 //! ```zig
 //! const scale = TwelveEqualTemperament{ .code = .c, .octave = 4 };
-//! const freq = scale.gen(); // C4の周波数（約261.63 Hz）を取得
+//! const freq = scale.gen(); // Get the frequency of C4 (approximately 261.63 Hz)
 //!
-//! const d4 = scale.add(2); // D4に移動（2半音上）
+//! const d4 = scale.add(2); // Move to D4 (2 semitones up)
 //! ```
 
 const std = @import("std");
@@ -18,36 +18,36 @@ const testing = std.testing;
 
 const Self = @This();
 
-/// 音名コード（C, C#, D, ...など）
+/// Note code (C, C#, D, etc.)
 code: Code,
 
-/// オクターブ番号（C4の場合は4）
+/// Octave number (4 for C4)
 octave: usize,
 
-/// 指定した半音数だけ音程を移動する
+/// Move the pitch by the specified number of semitones
 ///
-/// ## 引数
-/// - `self`: 現在の音程
-/// - `semitones`: 移動する半音数（正の値で上昇、負の値で下降）
+/// ## Arguments
+/// - `self`: Current pitch
+/// - `semitones`: Number of semitones to move (positive for up, negative for down)
 ///
-/// ## 戻り値
-/// 移動後の音程を表す新しい`Self`インスタンス
+/// ## Returns
+/// A new `Self` instance representing the moved pitch
 ///
-/// ## 例
+/// ## Example
 /// ```zig
 /// const c4 = TwelveEqualTemperament{ .code = .c, .octave = 4 };
-/// const e4 = c4.add(4); // C4から4半音上のE4
-/// const a3 = c4.add(-3); // C4から3半音下のA3
+/// const e4 = c4.add(4); // E4, 4 semitones up from C4
+/// const a3 = c4.add(-3); // A3, 3 semitones down from C4
 /// ```
 pub fn add(self: Self, semitones: isize) Self {
-    // 現在の音程をMIDI番号に変換（C-1 = 0, A4 = 69）
+    // Convert current pitch to MIDI number (C-1 = 0, A4 = 69)
     const self_midi_number: isize = @intCast(12 * (self.octave + 1) + @intFromEnum(self.code));
     
-    // 半音数を加算
+    // Add semitones
     const result_midi_number: isize = self_midi_number + semitones;
 
-    // MIDI番号を音名コードとオクターブに分解
-    // 12で割った余りが音名、商からオクターブを計算
+    // Decompose MIDI number into note code and octave
+    // Remainder of division by 12 is the note, quotient gives the octave
     const result_code: Code = @enumFromInt(@as(u8, @intCast(@mod(result_midi_number, 12))));
     const result_octave: usize = @intCast(@divTrunc(result_midi_number, 12) - 1);
 
@@ -57,53 +57,53 @@ pub fn add(self: Self, semitones: isize) Self {
     };
 }
 
-/// 音程から周波数（Hz）を計算する
+/// Calculate frequency (Hz) from pitch
 ///
-/// 十二平均律における周波数計算式を使用します：
+/// Uses the frequency calculation formula for twelve equal temperament:
 /// f = 440 * 2^((midi_number-69)/12)
-/// ここで、midi_numberはMIDI番号、440HzはA4（MIDI番号69）の基準周波数です。
+/// where midi_number is the MIDI number, and 440Hz is the reference frequency for A4 (MIDI number 69).
 ///
-/// ## 引数
-/// - `scale`: 周波数を計算する音程
+/// ## Arguments
+/// - `scale`: Pitch to calculate frequency for
 ///
-/// ## 戻り値
-/// 音程の周波数（Hz）
+/// ## Returns
+/// Frequency of the pitch (Hz)
 ///
-/// ## 例
+/// ## Example
 /// ```zig
 /// const a4 = TwelveEqualTemperament{ .code = .a, .octave = 4 };
 /// const freq = a4.gen(); // 440.0 Hz
 /// ```
 pub fn gen(scale: Self) f32 {
-    // 音程をMIDI番号に変換
+    // Convert pitch to MIDI number
     const midi_number: isize = @intCast(12 * (scale.octave + 1) + @intFromEnum(scale.code));
     
-    // A4（MIDI番号69、440Hz）からの半音差を計算
+    // Calculate semitone difference from A4 (MIDI number 69, 440Hz)
     const exp: f32 = @floatFromInt(midi_number - 69);
     
-    // 十二平均律の公式: f = 440 * 2^((midi_number-69)/12)
+    // Twelve equal temperament formula: f = 440 * 2^((midi_number-69)/12)
     const result: f32 = 440.0 * std.math.pow(f32, 2.0, exp / 12.0);
     return result;
 }
 
-/// 音名コード
+/// Note code
 ///
-/// `~s`が付くコードはシャープ（#）を表します。
-/// 例：`cs`はC#（ド・シャープ）
+/// Codes with `~s` represent sharp (#).
+/// Example: `cs` is C# (C sharp)
 ///
-/// ## 音名とMIDI番号の対応
-/// - c (0): ド
-/// - cs (1): ド♯
-/// - d (2): レ
-/// - ds (3): レ♯
-/// - e (4): ミ
-/// - f (5): ファ
-/// - fs (6): ファ♯
-/// - g (7): ソ
-/// - gs (8): ソ♯
-/// - a (9): ラ
-/// - as (10): ラ♯
-/// - b (11): シ
+/// ## Note names and MIDI number mapping
+/// - c (0): C
+/// - cs (1): C♯
+/// - d (2): D
+/// - ds (3): D♯
+/// - e (4): E
+/// - f (5): F
+/// - fs (6): F♯
+/// - g (7): G
+/// - gs (8): G♯
+/// - a (9): A
+/// - as (10): A♯
+/// - b (11): B
 pub const Code = enum(u8) {
     c = 0,
     cs = 1,

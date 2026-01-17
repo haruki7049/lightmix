@@ -1,32 +1,32 @@
 # Modular Composing Example
 
-このサンプルは、lightmixを使用してモジュラー構成でオーディオを生成する方法を示しています。
+This example demonstrates how to generate audio using a modular architecture with lightmix.
 
-## 概要
+## Overview
 
-このプロジェクトは、音楽理論と合成の概念を独立したパッケージに分離し、それらを組み合わせて音声を生成する方法を示します。
+This project shows how to separate music theory and synthesis concepts into independent packages and combine them to generate audio.
 
-- **temperaments**: 音律（調律システム）を定義するパッケージ
-- **synths**: 音声合成エンジンを提供するパッケージ
+- **temperaments**: Package defining tuning systems
+- **synths**: Package providing audio synthesis engines
 
-これらのパッケージを組み合わせることで、柔軟で保守性の高いオーディオ生成システムを構築できます。
+By combining these packages, you can build a flexible and maintainable audio generation system.
 
-## プロジェクト構造
+## Project Structure
 
 ```
 modular-composing/
-├── build.zig              # ビルド設定
-├── build.zig.zon         # 依存関係の定義
+├── build.zig              # Build configuration
+├── build.zig.zon         # Dependency definitions
 ├── src/
-│   └── root.zig          # メインエントリーポイント
+│   └── root.zig          # Main entry point
 └── packages/
-    ├── temperaments/     # 音律パッケージ
+    ├── temperaments/     # Tuning system package
     │   ├── src/
     │   │   ├── root.zig
     │   │   └── twelve_equal_temperament.zig
     │   ├── build.zig
     │   └── build.zig.zon
-    └── synths/           # シンセサイザーパッケージ
+    └── synths/           # Synthesizer package
         ├── src/
         │   ├── synths.zig
         │   └── synths/
@@ -35,55 +35,55 @@ modular-composing/
         └── build.zig.zon
 ```
 
-## パッケージの説明
+## Package Descriptions
 
 ### temperaments
 
-音律（音階のチューニングシステム）を提供します。現在は十二平均律（Twelve Equal Temperament）を実装しています。
+Provides tuning systems (scale tuning systems). Currently implements Twelve Equal Temperament.
 
-主な機能：
-- MIDI番号から周波数への変換
-- 半音単位での音程操作
-- 音名とオクターブの管理
+Key features:
+- Convert MIDI numbers to frequencies
+- Manipulate pitches by semitones
+- Manage note names and octaves
 
 ### synths
 
-シンセサイザーエンジンを提供します。現在はサイン波オシレーターを実装しています。
+Provides synthesizer engines. Currently implements a sine wave oscillator.
 
-主な機能：
-- 指定された音程でサイン波を生成
-- サンプルレートとチャンネル数のカスタマイズ
+Key features:
+- Generate sine waves at specified pitches
+- Customize sample rate and channel count
 
-## 使い方
+## Usage
 
-このディレクトリで以下のコマンドを実行すると、`result.wav`ファイルが生成されます：
+Run the following command in this directory to generate a `result.wav` file:
 
 ```bash
 zig build
 ```
 
-生成されるファイルは、C4（中央のド）の音を1秒間再生するサイン波の音声ファイルです。
+The generated file is an audio file containing a sine wave playing C4 (middle C) for 1 second.
 
-## 拡張方法
+## Extension Methods
 
-このサンプルは、以下のように拡張できます：
+This example can be extended in the following ways:
 
-1. **新しい音律の追加**: `temperaments`パッケージに新しい音律（例：純正律、ピタゴラス音律）を追加
-2. **新しいシンセサイザーの追加**: `synths`パッケージに新しい波形（例：矩形波、のこぎり波、三角波）を追加
-3. **複雑な音楽の作成**: 複数の音を組み合わせて和音やメロディーを作成
+1. **Add new tuning systems**: Add new tuning systems to the `temperaments` package (e.g., just intonation, Pythagorean tuning)
+2. **Add new synthesizers**: Add new waveforms to the `synths` package (e.g., square wave, sawtooth wave, triangle wave)
+3. **Create complex music**: Combine multiple notes to create chords and melodies
 
-## 技術的な特徴
+## Technical Features
 
-- **モジュラー設計**: 各機能が独立したパッケージとして実装されている
-- **Zigビルドシステムの活用**: `build.zig`でパッケージ依存関係を管理
-- **型安全**: Zigの強力な型システムを活用した安全な実装
-- **ビルド時生成**: コンパイル時にWAVファイルを生成
+- **Modular design**: Each feature is implemented as an independent package
+- **Leverage Zig build system**: Manage package dependencies with `build.zig`
+- **Type safety**: Safe implementation leveraging Zig's powerful type system
+- **Build-time generation**: Generate WAV files at compile time
 
-## 必要な環境
+## Requirements
 
-- Zig 0.15.2 以上
-- lightmix ライブラリ
+- Zig 0.15.2 or later
+- lightmix library
 
-## ライセンス
+## License
 
-このプロジェクトは lightmix プロジェクトの一部であり、同じライセンスが適用されます。
+This project is part of the lightmix project and is subject to the same license.

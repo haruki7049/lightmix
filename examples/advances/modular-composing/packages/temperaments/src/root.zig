@@ -1,13 +1,14 @@
 //! Temperaments Package
 //!
-//! このパッケージは音律（音階のチューニングシステム）を提供します。
-//! 音律とは、音楽で使用される音程の相対的な周波数関係を定義するシステムです。
+//! This package provides tuning systems (scale tuning systems).
+//! A tuning system is a system that defines the relative frequency relationships
+//! of pitches used in music.
 //!
-//! 現在は十二平均律（Twelve Equal Temperament）のみを提供していますが、
-//! 将来的には純正律、ピタゴラス音律などの他の音律も追加できます。
+//! Currently, only Twelve Equal Temperament is provided, but other tuning systems
+//! such as just intonation and Pythagorean tuning can be added in the future.
 
-/// 十二平均律（Twelve Equal Temperament）
+/// Twelve Equal Temperament
 /// 
-/// 1オクターブを12の等しい半音に分割する音律システムです。
-/// 西洋音楽で最も一般的に使用されています。
+/// A tuning system that divides one octave into 12 equal semitones.
+/// This is the most commonly used tuning system in Western music.
 pub const TwelveEqualTemperament = @import("./twelve_equal_temperament.zig");

@@ -1,12 +1,12 @@
-//! Sine Wave Synthesizer (サイン波シンセサイザー)
+//! Sine Wave Synthesizer
 //!
-//! このモジュールは、純粋なサイン波を生成するシンセサイザーを実装しています。
-//! サイン波は最も基本的な波形で、単一の周波数成分のみを持つ純音です。
+//! This module implements a synthesizer that generates pure sine waves.
+//! A sine wave is the most basic waveform and is a pure tone with only a single frequency component.
 //!
-//! ## 特徴
-//! - 倍音を含まない純粋な音色
-//! - 音叉や正弦波オシレーターと同じ音色
-//! - 音響学やシンセサイザーの基本となる波形
+//! ## Features
+//! - Pure tone without harmonics
+//! - Same tone as a tuning fork or sine wave oscillator
+//! - Fundamental waveform for acoustics and synthesizers
 
 const std = @import("std");
 const lightmix = @import("lightmix");
@@ -15,28 +15,29 @@ const temperaments = @import("temperaments");
 const Wave = lightmix.Wave;
 const Scale = temperaments.TwelveEqualTemperament;
 
-/// 指定された音程でサイン波を生成する
+/// Generate a sine wave at the specified pitch
 ///
-/// この関数は、与えられた音程（音階）に基づいてサイン波の音声データを生成します。
-/// 生成される波形は y = sin(2πft) の形式で、fは音程から計算される周波数です。
+/// This function generates sine wave audio data based on the given pitch (scale).
+/// The generated waveform is in the form y = sin(2πft), where f is the frequency
+/// calculated from the pitch.
 ///
-/// ## 引数
-/// - `allocator`: メモリアロケータ（生成されたサンプルデータの管理に使用）
-/// - `length`: 生成するサンプル数（例：44100サンプルで1秒@44.1kHz）
-/// - `sample_rate`: サンプリングレート（Hz）。一般的な値は44100（CD品質）または48000
-/// - `channels`: チャンネル数（1=モノラル、2=ステレオ）
-/// - `scale`: 音程（音名とオクターブを含む）
+/// ## Arguments
+/// - `allocator`: Memory allocator (used to manage generated sample data)
+/// - `length`: Number of samples to generate (e.g., 44100 samples for 1 second at 44.1kHz)
+/// - `sample_rate`: Sampling rate (Hz). Common values are 44100 (CD quality) or 48000
+/// - `channels`: Number of channels (1=mono, 2=stereo)
+/// - `scale`: Pitch (including note name and octave)
 ///
-/// ## 戻り値
-/// - `Wave`: 生成されたサイン波の音声データを含むWaveオブジェクト
+/// ## Returns
+/// - `Wave`: A Wave object containing the generated sine wave audio data
 ///
-/// ## エラー
-/// - メモリ割り当てに失敗した場合にエラーを返します
+/// ## Errors
+/// - Returns an error if memory allocation fails
 ///
-/// ## 例
+/// ## Example
 /// ```zig
 /// const allocator = std.heap.page_allocator;
-/// const scale = Scale{ .code = .a, .octave = 4 }; // A4（440Hz）
+/// const scale = Scale{ .code = .a, .octave = 4 }; // A4 (440Hz)
 /// const wave = try Sine.gen(allocator, 44100, 44100, 1, scale);
 /// defer wave.deinit();
 /// ```
@@ -47,22 +48,22 @@ pub fn gen(
     channels: u16,
     scale: Scale,
 ) !Wave {
-    // 指定された長さ分のサンプルデータを割り当て
+    // Allocate sample data for the specified length
     var samples = try allocator.alloc(f32, length);
 
-    // 各サンプルポイントでサイン波の値を計算
+    // Calculate sine wave values at each sample point
     for (0..samples.len) |i| {
-        // 時間 t を計算（秒単位）
-        // t = サンプルインデックス / サンプリングレート
+        // Calculate time t (in seconds)
+        // t = sample index / sampling rate
         const t = @as(f32, @floatFromInt(i)) / @as(f32, @floatFromInt(sample_rate));
         
-        // サイン波の計算: sin(2πft)
-        // scale.gen() で周波数fを取得
-        // 2πft はラジアン単位の位相
+        // Calculate sine wave: sin(2πft)
+        // scale.gen() gets the frequency f
+        // 2πft is the phase in radians
         samples[i] = @sin(t * scale.gen() * 2.0 * std.math.pi);
     }
 
-    // Waveオブジェクトを初期化して返す
+    // Initialize and return the Wave object
     return Wave.init(samples, allocator, .{
         .sample_rate = sample_rate,
         .channels = channels,
