@@ -3,9 +3,7 @@ const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
 const allocator = std.heap.page_allocator;
 
-pub fn generate(options: Options) !Wave {
-    std.debug.print("example_option: {d}\n", .{options.example_option});
-
+pub fn generate() !Wave {
     const data: [44100]f32 = generate_sinewave_data();
     const result: Wave = Wave.init(data[0..], allocator, .{
         .sample_rate = 44100,
@@ -14,8 +12,6 @@ pub fn generate(options: Options) !Wave {
 
     return result;
 }
-
-pub const Options = struct { example_option: u8 };
 
 const c_5: f32 = 523.251;
 const volume: f32 = 1.0;
