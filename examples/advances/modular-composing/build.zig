@@ -7,6 +7,7 @@ pub fn build(b: *std.Build) !void {
 
     const lightmix = b.dependency("lightmix", .{});
     const synths = b.dependency("synths", .{});
+    const temperaments = b.dependency("temperaments", .{});
 
     const mod = b.addModule("modular-composing", .{
         .root_source_file = b.path("src/root.zig"),
@@ -15,6 +16,7 @@ pub fn build(b: *std.Build) !void {
         .imports = &.{
             .{ .name = "lightmix", .module = lightmix.module("lightmix") },
             .{ .name = "synths", .module = synths.module("synths") },
+            .{ .name = "temperaments", .module = temperaments.module("temperaments") },
         },
     });
     const wave_step: *std.Build.Step = try l.createWave(b, mod, .{ .func_name = "gen", .wave = .{ .bit_type = .i16 } });

@@ -6,6 +6,7 @@
 
     .dependencies = .{
         .lightmix = .{ .path = "../../../../.." },
+        .temperaments = .{ .path = "../temperaments" },
     },
 
     .paths = .{
