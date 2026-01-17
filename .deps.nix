@@ -8,13 +8,6 @@
 
 linkFarm "zig-packages" [
   {
-    name = "known_folders-0.0.0-Fy-PJtTTAADUOhGKM0sxzG4eMkNQxRvx9e5dfHVyaeA3";
-    path = fetchzip {
-      url = "https://github.com/ziglibs/known-folders/archive/ab5cf5feb936fa3b72c95d3ad0c0c67791937ba1.tar.gz";
-      hash = "sha256-Pdn/nUclhHBB1COTzNNR5ysE13h6uLOFJjuFrasv/2I=";
-    };
-  }
-  {
     name = "lightmix_wav-0.5.0-IIrulooTVQD9sWDdiGai2Ix5sP7uzZ8YrBY1oGt0BhKz";
     path = fetchzip {
       url = "https://github.com/haruki7049/lightmix_wav/archive/refs/tags/0.5.0.tar.gz";
