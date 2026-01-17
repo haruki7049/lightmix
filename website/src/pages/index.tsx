@@ -1,7 +1,9 @@
-import { Hono } from 'hono'
+import "./globals.css" with { type: "css" };
+import { Hono } from 'hono';
+import { serveStatic } from "hono/bun";
 import type { FC } from "hono/jsx";
 
-const app = new Hono()
+const app = new Hono();
 
 const Layout: FC = (props) => {
   return (
@@ -26,9 +28,9 @@ const Top: FC<{ messages: string[] }> = (props: {
   );
 };
 
-app.get('/', (c) => {
-  const messages = ["Good Morning", "Good Evening", "Good Night"];
-  return c.html(<Top messages={messages} />);
-})
+app.get("/", (c) => {
+    const messages = ["hoge"];
+    return c.html(<Top messages={messages} />);
+});
 
-export default app
+export default app;
