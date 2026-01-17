@@ -1,23 +1,28 @@
 const std = @import("std");
-const lightmix = @import("lightmix");
+const l = @import("lightmix");
 
 pub fn build(b: *std.Build) !void {
-    const root = @import("./src/root.zig");
+    const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
 
-    const wave: lightmix.Wave = try root.generate(.{ .example_option = 7 });
-    defer wave.deinit();
+    const lightmix = b.dependency("lightmix", .{});
 
-    const wave_install_file: *std.Build.Step.InstallFile = try lightmix.addWaveInstallFile(b, wave, .{
-        .wave = .{ .name = "result.wav", .bit_type = .i16 },
-        .path = .{ .custom = "share" },
+    const mod = b.createModule(.{
+        .root_source_file = b.path("src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "lightmix", .module = lightmix.module("lightmix") },
+        },
     });
+    const wave_step: *std.Build.Step = try l.createWave(b, mod, .{ .func_name = "generate", .wave = .{ .bit_type = .i16 } });
+    b.getInstallStep().dependOn(wave_step);
 
-    const debug_play_step = try lightmix.addDebugPlayStep(b, wave, .{
-        .step = .{ .name = "debug", .description = "Play your wave instantly" },
-        .command = &[_][]const u8{"play"},
-        .wave = .{ .name = "result.wav", .bit_type = .i16 },
+    const mod_tests = b.addTest(.{
+        .root_module = mod,
     });
+    const run_mod_tests = b.addRunArtifact(mod_tests);
 
-    debug_play_step.dependOn(&wave_install_file.step);
-    b.getInstallStep().dependOn(&wave_install_file.step);
+    const test_step = b.step("test", "Run tests");
+    test_step.dependOn(&run_mod_tests.step);
 }
