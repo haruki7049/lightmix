@@ -1,12 +1,11 @@
 .{
-    .name = .modular_composing,
+    .name = .synths,
     .version = "0.0.0",
-    .fingerprint = 0xf05ee580c12b42d4,
+    .fingerprint = 0x249fdde76d58985d,
     .minimum_zig_version = "0.15.2",
 
     .dependencies = .{
-        .lightmix = .{ .path = "../../.." },
-        .synths = .{ .path = "packages/synths" },
+        .lightmix = .{ .path = "../../../../.." },
     },
 
     .paths = .{
