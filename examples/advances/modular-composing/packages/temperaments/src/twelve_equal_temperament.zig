@@ -60,8 +60,8 @@ pub fn add(self: Self, semitones: isize) Self {
 /// 音程から周波数（Hz）を計算する
 ///
 /// 十二平均律における周波数計算式を使用します：
-/// f = 440 * 2^((n-69)/12)
-/// ここで、nはMIDI番号、440HzはA4（MIDI番号69）の基準周波数です。
+/// f = 440 * 2^((midi_number-69)/12)
+/// ここで、midi_numberはMIDI番号、440HzはA4（MIDI番号69）の基準周波数です。
 ///
 /// ## 引数
 /// - `scale`: 周波数を計算する音程
@@ -81,7 +81,7 @@ pub fn gen(scale: Self) f32 {
     // A4（MIDI番号69、440Hz）からの半音差を計算
     const exp: f32 = @floatFromInt(midi_number - 69);
     
-    // 十二平均律の公式: f = 440 * 2^((n-69)/12)
+    // 十二平均律の公式: f = 440 * 2^((midi_number-69)/12)
     const result: f32 = 440.0 * std.math.pow(f32, 2.0, exp / 12.0);
     return result;
 }
