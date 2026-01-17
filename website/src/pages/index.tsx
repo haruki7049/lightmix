@@ -1,5 +1,5 @@
 import "./globals.css" with { type: "css" };
-import { Hono } from 'hono';
+import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import type { FC } from "hono/jsx";
 
@@ -13,15 +13,13 @@ const Layout: FC = (props) => {
   );
 };
 
-const Top: FC<{ messages: string[] }> = (props: {
-  messages: string[]
-}) => {
+const Top: FC<{ messages: string[] }> = (props: { messages: string[] }) => {
   return (
     <Layout>
       <h1>Hello Hono!</h1>
       <ul>
         {props.messages.map((message) => {
-          return <li>{message}!!</li>
+          return <li>{message}!!</li>;
         })}
       </ul>
     </Layout>
@@ -29,8 +27,8 @@ const Top: FC<{ messages: string[] }> = (props: {
 };
 
 app.get("/", (c) => {
-    const messages = ["hoge"];
-    return c.html(<Top messages={messages} />);
+  const messages = ["hoge"];
+  return c.html(<Top messages={messages} />);
 });
 
 export default app;
