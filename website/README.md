@@ -1,10 +1,11 @@
-# Vue 3 + TypeScript + Vite
-
-## How to build / deploy
-
-```bash
-nix-shell
+To install dependencies:
+```sh
 bun install
-bun run build
-# Take ./dist directory
 ```
+
+To run:
+```sh
+bun run dev
+```
+
+open http://localhost:3000

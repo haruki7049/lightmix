@@ -1,4 +1,7 @@
 {
-  "extends": "@vue/tsconfig/tsconfig.dom.json",
-  "files": []
+  "compilerOptions": {
+    "strict": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx"
+  }
 }
