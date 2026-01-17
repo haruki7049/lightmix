@@ -228,3 +228,79 @@ pub const WavefileOptions = struct {
     /// The bit depth for the wave file (e.g., .i16, .f32)
     bit_type: l_wav.BitType,
 };
+
+pub fn createWave(
+    b: *std.Build,
+    mod: *std.Build.Module,
+    options: CreateWaveOptions,
+) !*std.Build.Step {
+    // Create .zig-cache/lightmix directory
+    b.cache_root.handle.access("lightmix", .{}) catch {
+        try b.cache_root.handle.makeDir("lightmix");
+    };
+
+    // Create a wave file in .zig-cache/lightmix
+    const tmp_path: []const u8 = try std.fs.path.join(b.allocator, &[_][]const u8{ ".zig-cache", "lightmix", options.wave.name });
+    // Generate temporary Zig code that calls the user's function
+    const gen_source = try std.fmt.allocPrint(b.allocator,
+        \\const std = @import("std");
+        \\const user_module = @import("user_module");
+        \\
+        \\pub fn main() !void {{
+        \\    const wave = try user_module.{s}();
+        \\    defer wave.deinit();
+        \\
+        \\    var file = try std.fs.cwd().createFile("{s}", .{{}});
+        \\    defer file.close();
+        \\
+        \\    try wave.write(file, .{s});
+        \\}}
+    , .{
+        options.func_name,
+        tmp_path,
+        @tagName(options.wave.bit_type),
+    });
+
+    // Create a write files step to generate the temporary source
+    const write_files = b.addWriteFiles();
+    const gen_file = write_files.add("wave_gen.zig", gen_source);
+
+    // Create executable that generates the wave
+    const gen_exe = b.addExecutable(.{
+        .name = "wave_generator",
+        .root_module = b.createModule(.{
+            .root_source_file = gen_file,
+            .target = b.graph.host,
+            .optimize = .Debug,
+            .imports = &.{
+                .{ .name = "user_module", .module = mod },
+            },
+        }),
+    });
+
+    // Run the generator during build
+    const run_gen = b.addRunArtifact(gen_exe);
+
+    const src_path: []const u8 = try std.fs.path.join(b.allocator, &[_][]const u8{ ".zig-cache", "lightmix", options.wave.name });
+    // Install the generated wave file
+    const install_wave = b.addInstallFileWithDir(
+        b.path(src_path),
+        options.path,
+        options.wave.name,
+    );
+    install_wave.step.dependOn(&run_gen.step);
+
+    return &install_wave.step;
+}
+
+pub const CreateWaveOptions = struct {
+    /// Name of the function in the module that generates the Wave.
+    /// The function must have signature: `pub fn name() !lightmix.Wave`
+    func_name: []const u8 = "gen",
+
+    /// Destination path relative to the install prefix
+    path: std.Build.InstallDir = .{ .custom = "share" },
+
+    /// Configuration for the wave file (name and bit type)
+    wave: WavefileOptions,
+};

@@ -1,0 +1,14 @@
+.{
+    .name = .modular_composing,
+    .version = "0.0.0",
+    .fingerprint = 0xf05ee580c12b42d4,
+    .minimum_zig_version = "0.15.2",
+
+    .dependencies = .{ .lightmix = .{ .path = "../../.." } },
+
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
