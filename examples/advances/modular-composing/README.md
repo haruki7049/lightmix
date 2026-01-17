@@ -42,6 +42,7 @@ modular-composing/
 Provides tuning systems (scale tuning systems). Currently implements Twelve Equal Temperament.
 
 Key features:
+
 - Convert MIDI numbers to frequencies
 - Manipulate pitches by semitones
 - Manage note names and octaves
@@ -51,6 +52,7 @@ Key features:
 Provides synthesizer engines. Currently implements a sine wave oscillator.
 
 Key features:
+
 - Generate sine waves at specified pitches
 - Customize sample rate and channel count
 
@@ -69,8 +71,8 @@ The generated file is an audio file containing a sine wave playing C4 (middle C)
 This example can be extended in the following ways:
 
 1. **Add new tuning systems**: Add new tuning systems to the `temperaments` package (e.g., just intonation, Pythagorean tuning)
-2. **Add new synthesizers**: Add new waveforms to the `synths` package (e.g., square wave, sawtooth wave, triangle wave)
-3. **Create complex music**: Combine multiple notes to create chords and melodies
+1. **Add new synthesizers**: Add new waveforms to the `synths` package (e.g., square wave, sawtooth wave, triangle wave)
+1. **Create complex music**: Combine multiple notes to create chords and melodies
 
 ## Technical Features
 

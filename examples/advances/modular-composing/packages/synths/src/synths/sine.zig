@@ -56,7 +56,7 @@ pub fn gen(
         // Calculate time t (in seconds)
         // t = sample index / sampling rate
         const t = @as(f32, @floatFromInt(i)) / @as(f32, @floatFromInt(sample_rate));
-        
+
         // Calculate sine wave: sin(2πft)
         // scale.gen() gets the frequency f
         // 2πft is the phase in radians

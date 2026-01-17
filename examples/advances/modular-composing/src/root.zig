@@ -23,7 +23,7 @@ const Wave = lightmix.Wave;
 pub fn gen() !Wave {
     // Use page allocator for memory management
     const allocator = std.heap.page_allocator;
-    
+
     // Call synths.Sine.gen to generate the sine wave
     // Arguments:
     //   - allocator: Memory allocator

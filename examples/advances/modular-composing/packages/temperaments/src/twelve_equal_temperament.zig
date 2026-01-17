@@ -42,7 +42,7 @@ octave: usize,
 pub fn add(self: Self, semitones: isize) Self {
     // Convert current pitch to MIDI number (C-1 = 0, A4 = 69)
     const self_midi_number: isize = @intCast(12 * (self.octave + 1) + @intFromEnum(self.code));
-    
+
     // Add semitones
     const result_midi_number: isize = self_midi_number + semitones;
 
@@ -77,10 +77,10 @@ pub fn add(self: Self, semitones: isize) Self {
 pub fn gen(scale: Self) f32 {
     // Convert pitch to MIDI number
     const midi_number: isize = @intCast(12 * (scale.octave + 1) + @intFromEnum(scale.code));
-    
+
     // Calculate semitone difference from A4 (MIDI number 69, 440Hz)
     const exp: f32 = @floatFromInt(midi_number - 69);
-    
+
     // Twelve equal temperament formula: f = 440 * 2^((midi_number-69)/12)
     const result: f32 = 440.0 * std.math.pow(f32, 2.0, exp / 12.0);
     return result;
