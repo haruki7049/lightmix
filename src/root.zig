@@ -93,7 +93,7 @@
 //! ## Build-time Utilities
 //!
 //! lightmix provides build.zig helper functions for generating Wave files at build time.
-//! See `addWaveInstallFile()`, `EmitWaveOptions`, and `WavefileOptions` in the library's
+//! See `createWave()`, `CreateWaveOptions`, and `WavefileOptions` in the library's
 //! build.zig for details on generating and installing Wave files as build artifacts.
 //!
 //! For more examples, see the [examples directory](https://github.com/haruki7049/lightmix/tree/main/examples).

@@ -6,17 +6,24 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
 
     const lightmix = b.dependency("lightmix", .{});
+    const temperaments = b.dependency("temperaments", .{});
 
-    const mod = b.createModule(.{
-        .root_source_file = b.path("src/root.zig"),
+    const mod = b.addModule("synths", .{
+        .root_source_file = b.path("src/synths.zig"),
         .target = target,
         .optimize = optimize,
         .imports = &.{
             .{ .name = "lightmix", .module = lightmix.module("lightmix") },
+            .{ .name = "temperaments", .module = temperaments.module("temperaments") },
         },
     });
-    const wave_step: *std.Build.Step = try l.createWave(b, mod, .{ .func_name = "generate", .wave = .{ .bit_type = .i16 } });
-    b.getInstallStep().dependOn(wave_step);
+
+    // Install lib as a static library
+    const lib = b.addLibrary(.{
+        .name = "synths",
+        .root_module = mod,
+    });
+    b.installArtifact(lib);
 
     const mod_tests = b.addTest(.{
         .root_module = mod,

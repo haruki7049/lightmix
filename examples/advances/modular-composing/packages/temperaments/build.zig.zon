@@ -1,10 +1,10 @@
 .{
-    .name = .generate_with_debug_play,
+    .name = .temperaments,
     .version = "0.0.0",
-    .fingerprint = 0x397a3b91015a3229,
+    .fingerprint = 0x24b8773a7d72da8c,
     .minimum_zig_version = "0.15.2",
 
-    .dependencies = .{ .lightmix = .{ .path = "../../.." } },
+    .dependencies = .{},
 
     .paths = .{
         "build.zig",
