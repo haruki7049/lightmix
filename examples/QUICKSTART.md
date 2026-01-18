@@ -1,9 +1,5 @@
 # Examples Directory - Quick Start Guide
 
-## 🎯 What's New?
-
-The examples have been reorganized into a clear, progressive learning structure!
-
 ## 🚀 Quick Start
 
 **Complete beginners? Start here:**
@@ -91,5 +87,3 @@ Every example includes:
 - ✅ Top-level documentation describing the concept
 - ✅ Clear, readable variable names
 - ✅ Complete, runnable code
-
-Have fun learning audio programming! 🎵
