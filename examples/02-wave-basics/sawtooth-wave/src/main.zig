@@ -16,20 +16,20 @@ pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
     // Generate a 440Hz sawtooth wave
-    const frequency: f32 = 440.0;
-    const sample_rate: f32 = 44100.0;
-    const period: f32 = sample_rate / frequency;
+    const frequency: f64 = 440.0;
+    const sample_rate: f64 = 44100.0;
+    const period: f64 = sample_rate / frequency;
 
-    var samples: [44100]f32 = undefined;
-    for (samples, 0..) |*sample, i| {
+    var samples: [44100]f64 = undefined;
+    for (0..samples.len) |i| {
         // Calculate position within the current period (0.0 to 1.0)
-        const phase = @mod(@as(f32, @floatFromInt(i)), period) / period;
-        
+        const phase = @mod(@as(f64, @floatFromInt(i)), period) / period;
+
         // Sawtooth wave: Linear ramp from -1 to +1
-        sample.* = (phase * 2.0) - 1.0;
+        samples[i] = (phase * 2.0) - 1.0;
     }
 
-    const wave = Wave.init(samples[0..], allocator, .{
+    const wave = Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
@@ -37,7 +37,16 @@ pub fn main() !void {
 
     const file = try std.fs.cwd().createFile("result.wav", .{});
     defer file.close();
-    try wave.write(file, .i16);
+    const buf = try allocator.alloc(u8, 10 * 1024 * 1024);
+    var writer = file.writer(buf);
+
+    try wave.write(&writer.interface, .{
+        .allocator = allocator,
+        .bits = 16,
+        .format_code = .pcm,
+    });
+
+    try writer.interface.flush();
 
     std.debug.print("✓ Generated sawtooth wave at 440 Hz\n", .{});
 }
