@@ -211,10 +211,10 @@ pub const CreateWaveOptions = struct {
 pub const WavefileOptions = struct {
     /// The output filename for the wave file (e.g., "result.wav", "audio.wav").
     name: []const u8 = "result.wav",
-    
+
     /// The bit depth for the wave file (e.g., 16, 24, or 32 bits per sample).
     bits: u16,
-    
+
     /// Audio encoding format such as .pcm (PCM integer) or .ieee_float (floating-point).
     format_code: z_wav.FormatCode,
 };

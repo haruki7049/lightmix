@@ -34,7 +34,7 @@ pub fn inner(comptime T: type) type {
         };
 
         /// Creates a new Wave instance from the provided sample data.
-        /// 
+        ///
         /// The function creates a deep copy of the sample data, so the caller
         /// retains ownership of the original samples slice.
         ///
