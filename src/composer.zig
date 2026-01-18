@@ -162,14 +162,14 @@ pub const WaveInfo = struct {
     start_point: usize,
 
     fn to_wave(self: WaveInfo, allocator: std.mem.Allocator) Wave {
-        var padding_samples: []f32 = allocator.alloc(f32, self.start_point) catch @panic("Out of memory");
+        var padding_samples: []f64 = allocator.alloc(f64, self.start_point) catch @panic("Out of memory");
 
         for (0..padding_samples.len) |i| {
             padding_samples[i] = 0.0;
         }
 
-        const slices: []const []const f32 = &[_][]const f32{ padding_samples, self.wave.samples };
-        const samples = std.mem.concat(allocator, f32, slices);
+        const slices: []const []const f64 = &[_][]const f64{ padding_samples, self.wave.samples };
+        const samples = std.mem.concat(allocator, f64, slices);
 
         const result: Wave = Wave.init(samples, allocator, .{
             .sample_rate = self.wave.sample_rate,
@@ -192,7 +192,7 @@ sample_rate: u32,
 
 /// Number of audio channels in the output wave.
 /// 1 = mono, 2 = stereo
-channels: usize,
+channels: u16,
 
 /// Configuration options for creating a Composer.
 ///
@@ -206,7 +206,7 @@ channels: usize,
 /// ```
 pub const Options = struct {
     sample_rate: u32,
-    channels: usize,
+    channels: u16,
 };
 
 /// Initialize a new empty Composer.
@@ -537,10 +537,10 @@ pub fn finalize(self: Self, options: Wave.mixOptions) Wave {
 
     // Filter each WaveInfo to append padding both of start and last
     for (self.info) |waveinfo| {
-        const padded_at_start: []const f32 = padding_for_start(waveinfo.wave.samples, waveinfo.start_point, self.allocator);
+        const padded_at_start: []const f64 = padding_for_start(waveinfo.wave.samples, waveinfo.start_point, self.allocator);
         defer self.allocator.free(padded_at_start);
 
-        const padded_at_start_and_last: []const f32 = padding_for_last(padded_at_start, end_point, self.allocator);
+        const padded_at_start_and_last: []const f64 = padding_for_last(padded_at_start, end_point, self.allocator);
         defer self.allocator.free(padded_at_start_and_last);
 
         const wave: Wave = Wave.init(padded_at_start_and_last, self.allocator, .{
@@ -559,7 +559,7 @@ pub fn finalize(self: Self, options: Wave.mixOptions) Wave {
     const padded_waveinfo_slice: []const WaveInfo = padded_waveinfo_list.toOwnedSlice(self.allocator) catch @panic("Out of memory");
     defer self.allocator.free(padded_waveinfo_slice);
 
-    const empty_samples: []const f32 = generate_soundless_samples(end_point, self.allocator);
+    const empty_samples: []const f64 = generate_soundless_samples(end_point, self.allocator);
     defer self.allocator.free(empty_samples);
 
     var result: Wave = Wave.init(empty_samples, self.allocator, .{
@@ -591,9 +591,9 @@ pub fn finalize(self: Self, options: Wave.mixOptions) Wave {
 /// ## Returns
 ///
 /// New slice with silence prepended. Caller must free.
-fn padding_for_start(samples: []const f32, start_point: usize, allocator: std.mem.Allocator) []const f32 {
+fn padding_for_start(samples: []const f64, start_point: usize, allocator: std.mem.Allocator) []const f64 {
     const padding_length: usize = start_point;
-    var padding: std.array_list.Aligned(f32, null) = .empty;
+    var padding: std.array_list.Aligned(f64, null) = .empty;
     defer padding.deinit(allocator);
 
     // Append padding
@@ -603,7 +603,7 @@ fn padding_for_start(samples: []const f32, start_point: usize, allocator: std.me
     // Append samples slice
     padding.appendSlice(allocator, samples) catch @panic("Out of memory");
 
-    const result: []const f32 = padding.toOwnedSlice(allocator) catch @panic("Out of memory");
+    const result: []const f64 = padding.toOwnedSlice(allocator) catch @panic("Out of memory");
 
     return result;
 }
@@ -622,11 +622,11 @@ fn padding_for_start(samples: []const f32, start_point: usize, allocator: std.me
 /// ## Returns
 ///
 /// New slice with silence appended. Caller must free.
-fn padding_for_last(samples: []const f32, end_point: usize, allocator: std.mem.Allocator) []const f32 {
+fn padding_for_last(samples: []const f64, end_point: usize, allocator: std.mem.Allocator) []const f64 {
     std.debug.assert(samples.len <= end_point);
 
     const padding_length: usize = end_point - samples.len;
-    var padding: std.array_list.Aligned(f32, null) = .empty;
+    var padding: std.array_list.Aligned(f64, null) = .empty;
     defer padding.deinit(allocator);
 
     // Append samples slice
@@ -636,7 +636,7 @@ fn padding_for_last(samples: []const f32, end_point: usize, allocator: std.mem.A
     for (0..padding_length) |_|
         padding.append(allocator, 0.0) catch @panic("Out of memory");
 
-    const result: []const f32 = padding.toOwnedSlice(allocator) catch @panic("Out of memory");
+    const result: []const f64 = padding.toOwnedSlice(allocator) catch @panic("Out of memory");
 
     return result;
 }
@@ -654,30 +654,30 @@ fn padding_for_last(samples: []const f32, end_point: usize, allocator: std.mem.A
 /// ## Returns
 ///
 /// Slice of zeros with the specified length. Caller must free.
-fn generate_soundless_samples(length: usize, allocator: std.mem.Allocator) []const f32 {
-    var list: std.array_list.Aligned(f32, null) = .empty;
+fn generate_soundless_samples(length: usize, allocator: std.mem.Allocator) []const f64 {
+    var list: std.array_list.Aligned(f64, null) = .empty;
     defer list.deinit(allocator);
 
     // Append empty wave
     for (0..length) |_|
         list.append(allocator, 0.0) catch @panic("Out of memory");
 
-    const result: []const f32 = list.toOwnedSlice(allocator) catch @panic("Out of memory");
+    const result: []const f64 = list.toOwnedSlice(allocator) catch @panic("Out of memory");
 
     return result;
 }
 
 test "padding_for_start" {
     const allocator = testing.allocator;
-    const samples: []const f32 = &[_]f32{ 1.0, 1.0 };
+    const samples: []const f64 = &[_]f64{ 1.0, 1.0 };
     const start_point: usize = 10;
 
-    const result: []const f32 = padding_for_start(samples, start_point, allocator);
+    const result: []const f64 = padding_for_start(samples, start_point, allocator);
     defer allocator.free(result);
 
     try testing.expectEqual(samples.len + start_point, result.len);
 
-    const expected: []const f32 = &[_]f32{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0 };
+    const expected: []const f64 = &[_]f64{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0 };
     for (0..result.len) |i| {
         try testing.expectApproxEqAbs(expected[i], result[i], 0.001);
     }
@@ -754,7 +754,7 @@ test "finalize" {
     });
     defer composer.deinit();
 
-    var samples: []f32 = try allocator.alloc(f32, 44100);
+    var samples: []f64 = try allocator.alloc(f64, 44100);
     defer allocator.free(samples);
 
     for (0..samples.len) |i| {

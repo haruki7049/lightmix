@@ -38,11 +38,11 @@ test "Compose multiple soundless Wave" {
 
     var file = try tmpDir.dir.createFile("result.wav", .{});
     defer file.close();
-    var buf: [4096]u8 = undefined;
+    var buf: [10 * 1024 * 1024]u8 = undefined;
     var writer = file.writer(&buf);
 
     // Write Wave into the file
-    try result.write(&writer, .{
+    try result.write(&writer.interface, .{
         .allocator = allocator,
         .format_code = .pcm,
         .bits = 16,

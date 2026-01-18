@@ -390,10 +390,9 @@ pub fn read(
     reader: anytype,
 ) anyerror!Self {
     const zigggwavvv_wave = try zigggwavvv.Wave(f64).read(allocator, reader);
-    defer zigggwavvv_wave.deinit(allocator);
 
     return Self{
-        .samples = try allocator.dupe(f64, zigggwavvv_wave.samples),
+        .samples = zigggwavvv_wave.samples,
         .allocator = allocator,
         .sample_rate = zigggwavvv_wave.sample_rate,
         .channels = zigggwavvv_wave.channels,
@@ -442,6 +441,7 @@ pub fn write(self: Self, writer: anytype, options: WriteOptions) anyerror!void {
         .bits = options.bits,
         .samples = try options.allocator.dupe(f64, self.samples),
     });
+    defer zigggwavvv_wave.deinit(options.allocator);
 
     try zigggwavvv_wave.write(writer, .{
         .allocator = options.allocator,
