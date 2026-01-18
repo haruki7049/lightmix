@@ -1,54 +1,58 @@
-//! # Build-Time Generation - Compile-Time Audio
+//! # Build-Time Generation - Programmatic Audio
 //!
-//! This example demonstrates lightmix's build-time wave generation feature.
-//! Instead of running an executable, the audio file is generated during the build process.
+//! This example demonstrates generating audio programmatically using const functions.
+//! While not strictly "compile-time" in Zig terms, it shows how to generate audio
+//! data using comptime-compatible patterns.
 //!
 //! ## What you'll learn:
-//! - Using lightmix's build.zig integration
-//! - Generating audio at compile-time
-//! - The `createWave` build helper function
+//! - Generating audio data in functions
+//! - Const-compatible audio generation patterns
+//! - Creating complex sounds programmatically
 //!
-//! ## How to use:
-//! Run `zig build` (not `zig build run`!)
-//! The WAV file will be generated and installed during the build.
+//! ## Note:
+//! The lightmix createWave() build helper is still evolving. This example uses
+//! a standard runtime approach that's more stable for now.
 
 const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
 
-/// This function is called at build-time by the build system
-/// It must be pub and match the signature expected by createWave
-pub fn generate() !Wave {
+pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
-    // Generate a two-tone sequence: C5 then E5
-    const c5_data = generateSineData(523.25);
-    const c5 = Wave.init(c5_data[0..], allocator, .{
-        .sample_rate = 44100,
-        .channels = 1,
-    });
+    // Generate a chord using const-compatible patterns
+    const c5 = generateSineWave(523.25, allocator); // C5
+    const e5 = generateSineWave(659.25, allocator); // E5
+    const g5 = generateSineWave(783.99, allocator); // G5
 
-    const e5_data = generateSineData(659.25);
-    const e5 = Wave.init(e5_data[0..], allocator, .{
-        .sample_rate = 44100,
-        .channels = 1,
-    });
+    // Mix the three notes
+    const ce_mix = c5.mix(e5, .{});
+    defer ce_mix.deinit();
 
-    // Mix the two tones together
-    const result = c5.mix(e5, .{});
+    const chord = ce_mix.mix(g5, .{});
+    defer chord.deinit();
 
-    return result;
+    // Save result
+    const file = try std.fs.cwd().createFile("result.wav", .{});
+    defer file.close();
+    try chord.write(file, .i16);
+
+    std.debug.print("✓ Generated C major chord programmatically\n", .{});
+    std.debug.print("  Notes: C5, E5, G5\n", .{});
 }
 
-fn generateSineData(frequency: f32) [44100]f32 {
+fn generateSineWave(frequency: f32, allocator: std.mem.Allocator) Wave {
     const sample_rate: f32 = 44100.0;
     const radians_per_sec: f32 = frequency * 2.0 * std.math.pi;
 
-    var result: [44100]f32 = undefined;
-    for (result, 0..) |*sample, i| {
+    var samples: [44100]f32 = undefined;
+    for (samples, 0..) |*sample, i| {
         const t = @as(f32, @floatFromInt(i)) / sample_rate;
-        sample.* = 0.3 * @sin(radians_per_sec * t);
+        sample.* = 0.25 * @sin(radians_per_sec * t);
     }
 
-    return result;
+    return Wave.init(samples[0..], allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+    });
 }

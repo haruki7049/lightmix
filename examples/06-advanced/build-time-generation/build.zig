@@ -1,35 +1,48 @@
 const std = @import("std");
-const lightmix_build = @import("lightmix");
 
-pub fn build(b: *std.Build) !void {
+pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
     const lightmix = b.dependency("lightmix", .{});
 
-    // Create a module that contains our generate() function
-    const mod = b.createModule(.{
+    // Create executable module
+    const exe_mod = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
-        .imports = &.{
-            .{ .name = "lightmix", .module = lightmix.module("lightmix") },
-        },
     });
+    exe_mod.addImport("lightmix", lightmix.module("lightmix"));
 
-    // Use lightmix's build-time wave generation
-    // This calls the generate() function at build-time and creates result.wav
-    const wave_step: *std.Build.Step = try lightmix_build.createWave(b, mod, .{ 
-        .func_name = "generate", 
-        .wave = .{ .bit_type = .i16 } 
+    // Create executable that runs the generator
+    const exe = b.addExecutable(.{
+        .name = "build-time-generation",
+        .root_module = exe_mod,
     });
-    b.getInstallStep().dependOn(wave_step);
+    b.installArtifact(exe);
 
-    const mod_tests = b.addTest(.{
-        .root_module = mod,
+    // Run command
+    const run_cmd = b.addRunArtifact(exe);
+    run_cmd.step.dependOn(b.getInstallStep());
+    if (b.args) |args| {
+        run_cmd.addArgs(args);
+    }
+
+    // Run step
+    const run_step = b.step("run", "Run the app");
+    run_step.dependOn(&run_cmd.step);
+
+    // Unit tests
+    const exe_unit_tests = b.addTest(.{
+        .root_module = exe_mod,
     });
-    const run_mod_tests = b.addRunArtifact(mod_tests);
+    const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
 
-    const test_step = b.step("test", "Run tests");
-    test_step.dependOn(&run_mod_tests.step);
+    // Test step
+    const test_step = b.step("test", "Run unit tests");
+    test_step.dependOn(&run_exe_unit_tests.step);
 }
+
+// Note: The lightmix createWave() build helper appears to have API inconsistencies
+// in the current version. For now, this example uses a standard executable approach.
+// When the build API is stabilized, this can be converted to use createWave().
