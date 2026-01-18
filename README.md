@@ -49,15 +49,15 @@ const lightmix = @import("lightmix");
 
 pub fn generate() !lightmix.Wave(f64) {
     const allocator = std.heap.page_allocator;
-    
+
     // Generate your audio data (example: 1 second of silence)
     const data: [44100]f64 = [_]f64{0.0} ** 44100;
-    
+
     const wave = lightmix.Wave(f64).init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
-    
+
     return wave;
 }
 ```
@@ -86,14 +86,15 @@ pub fn build(b: *std.Build) !void {
 
     // Use createWave to generate the wave file during build
     const wave_step = try l.createWave(b, mod, .{
-        .func_name = "generate",  // Name of your wave generation function
+        .func_name = "generate", // Name of your wave generation function
         .wave = .{
-            .name = "result.wav",  // Output filename (optional, defaults to "result.wav")
-            .bit_type = .i16,      // Bit depth: .i16, .i24, or .f32
+            .name = "result.wav", // Output filename (optional, defaults to "result.wav")
+            .format_code = .pcm, // Wave format code (e.g., .pcm, .ieee_float)
+            .bits = 16, // The bits depth for this wave (e.g., 8, 16, 24, 32)
         },
-        .path = .{ .custom = "share" },  // Install directory (optional, defaults to "share")
+        .path = .{ .custom = "share" }, // Install directory (optional, defaults to "share")
     });
-    
+
     // Add to the install step so it runs during `zig build`
     b.getInstallStep().dependOn(wave_step);
 }
@@ -106,7 +107,8 @@ pub fn build(b: *std.Build) !void {
 - **`func_name`**: The name of the function in your module that generates the Wave. The function must have the signature `pub fn name() !lightmix.Wave(T)` where T is your chosen sample type (e.g., f64) (default: `"gen"`)
 - **`path`**: The installation directory relative to the install prefix (default: `.{ .custom = "share" }`)
 - **`wave.name`**: The output filename for the wave file (default: `"result.wav"`)
-- **`wave.bit_type`**: The bit depth for the wave file - can be `.i16`, `.i24`, or `.f32`
+- **`wave.bits`**: The bit depth for the wave file, which is typed u16
+- **`wave.format_code`**: Audio encoding format (e.g., .pcm, .ieee_float)
 
 You can find a complete example in [./examples/Wave/generate_by_build_zig](./examples/Wave/generate_by_build_zig).
 
@@ -142,8 +144,8 @@ defer file.close();
 // Then, write down your wave!!
 try wave.write(file.writer(), .{
     .allocator = allocator,
-    .bits = 16,  // Bit depth for the output file
-    .format_code = .pcm,  // Format code (e.g., .pcm or .ieee_float)
+    .bits = 16, // Bit depth for the output file
+    .format_code = .pcm, // Format code (e.g., .pcm or .ieee_float)
 });
 ```
 
