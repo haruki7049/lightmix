@@ -15,8 +15,6 @@ Start here if you're new to lightmix! These examples introduce the basics with c
 
 **What you'll learn:** Basic Wave creation, saving audio files, applying simple filters
 
-______________________________________________________________________
-
 ### 02-wave-basics/
 
 **Understanding fundamental waveforms**
@@ -31,8 +29,6 @@ Learn about the building blocks of sound synthesis. Each example generates a dif
 
 **What you'll learn:** Wave generation algorithms, harmonics, audio characteristics of different waveforms
 
-______________________________________________________________________
-
 ### 03-wave-operations/
 
 **Manipulating and combining waves**
@@ -45,8 +41,6 @@ Once you can generate waves, learn how to transform and combine them.
 
 **What you'll learn:** Wave mixing, filter chaining, additive synthesis, pitch relationships
 
-______________________________________________________________________
-
 ### 04-composer/
 
 **Arranging sounds in time**
@@ -57,8 +51,6 @@ The Composer lets you sequence and layer multiple audio sources.
 - **overlapping-sounds** - Layer sounds on top of each other (polyphony)
 
 **What you'll learn:** Using the Composer API, timing control, creating musical arrangements
-
-______________________________________________________________________
 
 ### 05-practical-examples/
 
@@ -71,8 +63,6 @@ See how to combine techniques to create realistic instrument sounds.
 
 **What you'll learn:** Physical modeling, combining noise and tones, percussion synthesis
 
-______________________________________________________________________
-
 ### 06-advanced/
 
 **Advanced techniques**
@@ -83,8 +73,6 @@ Ready for more? These examples show advanced lightmix features.
 - **modular-composing** - Organize complex audio projects with modules
 
 **What you'll learn:** Build system integration, code organization, reusable components
-
-______________________________________________________________________
 
 ## 🚀 How to Run Examples
 
@@ -106,8 +94,6 @@ cd examples/06-advanced/build-time-generation
 zig build  # Note: just 'build', not 'build run'
 ```
 
-______________________________________________________________________
-
 ## ⚠️ Important Notes
 
 ### Volume Warning
@@ -122,8 +108,6 @@ Most examples use 44100 Hz (CD quality), which is standard for audio files.
 
 Examples typically output 16-bit PCM WAV files (`.i16`), which is widely compatible. Some examples demonstrate other formats like `.f32`.
 
-______________________________________________________________________
-
 ## 📖 Learning Path
 
 We recommend following this order:
@@ -135,8 +119,6 @@ We recommend following this order:
 1. **Study 05-practical-examples/** - See real synthesis techniques in action
 1. **Experiment with 06-advanced/** - Explore advanced features
 
-______________________________________________________________________
-
 ## 🎵 Understanding the Code
 
 Each example includes:
@@ -146,8 +128,6 @@ Each example includes:
 - **Clear variable names** to make the code readable
 - **Complete, runnable code** - no dependencies on other examples
 
-______________________________________________________________________
-
 ## 🔊 Listening to Results
 
 After generating WAV files, you can play them with:
@@ -156,8 +136,6 @@ After generating WAV files, you can play them with:
 - **macOS:** `afplay result.wav`
 - **Windows:** `start result.wav` or use Windows Media Player
 - **All platforms:** VLC, Audacity, or any audio player
-
-______________________________________________________________________
 
 ## 🐛 Troubleshooting
 
@@ -176,8 +154,6 @@ ______________________________________________________________________
 - Ensure you're using a compatible Zig version (check the main README.md)
 - Try `zig build clean` and then `zig build run` again
 
-______________________________________________________________________
-
 ## 📚 Further Learning
 
 After working through these examples, check out:
@@ -185,8 +161,6 @@ After working through these examples, check out:
 - The main lightmix documentation in `src/root.zig`
 - API documentation for Wave and Composer modules
 - The test files in `tests/` for more usage patterns
-
-______________________________________________________________________
 
 ## 🤝 Contributing
 
