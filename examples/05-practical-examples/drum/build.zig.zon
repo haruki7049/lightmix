@@ -1,11 +1,15 @@
 .{
-    .name = "drum",
+    .name = .drum,
     .version = "0.1.0",
+    .fingerprint = 0xa33e93205174b58f,
+    .minimum_zig_version = "0.15.2",
+
     .dependencies = .{
         .lightmix = .{
             .path = "../../..",
         },
     },
+
     .paths = .{
         "build.zig",
         "build.zig.zon",
