@@ -1,11 +1,15 @@
 .{
-    .name = "frequency-changes",
+    .name = .frequency_changes,
     .version = "0.1.0",
+    .fingerprint = 0x1330bff611602aa,
+    .minimum_zig_version = "0.15.2",
+
     .dependencies = .{
         .lightmix = .{
             .path = "../../..",
         },
     },
+
     .paths = .{
         "build.zig",
         "build.zig.zon",
