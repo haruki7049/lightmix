@@ -1,0 +1,14 @@
+.{
+    .name = "frequency-changes",
+    .version = "0.1.0",
+    .dependencies = .{
+        .lightmix = .{
+            .path = "../../..",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
