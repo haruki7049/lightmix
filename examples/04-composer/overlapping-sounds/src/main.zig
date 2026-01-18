@@ -12,14 +12,13 @@ const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
 const Composer = lightmix.Composer;
-const WaveInfo = Composer.WaveInfo;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    const composer = Composer.init(allocator, .{
+    const composer = Composer(f64).init(allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
@@ -36,12 +35,12 @@ pub fn main() !void {
     defer g4.deinit();
 
     // Arrange with overlaps: bass note holds while melody plays
-    var arrangement: std.array_list.Aligned(WaveInfo, null) = .empty;
+    var arrangement: std.array_list.Aligned(Composer(f64).WaveInfo, null) = .empty;
     defer arrangement.deinit(allocator);
 
-    try arrangement.append(allocator, .{ .wave = long_c, .start_point = 0 });      // Bass starts at 0
-    try arrangement.append(allocator, .{ .wave = e4, .start_point = 0 });          // Melody starts with bass
-    try arrangement.append(allocator, .{ .wave = g4, .start_point = 22050 });      // Second melody note at 0.5s
+    try arrangement.append(allocator, .{ .wave = long_c, .start_point = 0 }); // Bass starts at 0
+    try arrangement.append(allocator, .{ .wave = e4, .start_point = 0 }); // Melody starts with bass
+    try arrangement.append(allocator, .{ .wave = g4, .start_point = 22050 }); // Second melody note at 0.5s
 
     const composed = composer.appendSlice(arrangement.items);
     defer composed.deinit();
@@ -51,42 +50,50 @@ pub fn main() !void {
 
     const file = try std.fs.cwd().createFile("result.wav", .{});
     defer file.close();
-    try result.write(file, .i16);
+    const buf = try allocator.alloc(u8, 10 * 1024 * 1024);
+    defer allocator.free(buf);
+    var writer = file.writer(buf);
+
+    try result.write(&writer.interface, .{
+        .allocator = allocator,
+        .format_code = .pcm,
+        .bits = 16,
+    });
+
+    try writer.interface.flush();
 
     std.debug.print("✓ Created overlapping arrangement\n", .{});
 }
 
-fn generateNote(frequency: f32, allocator: std.mem.Allocator) Wave {
-    const sample_rate: f32 = 44100.0;
-    const radians_per_sec: f32 = frequency * 2.0 * std.math.pi;
-    const num_samples: usize = 22050; // 0.5 seconds
+fn generateNote(frequency: f64, allocator: std.mem.Allocator) Wave(f64) {
+    const sample_rate: f64 = 44100.0;
+    const radians_per_sec: f64 = frequency * 2.0 * std.math.pi;
 
-    var samples_array: [22050]f32 = undefined;
-    for (samples_array, 0..) |*sample, i| {
-        const t = @as(f32, @floatFromInt(i)) / sample_rate;
+    var samples: [22050]f64 = undefined;
+    for (0..samples.len) |i| {
+        const t = @as(f64, @floatFromInt(i)) / sample_rate;
         const envelope = 1.0 - (t / 0.5);
-        sample.* = 0.2 * @sin(radians_per_sec * t) * envelope;
+        samples[i] = 0.2 * @sin(radians_per_sec * t) * envelope;
     }
 
-    return Wave.init(samples_array[0..], allocator, .{
+    return Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
 }
 
-fn generateLongNote(frequency: f32, allocator: std.mem.Allocator) Wave {
-    const sample_rate: f32 = 44100.0;
-    const radians_per_sec: f32 = frequency * 2.0 * std.math.pi;
-    const num_samples: usize = 66150; // 1.5 seconds
+fn generateLongNote(frequency: f64, allocator: std.mem.Allocator) Wave(f64) {
+    const sample_rate: f64 = 44100.0;
+    const radians_per_sec: f64 = frequency * 2.0 * std.math.pi;
 
-    var samples_array: [66150]f32 = undefined;
-    for (samples_array, 0..) |*sample, i| {
-        const t = @as(f32, @floatFromInt(i)) / sample_rate;
+    var samples: [66150]f64 = undefined;
+    for (0..samples.len) |i| {
+        const t = @as(f64, @floatFromInt(i)) / sample_rate;
         const envelope = 1.0 - (t / 1.5);
-        sample.* = 0.15 * @sin(radians_per_sec * t) * envelope;
+        samples[i] = 0.15 * @sin(radians_per_sec * t) * envelope;
     }
 
-    return Wave.init(samples_array[0..], allocator, .{
+    return Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
