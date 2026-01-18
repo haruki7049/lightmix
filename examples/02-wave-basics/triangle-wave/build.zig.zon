@@ -1,11 +1,15 @@
 .{
-    .name = "triangle-wave",
+    .name = .triangle_wave,
     .version = "0.1.0",
+    .fingerprint = 0xb357e96b64517423,
+    .minimum_zig_version = "0.15.2",
+
     .dependencies = .{
         .lightmix = .{
             .path = "../../..",
         },
     },
+
     .paths = .{
         "build.zig",
         "build.zig.zon",
