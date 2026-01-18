@@ -49,15 +49,15 @@ const lightmix = @import("lightmix");
 
 pub fn generate() !lightmix.Wave(f64) {
     const allocator = std.heap.page_allocator;
-    
+
     // Generate your audio data (example: 1 second of silence)
     const data: [44100]f64 = [_]f64{0.0} ** 44100;
-    
+
     const wave = lightmix.Wave(f64).init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
-    
+
     return wave;
 }
 ```
@@ -92,9 +92,9 @@ pub fn build(b: *std.Build) !void {
             .format_code = .pcm, // Wave format code (e.g., .pcm, .ieee_float)
             .bits = 16, // The bits depth for this wave (e.g., 8, 16, 24, 32)
         },
-        .path = .{ .custom = "share" },  // Install directory (optional, defaults to "share")
+        .path = .{ .custom = "share" }, // Install directory (optional, defaults to "share")
     });
-    
+
     // Add to the install step so it runs during `zig build`
     b.getInstallStep().dependOn(wave_step);
 }
@@ -144,8 +144,8 @@ defer file.close();
 // Then, write down your wave!!
 try wave.write(file.writer(), .{
     .allocator = allocator,
-    .bits = 16,  // Bit depth for the output file
-    .format_code = .pcm,  // Format code (e.g., .pcm or .ieee_float)
+    .bits = 16, // Bit depth for the output file
+    .format_code = .pcm, // Format code (e.g., .pcm or .ieee_float)
 });
 ```
 
