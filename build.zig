@@ -1,5 +1,5 @@
 const std = @import("std");
-const l_wav = @import("lightmix_wav");
+const z_wav = @import("zigggwavvv");
 
 pub const Wave = @import("./src/wave.zig");
 pub const Composer = @import("./src/composer.zig");
@@ -9,7 +9,7 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     // Dependencies
-    const lightmix_wav = b.dependency("lightmix_wav", .{});
+    const zigggwavvv = b.dependency("zigggwavvv", .{});
 
     // Library module declaration
     const lib_mod = b.addModule("lightmix", .{
@@ -17,7 +17,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
         .imports = &.{
-            .{ .name = "lightmix_wav", .module = lightmix_wav.module("lightmix_wav") },
+            .{ .name = "zigggwavvv", .module = zigggwavvv.module("zigggwavvv") },
         },
     });
 
@@ -94,20 +94,31 @@ pub fn createWave(
     const gen_source = try std.fmt.allocPrint(b.allocator,
         \\const std = @import("std");
         \\const user_module = @import("user_module");
+        \\const allocator = std.heap.page_allocator;
         \\
         \\pub fn main() !void {{
         \\    const wave = try user_module.{s}();
         \\    defer wave.deinit();
         \\
-        \\    var file = try std.fs.cwd().createFile("{s}", .{{}});
+        \\    const file = try std.fs.cwd().createFile("{s}", .{{}});
         \\    defer file.close();
+        \\    const buf = try allocator.alloc(u8, 10 * 1024 * 1024);
+        \\    defer allocator.free(buf);
+        \\    var writer = file.writer(buf);
         \\
-        \\    try wave.write(file, .{s});
+        \\    try wave.write(&writer.interface, .{{
+        \\        .allocator = allocator,
+        \\        .format_code = .{s},
+        \\        .bits = {d},
+        \\    }});
+        \\
+        \\    try writer.interface.flush();
         \\}}
     , .{
         options.func_name,
         tmp_path,
-        @tagName(options.wave.bit_type),
+        @tagName(options.wave.format_code),
+        options.wave.bits,
     });
 
     // Create a write files step to generate the temporary source
@@ -160,6 +171,8 @@ pub const CreateWaveOptions = struct {
 pub const WavefileOptions = struct {
     /// The output filename for the wave file
     name: []const u8 = "result.wav",
-    /// The bit depth for the wave file (e.g., .i16, .f32)
-    bit_type: l_wav.BitType,
+    /// The bit depth for the wave file
+    bits: u16,
+    /// Audio encoding format (e.g., .pcm, .ieee_float)
+    format_code: z_wav.FormatCode,
 };
