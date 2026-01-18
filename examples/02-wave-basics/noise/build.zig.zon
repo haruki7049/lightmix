@@ -1,6 +1,9 @@
 .{
-    .name = "noise",
+    .name = .noise,
     .version = "0.1.0",
+    .fingerprint = 0xfda99629c4965348,
+    .minimum_zig_version = "0.15.2",
+
     .dependencies = .{
         .lightmix = .{
             .path = "../../..",
