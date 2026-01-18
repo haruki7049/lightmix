@@ -38,9 +38,15 @@ test "Compose multiple soundless Wave" {
 
     var file = try tmpDir.dir.createFile("result.wav", .{});
     defer file.close();
+    var buf: [4096]u8 = undefined;
+    var writer = file.writer(&buf);
 
     // Write Wave into the file
-    try result.write(file, .i16);
+    try result.write(&writer, .{
+        .allocator = allocator,
+        .format_code = .pcm,
+        .bits = 16,
+    });
 
     // Read the written wave file
     const result_bytes = try tmpDir.dir.readFileAlloc(allocator, "result.wav", 10 * 1024 * 1024);

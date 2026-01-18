@@ -51,7 +51,7 @@
 //! ```
 
 const std = @import("std");
-const lightmix_wav = @import("lightmix_wav");
+const zigggwavvv = @import("zigggwavvv");
 const testing = std.testing;
 
 const Self = @This();
@@ -72,14 +72,14 @@ sample_rate: u32,
 
 /// The number of audio channels.
 /// 1 = mono, 2 = stereo, 6 = 5.1 surround, etc.
-channels: usize,
+channels: u16,
 
 /// Options for initializing a Wave.
 pub const Options = struct {
     /// Sample rate in Hz (samples per second)
     sample_rate: u32,
     /// Number of audio channels (1 = mono, 2 = stereo, etc.)
-    channels: usize,
+    channels: u16,
 };
 
 /// Initialize a Wave with wave samples (`[]const f32`).
@@ -385,50 +385,18 @@ pub fn deinit(self: Self) void {
 ///     defer wave.deinit();
 /// }
 /// ```
-pub fn from_file_content(
-    bit_type: lightmix_wav.BitType,
-    content: []const u8,
+pub fn read(
     allocator: std.mem.Allocator,
-) Self {
-    var stream = std.io.fixedBufferStream(content);
-    var decoder = lightmix_wav.decoder(stream.reader()) catch |err| {
-        std.debug.print("In lightmix_wav\n", .{});
-        std.debug.print("{any}\n", .{err});
-        @panic("Failed to create decoder");
-    };
-
-    std.debug.assert(bit_type == decoder.bits());
-
-    var buf: [64]f32 = undefined;
-    var arraylist: std.array_list.Aligned(f32, null) = .empty;
-
-    while (true) {
-        // Read samples as f32. Channels are interleaved.
-        const samples_read = decoder.read(f32, &buf) catch |err| {
-            std.debug.print("In lightmix_wav\n", .{});
-            std.debug.print("{any}\n", .{err});
-            @panic("Failed to read samples from decoder");
-        };
-
-        // < ------ Do something with samples in buf. ------ >
-        arraylist.appendSlice(allocator, &buf) catch @panic("Out of memory");
-
-        if (samples_read < buf.len) {
-            break;
-        }
-    }
-
-    const result: []const f32 = arraylist.toOwnedSlice(allocator) catch @panic("Out of memory");
-
-    const sample_rate: u32 = @as(u32, @intCast(decoder.sampleRate()));
-    const channels: usize = decoder.channels();
+    reader: anytype,
+) anyerror!Self {
+    const zigggwavvv_wave = try zigggwavvv.Wave(f32).read(allocator, reader);
+    defer zigggwavvv_wave.deinit(allocator);
 
     return Self{
-        .samples = result,
+        .samples = try allocator.dupe(f32, zigggwavvv_wave.samples),
         .allocator = allocator,
-
-        .sample_rate = sample_rate,
-        .channels = channels,
+        .sample_rate = zigggwavvv_wave.sample_rate,
+        .channels = zigggwavvv_wave.channels,
     };
 }
 
@@ -466,11 +434,32 @@ pub fn from_file_content(
 ///     try wave.write(file, .i16);
 /// }
 /// ```
-pub fn write(self: Self, file: std.fs.File, comptime bits: lightmix_wav.BitType) !void {
-    var encoder = try lightmix_wav.encoder(bits, file, self.sample_rate, self.channels);
-    try encoder.write(f32, self.samples);
-    try encoder.finalize();
+pub fn write(self: Self, writer: anytype, options: WriteOptions) anyerror!void {
+    const zigggwavvv_wave = zigggwavvv.Wave(f32).init(.{
+        .format_code = options.format_code,
+        .sample_rate = self.sample_rate,
+        .channels = self.channels,
+        .bits = options.bits,
+        .samples = try options.allocator.dupe(f32, self.samples),
+    });
+
+    try zigggwavvv_wave.write(writer, .{
+        .allocator = options.allocator,
+        .use_fact = options.use_fact,
+        .use_peak = options.use_peak,
+        .peak_timestamp = options.peak_timestamp,
+    });
 }
+
+pub const WriteOptions = struct {
+    allocator: std.mem.Allocator,
+    use_fact: bool = false,
+    use_peak: bool = false,
+    peak_timestamp: u32 = 0,
+
+    bits: u16,
+    format_code: zigggwavvv.FormatCode,
+};
 
 /// Apply a filter function to the wave with custom arguments.
 ///
@@ -633,9 +622,10 @@ pub fn filter(
     return result;
 }
 
-test "from_file_content & deinit" {
+test "read & deinit" {
     const allocator = testing.allocator;
-    const wave = Self.from_file_content(.i16, @embedFile("./assets/sine.wav"), allocator);
+    var reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
+    const wave = try Self.read(allocator, &reader);
     defer wave.deinit();
 
     try testing.expectEqual(wave.samples[0], 0.0);
@@ -935,9 +925,10 @@ test "mix preserves wave properties" {
     try testing.expectEqual(result.samples[2], 4.5);
 }
 
-test "from_file_content with different sample rates" {
+test "read with different sample rates" {
     const allocator = testing.allocator;
-    const wave = Self.from_file_content(.i16, @embedFile("./assets/sine.wav"), allocator);
+    var reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
+    const wave = try Self.read(allocator, &reader);
     defer wave.deinit();
 
     // Verify the wave has valid properties

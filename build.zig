@@ -1,5 +1,5 @@
 const std = @import("std");
-const l_wav = @import("lightmix_wav");
+const z_wav = @import("zigggwavvv");
 
 pub const Wave = @import("./src/wave.zig");
 pub const Composer = @import("./src/composer.zig");
@@ -9,7 +9,7 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     // Dependencies
-    const lightmix_wav = b.dependency("lightmix_wav", .{});
+    const zigggwavvv = b.dependency("zigggwavvv", .{});
 
     // Library module declaration
     const lib_mod = b.addModule("lightmix", .{
@@ -17,7 +17,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
         .imports = &.{
-            .{ .name = "lightmix_wav", .module = lightmix_wav.module("lightmix_wav") },
+            .{ .name = "zigggwavvv", .module = zigggwavvv.module("zigggwavvv") },
         },
     });
 
@@ -160,6 +160,8 @@ pub const CreateWaveOptions = struct {
 pub const WavefileOptions = struct {
     /// The output filename for the wave file
     name: []const u8 = "result.wav",
-    /// The bit depth for the wave file (e.g., .i16, .f32)
-    bit_type: l_wav.BitType,
+    /// The bit depth for the wave file
+    bits: u16,
+    /// Audio encoding format (e.g., .pcm, .ieee_float)
+    format_code: z_wav.FormatCode,
 };

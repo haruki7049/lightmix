@@ -4,12 +4,9 @@ const Wave = lightmix.Wave;
 
 test "read sine.wav" {
     const allocator = std.testing.allocator;
+    var reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
 
-    const sine: Wave = Wave.from_file_content(
-        .i16,
-        @embedFile("./assets/sine.wav"),
-        allocator,
-    );
+    const sine: Wave = try Wave.read(allocator, &reader);
     defer sine.deinit();
 
     const expected_samples: []const f32 = &[_]f32{
