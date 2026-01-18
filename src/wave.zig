@@ -27,11 +27,24 @@ pub fn inner(comptime T: type) type {
         sample_rate: u32,
         channels: u16,
 
+        /// Options for initializing a Wave instance.
         pub const InitOptions = struct {
             sample_rate: u32,
             channels: u16,
         };
 
+        /// Creates a new Wave instance from the provided sample data.
+        /// 
+        /// The function creates a deep copy of the sample data, so the caller
+        /// retains ownership of the original samples slice.
+        ///
+        /// ## Parameters
+        /// - `samples`: Slice of sample data to copy
+        /// - `allocator`: Memory allocator for internal allocations
+        /// - `options`: Initialization options (sample rate and channel count)
+        ///
+        /// ## Returns
+        /// A new Wave instance containing a copy of the sample data
         pub fn init(
             samples: []const T,
             allocator: std.mem.Allocator,
@@ -49,15 +62,39 @@ pub fn inner(comptime T: type) type {
             };
         }
 
+        /// Options for mixing two waves together.
         pub const mixOptions = struct {
             mixer: fn (T, T) T = default_mixing_expression,
         };
 
+        /// Default mixing function that adds two samples together.
+        ///
+        /// ## Parameters
+        /// - `left`: Sample value from the first wave
+        /// - `right`: Sample value from the second wave
+        ///
+        /// ## Returns
+        /// The sum of the two sample values
         pub fn default_mixing_expression(left: T, right: T) T {
             const result: T = left + right;
             return result;
         }
 
+        /// Mixes this wave with another wave, combining their samples.
+        ///
+        /// Both waves must have the same length, sample rate, and channel count.
+        /// The mixing is performed sample-by-sample using the provided mixer function.
+        ///
+        /// ## Parameters
+        /// - `self`: The first wave to mix
+        /// - `other`: The second wave to mix
+        /// - `options`: Mixing options (includes the mixer function)
+        ///
+        /// ## Returns
+        /// A new Wave containing the mixed result
+        ///
+        /// ## Panics
+        /// Panics if the waves have different lengths, sample rates, or channel counts
         pub fn mix(self: Self, other: Self, options: mixOptions) Self {
             std.debug.assert(self.samples.len == other.samples.len);
             std.debug.assert(self.sample_rate == other.sample_rate);
@@ -93,6 +130,17 @@ pub fn inner(comptime T: type) type {
             };
         }
 
+        /// Truncates the wave at a start point and fills with zeros to the end point.
+        ///
+        /// This is useful for creating silence or padding at the end of a wave.
+        ///
+        /// ## Parameters
+        /// - `self`: The wave to modify
+        /// - `start`: Sample index where truncation begins
+        /// - `end`: Sample index where the new wave ends (filled with zeros)
+        ///
+        /// ## Returns
+        /// A new Wave with samples from 0 to `start`, then zeros from `start` to `end`
         pub fn fill_zero_to_end(self: Self, start: usize, end: usize) !Self {
             // Initialization
             var result: std.array_list.Aligned(T, null) = .empty;
@@ -120,10 +168,24 @@ pub fn inner(comptime T: type) type {
                 .channels = self.channels,
             };
         }
+        /// Frees the memory allocated for the wave's sample data.
+        ///
+        /// This must be called when you're done with a Wave instance to avoid memory leaks.
         pub fn deinit(self: Self) void {
             self.allocator.free(self.samples);
         }
 
+        /// Reads wave data from a WAV file reader.
+        ///
+        /// ## Parameters
+        /// - `allocator`: Memory allocator for sample data
+        /// - `reader`: A reader interface for reading WAV file data
+        ///
+        /// ## Returns
+        /// A new Wave instance containing the audio data from the file
+        ///
+        /// ## Errors
+        /// Returns errors from the underlying WAV parser or allocation failures
         pub fn read(
             allocator: std.mem.Allocator,
             reader: anytype,
@@ -137,6 +199,15 @@ pub fn inner(comptime T: type) type {
                 .channels = zigggwavvv_wave.channels,
             };
         }
+        /// Writes wave data to a WAV file writer.
+        ///
+        /// ## Parameters
+        /// - `self`: The wave to write
+        /// - `writer`: A writer interface for writing WAV file data
+        /// - `options`: Write options (format, bits per sample, etc.)
+        ///
+        /// ## Errors
+        /// Returns errors from the underlying WAV writer or I/O failures
         pub fn write(self: Self, writer: anytype, options: WriteOptions) anyerror!void {
             const zigggwavvv_wave = zigggwavvv.Wave(T).init(.{
                 .format_code = options.format_code,
@@ -155,6 +226,7 @@ pub fn inner(comptime T: type) type {
             });
         }
 
+        /// Options for writing wave data to a file.
         pub const WriteOptions = struct {
             allocator: std.mem.Allocator,
             use_fact: bool = false,
@@ -165,6 +237,22 @@ pub fn inner(comptime T: type) type {
             format_code: zigggwavvv.FormatCode,
         };
 
+        /// Applies a filter function with custom arguments to the wave.
+        ///
+        /// The original wave is automatically freed after the filter is applied.
+        /// This enables chaining multiple filters together efficiently.
+        ///
+        /// ## Parameters
+        /// - `self`: The wave to filter (will be freed after filtering)
+        /// - `args_type`: The type of the arguments to pass to the filter function
+        /// - `filter_fn`: The filter function to apply
+        /// - `args`: Arguments to pass to the filter function
+        ///
+        /// ## Returns
+        /// A new Wave containing the filtered result
+        ///
+        /// ## Panics
+        /// Panics if the filter function returns an error
         pub fn filter_with(
             self: Self,
             comptime args_type: type,
@@ -183,6 +271,20 @@ pub fn inner(comptime T: type) type {
             return result;
         }
 
+        /// Applies a filter function to the wave.
+        ///
+        /// The original wave is automatically freed after the filter is applied.
+        /// This enables chaining multiple filters together efficiently.
+        ///
+        /// ## Parameters
+        /// - `self`: The wave to filter (will be freed after filtering)
+        /// - `filter_fn`: The filter function to apply
+        ///
+        /// ## Returns
+        /// A new Wave containing the filtered result
+        ///
+        /// ## Panics
+        /// Panics if the filter function returns an error
         pub fn filter(
             self: Self,
             filter_fn: fn (self: Self) anyerror!Self,

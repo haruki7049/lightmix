@@ -38,6 +38,7 @@ pub fn inner(comptime T: type) type {
 
         const Self = @This();
 
+        /// Information about a wave to be placed at a specific time point.
         pub const WaveInfo = struct {
             wave: Wave(T),
             start_point: usize,
@@ -61,11 +62,20 @@ pub fn inner(comptime T: type) type {
             }
         };
 
+        /// Options for initializing a Composer instance.
         pub const InitOptions = struct {
             sample_rate: u32,
             channels: u16,
         };
 
+        /// Creates a new empty Composer instance.
+        ///
+        /// ## Parameters
+        /// - `allocator`: Memory allocator for internal allocations
+        /// - `options`: Initialization options (sample rate and channel count)
+        ///
+        /// ## Returns
+        /// A new Composer instance with no waves
         pub fn init(
             allocator: std.mem.Allocator,
             options: InitOptions,
@@ -79,10 +89,23 @@ pub fn inner(comptime T: type) type {
             };
         }
 
+        /// Frees the memory allocated for the composer's internal data.
+        ///
+        /// Note: This does not free the individual Wave instances stored in WaveInfo.
+        /// Those must be freed separately by the caller.
         pub fn deinit(self: Self) void {
             self.allocator.free(self.info);
         }
 
+        /// Creates a new Composer instance initialized with the provided wave information.
+        ///
+        /// ## Parameters
+        /// - `info`: Slice of WaveInfo structures describing waves and their start points
+        /// - `allocator`: Memory allocator for internal allocations
+        /// - `options`: Initialization options (sample rate and channel count)
+        ///
+        /// ## Returns
+        /// A new Composer instance containing the provided waves
         pub fn init_with(
             info: []const WaveInfo,
             allocator: std.mem.Allocator,
@@ -100,6 +123,17 @@ pub fn inner(comptime T: type) type {
             };
         }
 
+        /// Appends a single wave to the composition.
+        ///
+        /// Returns a new Composer instance with the added wave. The original
+        /// Composer is consumed and should not be used after this call.
+        ///
+        /// ## Parameters
+        /// - `self`: The composer to add to
+        /// - `waveinfo`: Information about the wave and when it should start
+        ///
+        /// ## Returns
+        /// A new Composer instance with the wave added
         pub fn append(self: Self, waveinfo: WaveInfo) Self {
             var d: std.array_list.Aligned(WaveInfo, null) = .empty;
             d.appendSlice(self.allocator, self.info) catch @panic("Out of memory");
@@ -116,6 +150,17 @@ pub fn inner(comptime T: type) type {
             };
         }
 
+        /// Appends multiple waves to the composition.
+        ///
+        /// Returns a new Composer instance with the added waves. The original
+        /// Composer is consumed and should not be used after this call.
+        ///
+        /// ## Parameters
+        /// - `self`: The composer to add to
+        /// - `append_list`: Slice of WaveInfo structures to append
+        ///
+        /// ## Returns
+        /// A new Composer instance with all the waves added
         pub fn appendSlice(self: Self, append_list: []const WaveInfo) Self {
             var d: std.array_list.Aligned(WaveInfo, null) = .empty;
             d.appendSlice(self.allocator, self.info) catch @panic("Out of memory");
@@ -132,6 +177,19 @@ pub fn inner(comptime T: type) type {
             };
         }
 
+        /// Finalizes the composition by mixing all waves together.
+        ///
+        /// This creates a single Wave by:
+        /// 1. Calculating the total length needed
+        /// 2. Padding each wave to align with its start_point
+        /// 3. Mixing all waves together using the provided mixer function
+        ///
+        /// ## Parameters
+        /// - `self`: The composer containing all the waves to mix
+        /// - `options`: Mixing options (includes the mixer function)
+        ///
+        /// ## Returns
+        /// A new Wave containing the final mixed composition
         pub fn finalize(self: Self, options: Wave(T).mixOptions) Wave(T) {
             var end_point: usize = 0;
 
