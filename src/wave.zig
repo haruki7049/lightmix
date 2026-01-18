@@ -556,4 +556,5 @@ test "Run tests for each samples' type" {
     _ = inner(f128);
     _ = inner(f80);
     _ = inner(f64);
+    // _ = inner(f32); zigggwavvv 0.2.1 cannot use f32 as samples' type
 }
