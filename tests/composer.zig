@@ -53,7 +53,7 @@ test "Compose multiple soundless Wave" {
     defer allocator.free(result_bytes);
 
     // Read the actual file
-    const expected_bytes = try std.fs.cwd().readFileAlloc(allocator, "tests/assets/soundless.wav", 10 * 1024 * 1024);
+    const expected_bytes = try std.fs.cwd().readFileAlloc(allocator, "tests/assets/soundless.wav", 100 * 1024 * 1024);
     defer allocator.free(expected_bytes);
 
     try std.testing.expectEqualSlices(u8, expected_bytes, result_bytes);
