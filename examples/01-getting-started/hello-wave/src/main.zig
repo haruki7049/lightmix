@@ -24,23 +24,21 @@ pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
     // Generate a 440Hz sine wave (A4 note)
-    const frequency: f32 = 440.0;
-    const sample_rate: f32 = 44100.0;
-    const duration_seconds: f32 = 1.0;
-    const num_samples: usize = @intFromFloat(sample_rate * duration_seconds);
+    const frequency: f64 = 440.0;
+    const sample_rate: f64 = 44100.0;
 
     // Calculate radians per second for sine wave generation
-    const radians_per_sec: f32 = frequency * 2.0 * std.math.pi;
+    const radians_per_sec: f64 = frequency * 2.0 * std.math.pi;
 
     // Generate the audio samples
-    var samples: [44100]f32 = undefined;
-    for (samples, 0..) |*sample, i| {
-        const t = @as(f32, @floatFromInt(i)) / sample_rate;
-        sample.* = 0.5 * @sin(radians_per_sec * t); // 0.5 = volume control
+    var samples: [44100]f64 = undefined;
+    for (0..samples.len) |i| {
+        const t = @as(f64, @floatFromInt(i)) / sample_rate;
+        samples[i] = 0.5 * @sin(radians_per_sec * t); // 0.5 = volume control
     }
 
     // Create a Wave object from our samples
-    const wave = Wave.init(samples[0..], allocator, .{
+    const wave = Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1, // Mono audio
     });
@@ -49,9 +47,18 @@ pub fn main() !void {
     // Save the wave to a WAV file
     const file = try std.fs.cwd().createFile("result.wav", .{});
     defer file.close();
+    const buf = try allocator.alloc(u8, 10 * 1024 * 1024);
+    defer allocator.free(buf);
+    var writer = file.writer(buf);
 
     // Write as 16-bit integer PCM (most common format)
-    try wave.write(file, .i16);
+    try wave.write(&writer.interface, .{
+        .allocator = allocator,
+        .format_code = .pcm,
+        .bits = 16,
+    });
+
+    try writer.interface.flush();
 
     std.debug.print("✓ Created result.wav - A 440Hz sine wave!\n", .{});
     std.debug.print("  Duration: 1 second\n", .{});
