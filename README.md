@@ -40,20 +40,20 @@ The `createWave` function is a build-time helper that allows you to generate Wav
 
 #### How to use `createWave`
 
-1. First, create a module with a function that generates a `lightmix.Wave`:
+1. First, create a module with a function that generates a Wave:
 
 ```zig
 // In your src/root.zig or similar file
 const std = @import("std");
 const lightmix = @import("lightmix");
 
-pub fn generate() !lightmix.Wave {
+pub fn generate() !lightmix.Wave(f64) {
     const allocator = std.heap.page_allocator;
     
     // Generate your audio data (example: 1 second of silence)
-    const data: [44100]f32 = [_]f32{0.0} ** 44100;
+    const data: [44100]f64 = [_]f64{0.0} ** 44100;
     
-    const wave = lightmix.Wave.init(data[0..], allocator, .{
+    const wave = lightmix.Wave(f64).init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
@@ -103,7 +103,7 @@ pub fn build(b: *std.Build) !void {
 
 #### `createWave` Options
 
-- **`func_name`**: The name of the function in your module that generates the Wave. The function must have the signature `pub fn name() !lightmix.Wave` (default: `"gen"`)
+- **`func_name`**: The name of the function in your module that generates the Wave. The function must have the signature `pub fn name() !lightmix.Wave(T)` where T is your chosen sample type (e.g., f64) (default: `"gen"`)
 - **`path`**: The installation directory relative to the install prefix (default: `.{ .custom = "share" }`)
 - **`wave.name`**: The output filename for the wave file (default: `"result.wav"`)
 - **`wave.bit_type`**: The bit depth for the wave file - can be `.i16`, `.i24`, or `.f32`
@@ -114,53 +114,60 @@ You can find a complete example in [./examples/Wave/generate_by_build_zig](./exa
 
 ### `Wave`
 
-Contains a PCM audio source.
+`Wave` is a generic type function that accepts a sample type parameter. It contains PCM audio source with samples of the specified floating-point type.
+
+Supported sample types: `f64`, `f80`, `f128` (Note: `f32` is not supported in zigggwavvv 0.2.1)
 
 ```zig
 const allocator = std.heap.page_allocator; // Use your allocator
-const data: []const f32 = &[_]f32{ 0.0, 0.0, 0.0 }; // This array contains 3 float number, then this wave will make from 3 samples.
+const data: []const f64 = &[_]f64{ 0.0, 0.0, 0.0 }; // This array contains 3 float numbers, then this wave will be made from 3 samples.
 
-const wave: lightmix.Wave = Wave.init(data, allocator, .{
+const wave = lightmix.Wave(f64).init(data, allocator, .{
     .sample_rate = 44100, // Samples per second.
     .channels = 1, // Channels for this Wave. If this wave has two channels, it means this wave is stereo.
 });
-defer wave.deinit(); // Wave.data is owned data by passed allocator, then you must `free` this wave.
+defer wave.deinit(); // Wave samples are owned by the passed allocator, so you must free this wave.
 ```
 
-You can write your `Wave` to your wave file, such as `result.wav`.
+You can write your `Wave` to a wave file, such as `result.wav`.
 
 ```zig
-// First, create your `Wave`.
-const wave: lightmix.Wave = generate_wave();
+// First, create your Wave with a specific sample type
+const wave = generate_wave(); // Returns a Wave(f64)
 
 // Second, you must create a file, typed as `std.fs.File`.
 var file = try std.fs.cwd().createFile("result.wav", .{});
 defer file.close();
 
 // Then, write down your wave!!
-try wave.write(file, .i16);
+try wave.write(file.writer(), .{
+    .allocator = allocator,
+    .bits = 16,  // Bit depth for the output file
+    .format_code = .pcm,  // Format code (e.g., .pcm or .ieee_float)
+});
 ```
 
 ### `Composer`
 
-Contains a `Composer.WaveInfo` array, which contains a `Wave` and the timing when it plays.
+`Composer` is a generic type function that accepts a sample type parameter (same as Wave). It contains a `Composer(T).WaveInfo` array, which contains a `Wave(T)` and the timing when it plays.
 
 ```zig
 const allocator = std.heap.page_allocator; // Use your allocator
-const wave: lightmix.Wave = generate_wave();
+const wave = generate_wave(); // Returns a Wave(f64)
 
-const info: []const lightmix.Composer.WaveInfo = &[_]lightmix.Composer.WaveInfo{
+const Composer = lightmix.Composer(f64);
+const info: []const Composer.WaveInfo = &[_]Composer.WaveInfo{
     .{ .wave = wave, .start_point = 0 },
     .{ .wave = wave, .start_point = 44100 },
 };
-const composer: lightmix.Composer = Composer.init_with(info, allocator, .{
+const composer = Composer.init_with(info, allocator, .{
     .sample_rate = 44100, // Samples per second.
     .channels = 1, // Channels for the Wave. If this composer has two channels, it means the wave is stereo.
 });
-defer composer.deinit(); // Composer.info is also owned data by passed allocator, then you must `free` this wave.
+defer composer.deinit(); // Composer.info is also owned by the passed allocator, so you must free this composer.
 
-const result: lightmix.Wave = composer.finalize(.{}); // Let's finalize to create a `Wave`!!
-defer result.deinit(); // Don't forget to free the `Wave` data.
+const result = composer.finalize(.{}); // Let's finalize to create a Wave(f64)!!
+defer result.deinit(); // Don't forget to free the Wave data.
 ```
 
 ## Zig version
