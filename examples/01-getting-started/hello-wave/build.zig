@@ -12,8 +12,10 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
+        .imports = &.{
+            .{ .name = "lightmix", .module = lightmix.module("lightmix") },
+        },
     });
-    exe_mod.addImport("lightmix", lightmix.module("lightmix"));
 
     // Executable
     const exe = b.addExecutable(.{
