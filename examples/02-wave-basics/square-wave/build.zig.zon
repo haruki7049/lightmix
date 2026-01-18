@@ -1,11 +1,15 @@
 .{
-    .name = "square-wave",
+    .name = .square_wave,
     .version = "0.1.0",
+    .fingerprint = 0xd1743863eb9f5d29,
+    .minimum_zig_version = "0.15.2",
+
     .dependencies = .{
         .lightmix = .{
             .path = "../../..",
         },
     },
+
     .paths = .{
         "build.zig",
         "build.zig.zon",
