@@ -1,9 +1,11 @@
 //! # Wave
 //!
 //! The Wave module provides a comprehensive interface for working with PCM audio data in Zig.
-//! Wave is a generic type function that accepts a sample type (f64, f32, f80, f128), allowing
+//! Wave is a generic type function that accepts a sample type (f64, f80, f128), allowing
 //! you to work with different floating-point precisions for audio samples. It supports various
 //! operations such as mixing, filtering, and file I/O.
+//!
+//! Note: f32 is not currently supported due to limitations in zigggwavvv 0.2.1.
 //!
 //! ## Basic Usage
 //!

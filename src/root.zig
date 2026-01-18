@@ -5,7 +5,7 @@
 //!
 //! ## Features
 //!
-//! - **Wave**: Generate and manipulate PCM audio samples with support for multiple channels and sample rates. Wave is a generic type function that accepts sample types (f64, f32, f80, f128).
+//! - **Wave**: Generate and manipulate PCM audio samples with support for multiple channels and sample rates. Wave is a generic type function that accepts sample types (f64, f80, f128). Note: f32 is not currently supported.
 //! - **Composer**: Compose multiple audio waves with precise timing control. Composer is also generic and works with Wave(T) instances.
 //! - **Audio Filters**: Apply transformations to audio samples using custom filter functions
 //! - **WAV File I/O**: Read and write WAV files with various bit depths and format codes
