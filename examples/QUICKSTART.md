@@ -71,10 +71,10 @@ Follow this recommended order:
 
 After running an example:
 
-**Linux:** `aplay result.wav`\
-**macOS:** `afplay result.wav`\
-**Windows:** `start result.wav`\
-**All:** VLC, Audacity, or any audio player
+- **Linux:** `aplay result.wav`
+- **macOS:** `afplay result.wav`
+- **Windows:** `start result.wav`
+- **All:** VLC, Audacity, or any audio player
 
 ## 📖 Full Documentation
 
