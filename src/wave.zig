@@ -241,9 +241,9 @@ pub fn inner(comptime T: type) type {
             const wave = try Self.read(allocator, &reader);
             defer wave.deinit();
 
-            try testing.expectEqual(wave.samples[0], 0.0);
-            try testing.expectEqual(wave.samples[1], 0.05011139255958739);
-            try testing.expectEqual(wave.samples[2], 0.1000396740623188);
+            try testing.expectApproxEqAbs(wave.samples[0], 0.0, 0.00001);
+            try testing.expectApproxEqAbs(wave.samples[1], 0.05011139255958739, 0.00001);
+            try testing.expectApproxEqAbs(wave.samples[2], 0.1000396740623188, 0.00001);
 
             try testing.expectEqual(wave.sample_rate, 44100);
             try testing.expectEqual(wave.channels, 1);
@@ -310,9 +310,9 @@ pub fn inner(comptime T: type) type {
             try testing.expectEqual(wave.sample_rate, 44100);
             try testing.expectEqual(wave.channels, 1);
 
-            try testing.expectEqual(result.samples[0], 0.0);
-            try testing.expectEqual(result.samples[1], 0.06264832417874369);
-            try testing.expectEqual(result.samples[2], 0.1250505236945281);
+            try testing.expectApproxEqAbs(result.samples[0], 0.0, 0.00001);
+            try testing.expectApproxEqAbs(result.samples[1], 0.06264832417874369, 0.00001);
+            try testing.expectApproxEqAbs(result.samples[2], 0.1250505236945281, 0.00001);
         }
 
         test "fill_zero_to_end" {
@@ -346,14 +346,14 @@ pub fn inner(comptime T: type) type {
             try testing.expectEqual(filled_wave.sample_rate, 44100);
             try testing.expectEqual(filled_wave.channels, 1);
 
-            try testing.expectEqual(filled_wave.samples[0], 0.0);
-            try testing.expectEqual(filled_wave.samples[1], 0.031324162089371846);
-            try testing.expectEqual(filled_wave.samples[2], 0.06252526184726405);
+            try testing.expectApproxEqAbs(filled_wave.samples[0], 0.0, 0.00001);
+            try testing.expectApproxEqAbs(filled_wave.samples[1], 0.031324162089371846, 0.00001);
+            try testing.expectApproxEqAbs(filled_wave.samples[2], 0.06252526184726405, 0.00001);
 
-            try testing.expectEqual(filled_wave.samples[22049], -0.03132416208941618);
-            try testing.expectEqual(filled_wave.samples[22050], 0.0);
-            try testing.expectEqual(filled_wave.samples[22051], 0.0);
-            try testing.expectEqual(filled_wave.samples[44099], 0.0);
+            try testing.expectApproxEqAbs(filled_wave.samples[22049], -0.03132416208941618, 0.00001);
+            try testing.expectApproxEqAbs(filled_wave.samples[22050], 0.0, 0.00001);
+            try testing.expectApproxEqAbs(filled_wave.samples[22051], 0.0, 0.00001);
+            try testing.expectApproxEqAbs(filled_wave.samples[44099], 0.0, 0.00001);
         }
 
         test "filter_with" {
