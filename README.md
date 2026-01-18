@@ -108,7 +108,7 @@ pub fn build(b: *std.Build) !void {
 - **`path`**: The installation directory relative to the install prefix (default: `.{ .custom = "share" }`)
 - **`wave.name`**: The output filename for the wave file (default: `"result.wav"`)
 - **`wave.bits`**: The bit depth for the wave file, which is typed u16
-- **`wave.format_code`**: Audio encoding format (e.g., .pcm, .ieee\_float)
+- **`wave.format_code`**: Audio encoding format (e.g., .pcm, .ieee_float)
 
 You can find a complete example in [./examples/Wave/generate_by_build_zig](./examples/Wave/generate_by_build_zig).
 
