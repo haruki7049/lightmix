@@ -1,8 +1,9 @@
 //! # Wave
 //!
 //! The Wave module provides a comprehensive interface for working with PCM audio data in Zig.
-//! It represents audio waveforms as arrays of f32 samples, supporting various operations
-//! such as mixing, filtering, and file I/O.
+//! Wave is a generic type function that accepts a sample type (f64, f32, f80, f128), allowing
+//! you to work with different floating-point precisions for audio samples. It supports various
+//! operations such as mixing, filtering, and file I/O.
 //!
 //! ## Basic Usage
 //!
@@ -14,9 +15,9 @@
 //! const Wave = lightmix.Wave;
 //!
 //! const allocator = std.heap.page_allocator;
-//! const samples: []const f32 = &[_]f32{ 0.0, 0.5, 1.0, 0.5, 0.0 };
+//! const samples: []const f64 = &[_]f64{ 0.0, 0.5, 1.0, 0.5, 0.0 };
 //!
-//! const wave = Wave.init(samples, allocator, .{
+//! const wave = Wave(f64).init(samples, allocator, .{
 //!     .sample_rate = 44100,
 //!     .channels = 1,
 //! });
@@ -26,24 +27,20 @@
 //! ## Loading from WAV file
 //!
 //! ```zig
-//! const wave = Wave.from_file_content(
-//!     .i16,
-//!     @embedFile("./assets/sine.wav"),
-//!     allocator
-//! );
+//! const wave = Wave(f64).read(allocator, reader);
 //! defer wave.deinit();
 //! ```
 //!
 //! ## Mixing Waves
 //!
 //! ```zig
-//! const samples1: []const f32 = &[_]f32{ 0.5, 0.3, 0.1 };
-//! const samples2: []const f32 = &[_]f32{ 0.2, 0.4, 0.3 };
+//! const samples1: []const f64 = &[_]f64{ 0.5, 0.3, 0.1 };
+//! const samples2: []const f64 = &[_]f64{ 0.2, 0.4, 0.3 };
 //!
-//! const wave1 = Wave.init(samples1, allocator, .{ .sample_rate = 44100, .channels = 1 });
+//! const wave1 = Wave(f64).init(samples1, allocator, .{ .sample_rate = 44100, .channels = 1 });
 //! defer wave1.deinit();
 //!
-//! const wave2 = Wave.init(samples2, allocator, .{ .sample_rate = 44100, .channels = 1 });
+//! const wave2 = Wave(f64).init(samples2, allocator, .{ .sample_rate = 44100, .channels = 1 });
 //! defer wave2.deinit();
 //!
 //! const mixed = wave1.mix(wave2, .{});
