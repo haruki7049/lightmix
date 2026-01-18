@@ -2,6 +2,22 @@ const std = @import("std");
 const zigggwavvv = @import("zigggwavvv");
 const testing = std.testing;
 
+/// Wave type function: Creates a Wave type for the specified sample type.
+///
+/// Wave represents audio waveform data with methods for manipulation, mixing, and I/O.
+///
+/// ## Type Parameter
+/// - `T`: The sample data type (typically f64, f80, or f128 for floating-point audio)
+///
+/// ## Usage
+/// ```zig
+/// const Wave = lightmix.Wave;
+/// const wave = Wave(f64).init(samples, allocator, .{
+///     .sample_rate = 44100,
+///     .channels = 1,
+/// });
+/// defer wave.deinit();
+/// ```
 pub fn inner(comptime T: type) type {
     return struct {
         const Self = @This();

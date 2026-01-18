@@ -2,6 +2,33 @@ const std = @import("std");
 const testing = std.testing;
 const Wave = @import("./root.zig").Wave;
 
+/// Composer type function: Creates a Composer type for the specified sample type.
+///
+/// Composer allows sequencing and overlaying multiple Wave instances in time to create
+/// complex audio arrangements.
+///
+/// ## Type Parameter
+/// - `T`: The sample data type (typically f64, f80, or f128 for floating-point audio)
+///
+/// ## Usage
+/// ```zig
+/// const Composer = lightmix.Composer;
+/// const composer = Composer(f64).init(allocator, .{
+///     .sample_rate = 44100,
+///     .channels = 1,
+/// });
+/// defer composer.deinit();
+///
+/// // Append waves at specific time points
+/// const composed = composer
+///     .append(.{ .wave = wave1, .start_point = 0 })
+///     .append(.{ .wave = wave2, .start_point = 22050 });
+/// defer composed.deinit();
+///
+/// // Finalize to create the mixed result
+/// const result = composed.finalize(.{});
+/// defer result.deinit();
+/// ```
 pub fn inner(comptime T: type) type {
     return struct {
         info: []const WaveInfo,
