@@ -94,20 +94,31 @@ pub fn createWave(
     const gen_source = try std.fmt.allocPrint(b.allocator,
         \\const std = @import("std");
         \\const user_module = @import("user_module");
+        \\const allocator = std.heap.page_allocator;
         \\
         \\pub fn main() !void {{
         \\    const wave = try user_module.{s}();
         \\    defer wave.deinit();
         \\
-        \\    var file = try std.fs.cwd().createFile("{s}", .{{}});
+        \\    const file = try std.fs.cwd().createFile("{s}", .{{}});
         \\    defer file.close();
+        \\    const buf = try allocator.alloc(u8, 10 * 1024 * 1024);
+        \\    defer allocator.free(buf);
+        \\    var writer = file.writer(buf);
         \\
-        \\    try wave.write(file, .{s});
+        \\    try wave.write(&writer.interface, .{{
+        \\        .allocator = allocator,
+        \\        .format_code = .{s},
+        \\        .bits = {d},
+        \\    }});
+        \\
+        \\    try writer.interface.flush();
         \\}}
     , .{
         options.func_name,
         tmp_path,
-        @tagName(options.wave.bit_type),
+        @tagName(options.wave.format_code),
+        options.wave.bits,
     });
 
     // Create a write files step to generate the temporary source
