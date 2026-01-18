@@ -23,8 +23,11 @@ pub fn main() !void {
 
     // Generate three notes of a C major chord
     const c4 = generateSineWave(261.63, 0.3, allocator); // C4 - root
+    defer c4.deinit();
     const e4 = generateSineWave(329.63, 0.3, allocator); // E4 - major third
+    defer e4.deinit();
     const g4 = generateSineWave(392.00, 0.3, allocator); // G4 - perfect fifth
+    defer g4.deinit();
 
     // Mix the first two notes
     const c_e_mix = c4.mix(e4, .{});

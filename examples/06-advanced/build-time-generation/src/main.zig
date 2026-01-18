@@ -22,8 +22,11 @@ pub fn main() !void {
 
     // Generate a chord using const-compatible patterns
     const c5 = generateSineWave(523.25, allocator); // C5
+    defer c5.deinit();
     const e5 = generateSineWave(659.25, allocator); // E5
+    defer e5.deinit();
     const g5 = generateSineWave(783.99, allocator); // G5
+    defer g5.deinit();
 
     // Mix the three notes
     const ce_mix = c5.mix(e5, .{});

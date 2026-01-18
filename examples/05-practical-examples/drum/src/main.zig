@@ -30,9 +30,11 @@ pub fn main() !void {
 fn generateSnare(allocator: std.mem.Allocator) Wave {
     // Generate pink noise for snare wires
     const noise = generatePinkNoise(allocator);
+    defer noise.deinit();
     
     // Generate low sine for drum body
     const tone = generateDrumTone(allocator);
+    defer tone.deinit();
 
     // Apply aggressive decay to noise
     const decayed_noise = noise

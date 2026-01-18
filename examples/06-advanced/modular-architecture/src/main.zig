@@ -22,10 +22,7 @@ pub fn main() !void {
 
     // Use modular generators to create sounds
     const kick = Generators.kick(allocator);
-    defer kick.deinit();
-
     const hihat = Generators.hihat(allocator);
-    defer hihat.deinit();
 
     // Process with envelope
     const shaped_kick = kick.filter(Envelopes.exponentialDecay);
