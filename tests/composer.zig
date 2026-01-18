@@ -2,11 +2,10 @@ const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
 const Composer = lightmix.Composer;
-const WaveInfo = lightmix.Composer.WaveInfo;
 
 test "Compose multiple soundless Wave" {
     const allocator = std.testing.allocator;
-    const composer: Composer = Composer.init(allocator, .{
+    const composer = Composer(f64).init(allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
@@ -15,13 +14,13 @@ test "Compose multiple soundless Wave" {
     const data: []const f64 = generate_soundless_data(44100, allocator);
     defer allocator.free(data);
 
-    const wave = Wave.init(data, allocator, .{
+    const wave = Wave(f64).init(data, allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
     defer wave.deinit();
 
-    var append_list: std.array_list.Aligned(WaveInfo, null) = .empty;
+    var append_list: std.array_list.Aligned(Composer(f64).WaveInfo, null) = .empty;
     defer append_list.deinit(allocator);
     try append_list.append(allocator, .{ .wave = wave, .start_point = 0 });
     try append_list.append(allocator, .{ .wave = wave, .start_point = 0 });
@@ -29,7 +28,7 @@ test "Compose multiple soundless Wave" {
     const appended_composer = composer.appendSlice(append_list.items);
     defer appended_composer.deinit();
 
-    const result: Wave = appended_composer.finalize(.{});
+    const result = appended_composer.finalize(.{});
     defer result.deinit();
 
     // Create TmpDir

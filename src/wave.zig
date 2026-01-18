@@ -253,22 +253,22 @@ pub fn inner(comptime T: type) type {
             const allocator = testing.allocator;
 
             const generator = struct {
-                fn sinewave() [44100]f64 {
-                    const sample_rate: f64 = 44100.0;
-                    const radins_per_sec: f64 = 440.0 * 2.0 * std.math.pi;
+                fn sinewave() [44100]T {
+                    const sample_rate: T = 44100.0;
+                    const radins_per_sec: T = 440.0 * 2.0 * std.math.pi;
 
-                    var result: [44100]f64 = undefined;
+                    var result: [44100]T = undefined;
                     var i: usize = 0;
 
                     while (i < result.len) : (i += 1) {
-                        result[i] = 0.5 * std.math.sin(@as(f64, @floatFromInt(i)) * radins_per_sec / sample_rate);
+                        result[i] = 0.5 * std.math.sin(@as(T, @floatFromInt(i)) * radins_per_sec / sample_rate);
                     }
 
                     return result;
                 }
             };
 
-            const samples: [44100]f64 = generator.sinewave();
+            const samples: [44100]T = generator.sinewave();
             const wave = Self.init(samples[0..], allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
@@ -282,22 +282,22 @@ pub fn inner(comptime T: type) type {
         test "mix" {
             const allocator = testing.allocator;
             const generator = struct {
-                fn sinewave() [44100]f64 {
-                    const sample_rate: f64 = 44100.0;
-                    const radins_per_sec: f64 = 440.0 * 2.0 * std.math.pi;
+                fn sinewave() [44100]T {
+                    const sample_rate: T = 44100.0;
+                    const radins_per_sec: T = 440.0 * 2.0 * std.math.pi;
 
-                    var result: [44100]f64 = undefined;
+                    var result: [44100]T = undefined;
                     var i: usize = 0;
 
                     while (i < result.len) : (i += 1) {
-                        result[i] = 0.5 * std.math.sin(@as(f64, @floatFromInt(i)) * radins_per_sec / sample_rate);
+                        result[i] = 0.5 * std.math.sin(@as(T, @floatFromInt(i)) * radins_per_sec / sample_rate);
                     }
 
                     return result;
                 }
             };
 
-            const samples: [44100]f64 = generator.sinewave();
+            const samples: [44100]T = generator.sinewave();
             const wave = Self.init(samples[0..], allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
@@ -318,22 +318,22 @@ pub fn inner(comptime T: type) type {
         test "fill_zero_to_end" {
             const allocator = testing.allocator;
             const generator = struct {
-                fn sinewave() [44100]f64 {
-                    const sample_rate: f64 = 44100.0;
-                    const radins_per_sec: f64 = 440.0 * 2.0 * std.math.pi;
+                fn sinewave() [44100]T {
+                    const sample_rate: T = 44100.0;
+                    const radins_per_sec: T = 440.0 * 2.0 * std.math.pi;
 
-                    var result: [44100]f64 = undefined;
+                    var result: [44100]T = undefined;
                     var i: usize = 0;
 
                     while (i < result.len) : (i += 1) {
-                        result[i] = 0.5 * std.math.sin(@as(f64, @floatFromInt(i)) * radins_per_sec / sample_rate);
+                        result[i] = 0.5 * std.math.sin(@as(T, @floatFromInt(i)) * radins_per_sec / sample_rate);
                     }
 
                     return result;
                 }
             };
 
-            const samples: [44100]f64 = generator.sinewave();
+            const samples: [44100]T = generator.sinewave();
             const wave = Self.init(samples[0..], allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
@@ -358,7 +358,7 @@ pub fn inner(comptime T: type) type {
 
         test "filter_with" {
             const allocator = testing.allocator;
-            const samples: []const f64 = &[_]f64{};
+            const samples: []const T = &[_]T{};
             const wave = Self.init(samples[0..], allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
@@ -379,7 +379,7 @@ pub fn inner(comptime T: type) type {
             original_wave: Self,
             args: ArgsForTesting,
         ) !Self {
-            var result: std.array_list.Aligned(f64, null) = .empty;
+            var result: std.array_list.Aligned(T, null) = .empty;
 
             for (0..args.samples) |_|
                 try result.append(original_wave.allocator, 0.0);
@@ -399,7 +399,7 @@ pub fn inner(comptime T: type) type {
 
         test "filter" {
             const allocator = testing.allocator;
-            const samples: []const f64 = &[_]f64{};
+            const samples: []const T = &[_]T{};
             const wave = Self.init(samples, allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
@@ -419,7 +419,7 @@ pub fn inner(comptime T: type) type {
         }
 
         fn test_filter_without_args(original_wave: Self) !Self {
-            var result: std.array_list.Aligned(f64, null) = .empty;
+            var result: std.array_list.Aligned(T, null) = .empty;
 
             for (0..5) |_|
                 try result.append(original_wave.allocator, 0.0);
@@ -435,7 +435,7 @@ pub fn inner(comptime T: type) type {
 
         test "filter memory leaks' check" {
             const allocator = testing.allocator;
-            const samples: []const f64 = &[_]f64{};
+            const samples: []const T = &[_]T{};
             const wave = Self.init(samples, allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
@@ -459,7 +459,7 @@ pub fn inner(comptime T: type) type {
 
         test "init with empty samples" {
             const allocator = testing.allocator;
-            const samples: []const f64 = &[_]f64{};
+            const samples: []const T = &[_]T{};
             const wave = Self.init(samples, allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
@@ -473,7 +473,7 @@ pub fn inner(comptime T: type) type {
 
         test "init creates deep copy of samples" {
             const allocator = testing.allocator;
-            var original_samples = [_]f64{ 1.0, 2.0, 3.0 };
+            var original_samples = [_]T{ 1.0, 2.0, 3.0 };
             const wave = Self.init(&original_samples, allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
@@ -491,7 +491,7 @@ pub fn inner(comptime T: type) type {
 
         test "init with different channels" {
             const allocator = testing.allocator;
-            const samples: []const f64 = &[_]f64{ 1.0, 2.0, 3.0, 4.0 };
+            const samples: []const T = &[_]T{ 1.0, 2.0, 3.0, 4.0 };
 
             // Mono
             const wave_mono = Self.init(samples, allocator, .{
@@ -512,8 +512,8 @@ pub fn inner(comptime T: type) type {
 
         test "mix preserves wave properties" {
             const allocator = testing.allocator;
-            const samples1: []const f64 = &[_]f64{ 1.0, 2.0, 3.0 };
-            const samples2: []const f64 = &[_]f64{ 0.5, 1.0, 1.5 };
+            const samples1: []const T = &[_]T{ 1.0, 2.0, 3.0 };
+            const samples2: []const T = &[_]T{ 0.5, 1.0, 1.5 };
 
             const wave1 = Self.init(samples1, allocator, .{
                 .sample_rate = 48000,
