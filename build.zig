@@ -78,6 +78,39 @@ pub fn build(b: *std.Build) void {
     docs_step.dependOn(&docs_install.step);
 }
 
+/// Creates a build step that generates a WAV file at compile time.
+///
+/// This function enables compile-time audio generation by calling a user-defined
+/// function that returns a Wave instance, then writing it to a WAV file during
+/// the build process.
+///
+/// ## Parameters
+/// - `b`: The build context
+/// - `mod`: The module containing the wave generation function
+/// - `options`: Configuration options for wave generation
+///
+/// ## Returns
+/// A build step that can be added as a dependency to install the generated WAV file
+///
+/// ## Usage
+/// ```zig
+/// const lightmix = b.dependency("lightmix", .{});
+/// const mod = b.createModule(.{
+///     .root_source_file = b.path("src/main.zig"),
+///     .imports = &.{
+///         .{ .name = "lightmix", .module = lightmix.module("lightmix") },
+///     },
+/// });
+///
+/// const wave_step = try lightmix.artifact("lightmix").?.builder.createWave(b, mod, .{
+///     .func_name = "gen",
+///     .wave = .{ .bits = 16, .format_code = .pcm },
+/// });
+/// b.getInstallStep().dependOn(wave_step);
+/// ```
+///
+/// The user module must export a function matching the signature specified in
+/// `options.func_name` (default: "gen") that returns `!lightmix.Wave(T)`.
 pub fn createWave(
     b: *std.Build,
     mod: *std.Build.Module,
@@ -153,26 +186,35 @@ pub fn createWave(
     return &install_wave.step;
 }
 
+/// Options for configuring compile-time wave generation.
+///
+/// These options control how the wave generation function is called and
+/// where the resulting WAV file is installed.
 pub const CreateWaveOptions = struct {
     /// Name of the function in the module that generates the Wave.
-    /// The function must have signature: `pub fn name() !lightmix.Wave`
+    /// The function must have signature: `pub fn name() !lightmix.Wave(T)`
+    /// where T is typically f64, f80, or f128.
     func_name: []const u8 = "gen",
 
-    /// Destination path relative to the install prefix
+    /// Destination path relative to the install prefix where the WAV file will be installed.
+    /// Defaults to the "share" directory.
     path: std.Build.InstallDir = .{ .custom = "share" },
 
-    /// Configuration for the wave file (name and bit type)
+    /// Configuration for the wave file output (filename, bit depth, and format).
     wave: WavefileOptions,
 };
 
-/// Options for configuring a wave file's properties.
+/// Options for configuring a wave file's output properties.
 ///
-/// This struct specifies the output filename and bit depth for the wave file.
+/// This struct specifies the output filename, bit depth, and audio format
+/// for the generated WAV file.
 pub const WavefileOptions = struct {
-    /// The output filename for the wave file
+    /// The output filename for the wave file (e.g., "result.wav", "audio.wav").
     name: []const u8 = "result.wav",
-    /// The bit depth for the wave file
+    
+    /// The bit depth for the wave file (e.g., 16, 24, or 32 bits per sample).
     bits: u16,
-    /// Audio encoding format (e.g., .pcm, .ieee_float)
+    
+    /// Audio encoding format such as .pcm (PCM integer) or .ieee_float (floating-point).
     format_code: z_wav.FormatCode,
 };
