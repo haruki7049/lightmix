@@ -2,7 +2,7 @@ const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
 
-pub fn gen() Wave(f64) {
+pub fn gen() !Wave(f64) {
     const allocator = std.heap.page_allocator;
 
     // Generate a chord using const-compatible patterns
