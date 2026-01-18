@@ -12,7 +12,7 @@ test "Compose multiple soundless Wave" {
     });
     defer composer.deinit();
 
-    const data: []const f32 = generate_soundless_data(44100, allocator);
+    const data: []const f64 = generate_soundless_data(44100, allocator);
     defer allocator.free(data);
 
     const wave = Wave.init(data, allocator, .{
@@ -59,14 +59,14 @@ test "Compose multiple soundless Wave" {
     try std.testing.expectEqualSlices(u8, expected_bytes, result_bytes);
 }
 
-fn generate_soundless_data(length: usize, allocator: std.mem.Allocator) []const f32 {
-    var list: std.array_list.Aligned(f32, null) = .empty;
+fn generate_soundless_data(length: usize, allocator: std.mem.Allocator) []const f64 {
+    var list: std.array_list.Aligned(f64, null) = .empty;
 
     // Append empty wave
     for (0..length) |_|
         list.append(allocator, 0.0) catch @panic("Out of memory");
 
-    const result: []const f32 = list.toOwnedSlice(allocator) catch @panic("Out of memory");
+    const result: []const f64 = list.toOwnedSlice(allocator) catch @panic("Out of memory");
 
     return result;
 }

@@ -60,7 +60,7 @@ const Self = @This();
 /// Each sample represents the amplitude at a specific point in time.
 /// The samples is stored in interleaved format for multi-channel audio
 /// (e.g., for stereo: L, R, L, R, ...).
-samples: []const f32,
+samples: []const f64,
 
 /// The allocator used to manage the wave's samples memory.
 /// This allocator is responsible for both allocating and freeing the samples array.
@@ -119,11 +119,11 @@ pub const Options = struct {
 /// }
 /// ```
 pub fn init(
-    samples: []const f32,
+    samples: []const f64,
     allocator: std.mem.Allocator,
     options: Options,
 ) Self {
-    const owned_samples = allocator.alloc(f32, samples.len) catch @panic("Out of memory");
+    const owned_samples = allocator.alloc(f64, samples.len) catch @panic("Out of memory");
     @memcpy(owned_samples, samples);
 
     return Self{
@@ -139,7 +139,7 @@ pub fn init(
 pub const mixOptions = struct {
     /// Custom mixing function to combine two samples.
     /// The default implementation adds the two samples together.
-    mixer: fn (f32, f32) f32 = default_mixing_expression,
+    mixer: fn (f64, f64) f64 = default_mixing_expression,
 };
 
 /// Default mixing expression that adds two samples together.
@@ -151,8 +151,8 @@ pub const mixOptions = struct {
 ///
 /// ## Returns
 /// The sum of the two samples
-pub fn default_mixing_expression(left: f32, right: f32) f32 {
-    const result: f32 = left + right;
+pub fn default_mixing_expression(left: f64, right: f64) f64 {
+    const result: f64 = left + right;
     return result;
 }
 
@@ -222,24 +222,24 @@ pub fn mix(self: Self, other: Self, options: mixOptions) Self {
 
     if (self.samples.len == 0)
         return Self{
-            .samples = &[_]f32{},
+            .samples = &[_]f64{},
             .allocator = self.allocator,
 
             .sample_rate = self.sample_rate,
             .channels = self.channels,
         };
 
-    var samples: std.array_list.Aligned(f32, null) = .empty;
+    var samples: std.array_list.Aligned(f64, null) = .empty;
 
     for (0..self.samples.len) |i| {
-        const left: f32 = self.samples[i];
-        const right: f32 = other.samples[i];
-        const result: f32 = options.mixer(left, right);
+        const left: f64 = self.samples[i];
+        const right: f64 = other.samples[i];
+        const result: f64 = options.mixer(left, right);
 
         samples.append(self.allocator, result) catch @panic("Out of memory");
     }
 
-    const result: []const f32 = samples.toOwnedSlice(self.allocator) catch @panic("Out of memory");
+    const result: []const f64 = samples.toOwnedSlice(self.allocator) catch @panic("Out of memory");
 
     return Self{
         .samples = result,
@@ -288,7 +288,7 @@ pub fn mix(self: Self, other: Self, options: mixOptions) Self {
 /// ```
 pub fn fill_zero_to_end(self: Self, start: usize, end: usize) !Self {
     // Initialization
-    var result: std.array_list.Aligned(f32, null) = .empty;
+    var result: std.array_list.Aligned(f64, null) = .empty;
     try result.appendSlice(self.allocator, self.samples);
 
     const delete_count: usize = result.items.len - start;
@@ -389,11 +389,11 @@ pub fn read(
     allocator: std.mem.Allocator,
     reader: anytype,
 ) anyerror!Self {
-    const zigggwavvv_wave = try zigggwavvv.Wave(f32).read(allocator, reader);
+    const zigggwavvv_wave = try zigggwavvv.Wave(f64).read(allocator, reader);
     defer zigggwavvv_wave.deinit(allocator);
 
     return Self{
-        .samples = try allocator.dupe(f32, zigggwavvv_wave.samples),
+        .samples = try allocator.dupe(f64, zigggwavvv_wave.samples),
         .allocator = allocator,
         .sample_rate = zigggwavvv_wave.sample_rate,
         .channels = zigggwavvv_wave.channels,
@@ -435,12 +435,12 @@ pub fn read(
 /// }
 /// ```
 pub fn write(self: Self, writer: anytype, options: WriteOptions) anyerror!void {
-    const zigggwavvv_wave = zigggwavvv.Wave(f32).init(.{
+    const zigggwavvv_wave = zigggwavvv.Wave(f64).init(.{
         .format_code = options.format_code,
         .sample_rate = self.sample_rate,
         .channels = self.channels,
         .bits = options.bits,
-        .samples = try options.allocator.dupe(f32, self.samples),
+        .samples = try options.allocator.dupe(f64, self.samples),
     });
 
     try zigggwavvv_wave.write(writer, .{
@@ -640,22 +640,22 @@ test "init & deinit" {
     const allocator = testing.allocator;
 
     const generator = struct {
-        fn sinewave() [44100]f32 {
-            const sample_rate: f32 = 44100.0;
-            const radins_per_sec: f32 = 440.0 * 2.0 * std.math.pi;
+        fn sinewave() [44100]f64 {
+            const sample_rate: f64 = 44100.0;
+            const radins_per_sec: f64 = 440.0 * 2.0 * std.math.pi;
 
-            var result: [44100]f32 = undefined;
+            var result: [44100]f64 = undefined;
             var i: usize = 0;
 
             while (i < result.len) : (i += 1) {
-                result[i] = 0.5 * std.math.sin(@as(f32, @floatFromInt(i)) * radins_per_sec / sample_rate);
+                result[i] = 0.5 * std.math.sin(@as(f64, @floatFromInt(i)) * radins_per_sec / sample_rate);
             }
 
             return result;
         }
     };
 
-    const samples: [44100]f32 = generator.sinewave();
+    const samples: [44100]f64 = generator.sinewave();
     const wave = Self.init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
@@ -669,22 +669,22 @@ test "init & deinit" {
 test "mix" {
     const allocator = testing.allocator;
     const generator = struct {
-        fn sinewave() [44100]f32 {
-            const sample_rate: f32 = 44100.0;
-            const radins_per_sec: f32 = 440.0 * 2.0 * std.math.pi;
+        fn sinewave() [44100]f64 {
+            const sample_rate: f64 = 44100.0;
+            const radins_per_sec: f64 = 440.0 * 2.0 * std.math.pi;
 
-            var result: [44100]f32 = undefined;
+            var result: [44100]f64 = undefined;
             var i: usize = 0;
 
             while (i < result.len) : (i += 1) {
-                result[i] = 0.5 * std.math.sin(@as(f32, @floatFromInt(i)) * radins_per_sec / sample_rate);
+                result[i] = 0.5 * std.math.sin(@as(f64, @floatFromInt(i)) * radins_per_sec / sample_rate);
             }
 
             return result;
         }
     };
 
-    const samples: [44100]f32 = generator.sinewave();
+    const samples: [44100]f64 = generator.sinewave();
     const wave = Self.init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
@@ -705,22 +705,22 @@ test "mix" {
 test "fill_zero_to_end" {
     const allocator = testing.allocator;
     const generator = struct {
-        fn sinewave() [44100]f32 {
-            const sample_rate: f32 = 44100.0;
-            const radins_per_sec: f32 = 440.0 * 2.0 * std.math.pi;
+        fn sinewave() [44100]f64 {
+            const sample_rate: f64 = 44100.0;
+            const radins_per_sec: f64 = 440.0 * 2.0 * std.math.pi;
 
-            var result: [44100]f32 = undefined;
+            var result: [44100]f64 = undefined;
             var i: usize = 0;
 
             while (i < result.len) : (i += 1) {
-                result[i] = 0.5 * std.math.sin(@as(f32, @floatFromInt(i)) * radins_per_sec / sample_rate);
+                result[i] = 0.5 * std.math.sin(@as(f64, @floatFromInt(i)) * radins_per_sec / sample_rate);
             }
 
             return result;
         }
     };
 
-    const samples: [44100]f32 = generator.sinewave();
+    const samples: [44100]f64 = generator.sinewave();
     const wave = Self.init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
@@ -745,7 +745,7 @@ test "fill_zero_to_end" {
 
 test "filter_with" {
     const allocator = testing.allocator;
-    const samples: []const f32 = &[_]f32{};
+    const samples: []const f64 = &[_]f64{};
     const wave = Self.init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
@@ -766,7 +766,7 @@ fn test_filter_with_args(
     original_wave: Self,
     args: ArgsForTesting,
 ) !Self {
-    var result: std.array_list.Aligned(f32, null) = .empty;
+    var result: std.array_list.Aligned(f64, null) = .empty;
 
     for (0..args.samples) |_|
         try result.append(original_wave.allocator, 0.0);
@@ -786,7 +786,7 @@ const ArgsForTesting = struct {
 
 test "filter" {
     const allocator = testing.allocator;
-    const samples: []const f32 = &[_]f32{};
+    const samples: []const f64 = &[_]f64{};
     const wave = Self.init(samples, allocator, .{
         .sample_rate = 44100,
         .channels = 1,
@@ -806,7 +806,7 @@ test "filter" {
 }
 
 fn test_filter_without_args(original_wave: Self) !Self {
-    var result: std.array_list.Aligned(f32, null) = .empty;
+    var result: std.array_list.Aligned(f64, null) = .empty;
 
     for (0..5) |_|
         try result.append(original_wave.allocator, 0.0);
@@ -822,7 +822,7 @@ fn test_filter_without_args(original_wave: Self) !Self {
 
 test "filter memory leaks' check" {
     const allocator = testing.allocator;
-    const samples: []const f32 = &[_]f32{};
+    const samples: []const f64 = &[_]f64{};
     const wave = Self.init(samples, allocator, .{
         .sample_rate = 44100,
         .channels = 1,
@@ -846,7 +846,7 @@ test "filter memory leaks' check" {
 
 test "init with empty samples" {
     const allocator = testing.allocator;
-    const samples: []const f32 = &[_]f32{};
+    const samples: []const f64 = &[_]f64{};
     const wave = Self.init(samples, allocator, .{
         .sample_rate = 44100,
         .channels = 1,
@@ -860,7 +860,7 @@ test "init with empty samples" {
 
 test "init creates deep copy of samples" {
     const allocator = testing.allocator;
-    var original_samples = [_]f32{ 1.0, 2.0, 3.0 };
+    var original_samples = [_]f64{ 1.0, 2.0, 3.0 };
     const wave = Self.init(&original_samples, allocator, .{
         .sample_rate = 44100,
         .channels = 1,
@@ -878,7 +878,7 @@ test "init creates deep copy of samples" {
 
 test "init with different channels" {
     const allocator = testing.allocator;
-    const samples: []const f32 = &[_]f32{ 1.0, 2.0, 3.0, 4.0 };
+    const samples: []const f64 = &[_]f64{ 1.0, 2.0, 3.0, 4.0 };
 
     // Mono
     const wave_mono = Self.init(samples, allocator, .{
@@ -899,8 +899,8 @@ test "init with different channels" {
 
 test "mix preserves wave properties" {
     const allocator = testing.allocator;
-    const samples1: []const f32 = &[_]f32{ 1.0, 2.0, 3.0 };
-    const samples2: []const f32 = &[_]f32{ 0.5, 1.0, 1.5 };
+    const samples1: []const f64 = &[_]f64{ 1.0, 2.0, 3.0 };
+    const samples2: []const f64 = &[_]f64{ 0.5, 1.0, 1.5 };
 
     const wave1 = Self.init(samples1, allocator, .{
         .sample_rate = 48000,
