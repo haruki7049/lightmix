@@ -253,6 +253,59 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Panics
         /// Panics if the filter function returns an error
+        ///
+        /// ## Example Usage
+        /// ```zig
+        /// const DecayWithDebugPrintArgs = struct {
+        ///     string: []const u8,
+        /// };
+        ///
+        /// /// Decay filter: Creates a linear fade-out effect
+        /// /// The volume decreases from 100% to 0% over the duration of the wave
+        /// fn decay_with_debug_print(comptime T: type, original_wave: Wave(T), args: DecayWithDebugPrintArgs) !Wave(T) {
+        ///     var result_list: std.array_list.Aligned(T, null) = .empty;
+        ///     defer result_list.deinit(original_wave.allocator);
+        ///
+        ///     // Process each sample, applying a decay factor
+        ///     for (original_wave.samples, 0..) |sample, n| {
+        ///         // Calculate how far from the end we are
+        ///         const remaining_samples = original_wave.samples.len - n;
+        ///
+        ///         // Decay factor: 1.0 at start, 0.0 at end
+        ///         const decay_factor = @as(T, @floatFromInt(remaining_samples)) /
+        ///             @as(T, @floatFromInt(original_wave.samples.len));
+        ///
+        ///         // Apply the decay to the sample
+        ///         const decayed_sample = sample * decay_factor;
+        ///         try result_list.append(original_wave.allocator, decayed_sample);
+        ///     }
+        ///
+        ///     // A example usage of args
+        ///     // This means that you can accept any arguments to change this filter's effects
+        ///     std.debug.print("A message from args: {s}\n", .{args.string});
+        ///
+        ///     // Return a new Wave with the filtered samples
+        ///     return Wave(T).init(result_list.items, original_wave.allocator, .{
+        ///         .sample_rate = original_wave.sample_rate,
+        ///         .channels = original_wave.channels,
+        ///     });
+        /// }
+        ///
+        /// // Sine wave generation
+        /// var samples: [44100]f64 = undefined;
+        /// for (0..samples.len) |i| {
+        ///     const t = @as(f64, @floatFromInt(i)) / sample_rate;
+        ///     samples[i] = 0.5 * @sin(radians_per_sec * t);
+        /// }
+        ///
+        /// const wave: Wave(f64) = Wave(f64).init(samples[0..], allocator, .{
+        ///     .sample_rate = 44100,
+        ///     .channels = 1,
+        /// });
+        ///
+        /// const decayed_wave: Wave(f64) = wave.filter(decay);
+        /// defer decayed_wave.deinit();
+        /// ```
         pub fn filter_with(
             self: Self,
             comptime args_type: type,
@@ -285,6 +338,51 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Panics
         /// Panics if the filter function returns an error
+        ///
+        /// ## Example Usage
+        /// ```zig
+        /// /// Decay filter: Creates a linear fade-out effect
+        /// /// The volume decreases from 100% to 0% over the duration of the wave
+        /// fn decay(comptime T: type, original_wave: Wave(T)) !Wave(T) {
+        ///     var result_list: std.array_list.Aligned(T, null) = .empty;
+        ///     defer result_list.deinit(original_wave.allocator);
+        ///
+        ///     // Process each sample, applying a decay factor
+        ///     for (original_wave.samples, 0..) |sample, n| {
+        ///         // Calculate how far from the end we are
+        ///         const remaining_samples = original_wave.samples.len - n;
+        ///
+        ///         // Decay factor: 1.0 at start, 0.0 at end
+        ///         const decay_factor = @as(T, @floatFromInt(remaining_samples)) /
+        ///             @as(T, @floatFromInt(original_wave.samples.len));
+        ///
+        ///         // Apply the decay to the sample
+        ///         const decayed_sample = sample * decay_factor;
+        ///         try result_list.append(original_wave.allocator, decayed_sample);
+        ///     }
+        ///
+        ///     // Return a new Wave with the filtered samples
+        ///     return Wave(T).init(result_list.items, original_wave.allocator, .{
+        ///         .sample_rate = original_wave.sample_rate,
+        ///         .channels = original_wave.channels,
+        ///     });
+        /// }
+        ///
+        /// // Sine wave generation
+        /// var samples: [44100]f64 = undefined;
+        /// for (0..samples.len) |i| {
+        ///     const t = @as(f64, @floatFromInt(i)) / sample_rate;
+        ///     samples[i] = 0.5 * @sin(radians_per_sec * t);
+        /// }
+        ///
+        /// const wave: Wave(f64) = Wave(f64).init(samples[0..], allocator, .{
+        ///     .sample_rate = 44100,
+        ///     .channels = 1,
+        /// });
+        ///
+        /// const decayed_wave: Wave(f64) = wave.filter(decay);
+        /// defer decayed_wave.deinit();
+        /// ```
         pub fn filter(
             self: Self,
             comptime filter_fn: anytype,
