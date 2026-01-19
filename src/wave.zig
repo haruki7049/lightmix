@@ -287,13 +287,13 @@ pub fn inner(comptime T: type) type {
         /// Panics if the filter function returns an error
         pub fn filter(
             self: Self,
-            filter_fn: fn (self: Self) anyerror!Self,
+            comptime filter_fn: anytype,
         ) Self {
             // To destroy original samples array
             // If we don't do this, we may catch some memory leaks by not to free original samples array
             defer self.deinit();
 
-            const result: Self = filter_fn(self) catch |err| {
+            const result: Self = filter_fn(T, self) catch |err| {
                 std.debug.print("{any}\n", .{err});
                 @panic("Error happened in filter function...");
             };
@@ -484,21 +484,6 @@ pub fn inner(comptime T: type) type {
             try testing.expectEqual(wave.samples[4], 0.0);
         }
 
-        fn test_filter_without_args(original_wave: Self) !Self {
-            var result: std.array_list.Aligned(T, null) = .empty;
-
-            for (0..5) |_|
-                try result.append(original_wave.allocator, 0.0);
-
-            return Self{
-                .samples = try result.toOwnedSlice(original_wave.allocator),
-                .allocator = original_wave.allocator,
-
-                .sample_rate = original_wave.sample_rate,
-                .channels = original_wave.channels,
-            };
-        }
-
         test "filter memory leaks' check" {
             const allocator = testing.allocator;
             const samples: []const T = &[_]T{};
@@ -623,4 +608,19 @@ test "Run tests for each samples' type" {
     _ = inner(f80);
     _ = inner(f64);
     // _ = inner(f32); zigggwavvv 0.2.1 cannot use f32 as samples' type
+}
+
+fn test_filter_without_args(comptime SampleType: type, original: inner(SampleType)) !inner(SampleType) {
+    var result: std.array_list.Aligned(SampleType, null) = .empty;
+
+    for (0..5) |_|
+        try result.append(original.allocator, 0.0);
+
+    return inner(SampleType){
+        .samples = try result.toOwnedSlice(original.allocator),
+        .allocator = original.allocator,
+
+        .sample_rate = original.sample_rate,
+        .channels = original.channels,
+    };
 }
