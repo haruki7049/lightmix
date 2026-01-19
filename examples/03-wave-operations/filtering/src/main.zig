@@ -57,17 +57,17 @@ pub fn main() !void {
 }
 
 /// Decay filter: Linear fade-out effect
-fn decayFilter(original_wave: Wave(f64)) !Wave(f64) {
-    var result_list: std.array_list.Aligned(f64, null) = .empty;
+fn decayFilter(comptime T: type, original_wave: Wave(T)) !Wave(T) {
+    var result_list: std.array_list.Aligned(T, null) = .empty;
 
     for (original_wave.samples, 0..) |sample, n| {
         const remaining = original_wave.samples.len - n;
-        const decay_factor = @as(f64, @floatFromInt(remaining)) /
-            @as(f64, @floatFromInt(original_wave.samples.len));
+        const decay_factor = @as(T, @floatFromInt(remaining)) /
+            @as(T, @floatFromInt(original_wave.samples.len));
         try result_list.append(original_wave.allocator, sample * decay_factor);
     }
 
-    return Wave(f64){
+    return Wave(T){
         .samples = try result_list.toOwnedSlice(original_wave.allocator),
         .allocator = original_wave.allocator,
         .sample_rate = original_wave.sample_rate,
@@ -76,14 +76,14 @@ fn decayFilter(original_wave: Wave(f64)) !Wave(f64) {
 }
 
 /// Volume reduction filter: Halve all sample values
-fn halveSampleValuesFilter(original_wave: Wave(f64)) !Wave(f64) {
-    var result_list: std.array_list.Aligned(f64, null) = .empty;
+fn halveSampleValuesFilter(comptime T: type, original_wave: Wave(T)) !Wave(T) {
+    var result_list: std.array_list.Aligned(T, null) = .empty;
 
     for (original_wave.samples) |sample| {
         try result_list.append(original_wave.allocator, sample * 0.5);
     }
 
-    return Wave(f64){
+    return Wave(T){
         .samples = try result_list.toOwnedSlice(original_wave.allocator),
         .allocator = original_wave.allocator,
         .sample_rate = original_wave.sample_rate,

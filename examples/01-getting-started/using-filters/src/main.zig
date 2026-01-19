@@ -61,8 +61,8 @@ pub fn main() !void {
 
 /// Decay filter: Creates a linear fade-out effect
 /// The volume decreases from 100% to 0% over the duration of the wave
-fn decayFilter(original_wave: Wave(f64)) !Wave(f64) {
-    var result_list: std.array_list.Aligned(f64, null) = .empty;
+fn decayFilter(comptime T: type, original_wave: Wave(T)) !Wave(T) {
+    var result_list: std.array_list.Aligned(T, null) = .empty;
 
     // Process each sample, applying a decay factor
     for (original_wave.samples, 0..) |sample, n| {
@@ -70,8 +70,8 @@ fn decayFilter(original_wave: Wave(f64)) !Wave(f64) {
         const remaining_samples = original_wave.samples.len - n;
 
         // Decay factor: 1.0 at start, 0.0 at end
-        const decay_factor = @as(f64, @floatFromInt(remaining_samples)) /
-            @as(f64, @floatFromInt(original_wave.samples.len));
+        const decay_factor = @as(T, @floatFromInt(remaining_samples)) /
+            @as(T, @floatFromInt(original_wave.samples.len));
 
         // Apply the decay to the sample
         const decayed_sample = sample * decay_factor;
@@ -79,7 +79,7 @@ fn decayFilter(original_wave: Wave(f64)) !Wave(f64) {
     }
 
     // Return a new Wave with the filtered samples
-    return Wave(f64){
+    return Wave(T){
         .samples = try result_list.toOwnedSlice(original_wave.allocator),
         .allocator = original_wave.allocator,
         .sample_rate = original_wave.sample_rate,
