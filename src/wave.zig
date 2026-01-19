@@ -256,14 +256,14 @@ pub fn inner(comptime T: type) type {
         pub fn filter_with(
             self: Self,
             comptime args_type: type,
-            filter_fn: fn (self: Self, args: args_type) anyerror!Self,
+            comptime filter_fn: anytype,
             args: args_type,
         ) Self {
             // To destroy original samples array
             // If we don't do this, we may catch some memory leaks by not to free original samples array
             defer self.deinit();
 
-            const result: Self = filter_fn(self, args) catch |err| {
+            const result: Self = filter_fn(T, self, args) catch |err| {
                 std.debug.print("{any}\n", .{err});
                 @panic("Error happened in filter_with function...");
             };
@@ -441,28 +441,6 @@ pub fn inner(comptime T: type) type {
             try testing.expectEqual(wave.samples[2], 0.0);
         }
 
-        fn test_filter_with_args(
-            original_wave: Self,
-            args: ArgsForTesting,
-        ) !Self {
-            var result: std.array_list.Aligned(T, null) = .empty;
-
-            for (0..args.samples) |_|
-                try result.append(original_wave.allocator, 0.0);
-
-            return Self{
-                .samples = try result.toOwnedSlice(original_wave.allocator),
-                .allocator = original_wave.allocator,
-
-                .sample_rate = original_wave.sample_rate,
-                .channels = original_wave.channels,
-            };
-        }
-
-        const ArgsForTesting = struct {
-            samples: usize,
-        };
-
         test "filter" {
             const allocator = testing.allocator;
             const samples: []const T = &[_]T{};
@@ -612,15 +590,34 @@ test "Run tests for each samples' type" {
 
 fn test_filter_without_args(comptime SampleType: type, original: inner(SampleType)) !inner(SampleType) {
     var result: std.array_list.Aligned(SampleType, null) = .empty;
+    defer result.deinit(original.allocator);
 
     for (0..5) |_|
         try result.append(original.allocator, 0.0);
 
-    return inner(SampleType){
-        .samples = try result.toOwnedSlice(original.allocator),
-        .allocator = original.allocator,
-
+    return inner(SampleType).init(result.items, original.allocator, .{
         .sample_rate = original.sample_rate,
         .channels = original.channels,
-    };
+    });
 }
+
+fn test_filter_with_args(
+    comptime SampleType: type,
+    original: inner(SampleType),
+    args: ArgsForTesting,
+) !inner(SampleType) {
+    var result: std.array_list.Aligned(SampleType, null) = .empty;
+    defer result.deinit(original.allocator);
+
+    for (0..args.samples) |_|
+        try result.append(original.allocator, 0.0);
+
+    return inner(SampleType).init(result.items, original.allocator, .{
+        .sample_rate = original.sample_rate,
+        .channels = original.channels,
+    });
+}
+
+const ArgsForTesting = struct {
+    samples: usize,
+};
