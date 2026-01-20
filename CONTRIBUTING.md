@@ -21,13 +21,13 @@ See [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md). We use [Contributor Covenant](ht
 ## Getting Started
 
 1. **Fork the repository** on GitHub
-2. **Clone your fork** locally:
+1. **Clone your fork** locally:
    ```bash
    git clone https://github.com/YOUR_USERNAME/lightmix.git
    cd lightmix
    ```
-3. **Set up the development environment** (see below)
-4. **Create a new branch** for your work:
+1. **Set up the development environment** (see below)
+1. **Create a new branch** for your work:
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -61,7 +61,7 @@ nix develop
 ### Setup without Nix
 
 1. Install Zig 0.15.2 from [ziglang.org](https://ziglang.org/download/)
-2. Verify installation:
+1. Verify installation:
    ```bash
    zig version  # Should show 0.15.2
    ```
@@ -108,9 +108,9 @@ We welcome:
 ### General Principles
 
 1. **Clarity over cleverness** - Write code that's easy to understand
-2. **Type safety** - Leverage Zig's type system for compile-time safety
-3. **Memory safety** - Properly manage allocations and prevent leaks
-4. **Documentation** - Document public APIs and complex algorithms
+1. **Type safety** - Leverage Zig's type system for compile-time safety
+1. **Memory safety** - Properly manage allocations and prevent leaks
+1. **Documentation** - Document public APIs and complex algorithms
 
 ### Code Style
 
@@ -159,7 +159,7 @@ When creating generic functions:
 - Document type constraints clearly
 - Provide usage examples
 
-```zig
+````zig
 /// Wave type function: Creates a Wave type for the specified sample type.
 ///
 /// ## Type Parameter
@@ -179,7 +179,7 @@ pub fn inner(comptime T: type) type {
         // Implementation
     };
 }
-```
+````
 
 ### Memory Management
 
@@ -247,10 +247,10 @@ zig test src/wave.zig --test-filter "no memory leaks"
 ### Before Submitting
 
 1. **Run tests**: `zig build test`
-2. **Format code**: `zig fmt .`
-3. **Update documentation** if needed
-4. **Add tests** for new functionality
-5. **Test examples** if they're affected
+1. **Format code**: `zig fmt .`
+1. **Update documentation** if needed
+1. **Add tests** for new functionality
+1. **Test examples** if they're affected
 
 ### Commit Messages
 
@@ -267,13 +267,13 @@ Add filter chaining example
 ### Pull Request Process
 
 1. **Push your branch** to your fork
-2. **Open a Pull Request** against `main`
-3. **Describe your changes**:
+1. **Open a Pull Request** against `main`
+1. **Describe your changes**:
    - What problem does this solve?
    - How did you test it?
    - Any breaking changes?
-4. **Respond to review feedback**
-5. **Keep your PR up to date** with main
+1. **Respond to review feedback**
+1. **Keep your PR up to date** with main
 
 ### PR Title Format
 
@@ -289,9 +289,9 @@ Add filter chaining example
 ### Types of Documentation
 
 1. **API Documentation** - Document all public functions, types, and constants
-2. **Examples** - Create runnable examples with detailed comments
-3. **README** - Keep README.md up to date with new features
-4. **Build-time Docs** - Run `zig build docs` to generate API docs
+1. **Examples** - Create runnable examples with detailed comments
+1. **README** - Keep README.md up to date with new features
+1. **Build-time Docs** - Run `zig build docs` to generate API docs
 
 ### Example Documentation
 
@@ -340,9 +340,9 @@ pub fn main() !void {
 When contributing audio generation code:
 
 1. **Listen to the output** - Does it sound correct?
-2. **Check for clipping** - Ensure samples stay within [-1.0, 1.0]
-3. **Verify silence** - Silent sections should be exactly 0.0
-4. **Test edge cases** - Empty waves, single samples, etc.
+1. **Check for clipping** - Ensure samples stay within [-1.0, 1.0]
+1. **Verify silence** - Silent sections should be exactly 0.0
+1. **Test edge cases** - Empty waves, single samples, etc.
 
 ### Performance Considerations
 
@@ -372,6 +372,6 @@ If you have questions:
 
 By contributing to lightmix, you agree that your contributions will be licensed under the MIT License.
 
----
+______________________________________________________________________
 
 Thank you for contributing to lightmix! 🎵
