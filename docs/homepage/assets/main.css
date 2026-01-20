@@ -1,9 +1,22 @@
 /* App-wide styling */
-body {
-  background-color: #0f1116;
-  color: #ffffff;
+:root {
+  background-color: #101010;
+  color: #cccccc;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   margin: 20px;
+}
+
+header {
+  display: flex;
+  padding: 3%;
+  font-weight: inherit;
+  color: inherit;
+}
+
+a {
+  font-weight: inherit;
+  color: inherit;
+  text-decoration: inherit;
 }
 
 @media (prefers-color-scheme: light) {
