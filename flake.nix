@@ -100,7 +100,7 @@
             ];
 
             shellHook = ''
-              export ZIG_GLOBAL_CACHE_DIR=$TMPDIR;
+              unset ZIG_GLOBAL_CACHE_DIR;
             '';
           };
 
