@@ -115,6 +115,7 @@
               rust
               pkgs.dioxus-cli
               pkgs.wasm-bindgen-cli_0_2_105
+              pkgs.binaryen
 
               # LSP
               pkgs.nil
