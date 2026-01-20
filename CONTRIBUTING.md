@@ -370,7 +370,7 @@ If you have questions:
 
 ## License
 
-By contributing to lightmix, you agree that your contributions will be licensed under the MIT License.
+By contributing to lightmix, you agree that your contributions will be licensed under the [MIT License](./LICENSE).
 
 ______________________________________________________________________
 
