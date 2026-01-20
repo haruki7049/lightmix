@@ -94,19 +94,33 @@ pub fn build(b: *std.Build) void {
 ///
 /// ## Usage
 /// ```zig
-/// const lightmix = b.dependency("lightmix", .{});
-/// const mod = b.createModule(.{
-///     .root_source_file = b.path("src/main.zig"),
-///     .imports = &.{
-///         .{ .name = "lightmix", .module = lightmix.module("lightmix") },
-///     },
-/// });
+/// const std = @import("std");
+/// const l = @import("lightmix");
 ///
-/// const wave_step = try lightmix.artifact("lightmix").?.builder.createWave(b, mod, .{
-///     .func_name = "gen",
-///     .wave = .{ .bits = 16, .format_code = .pcm },
-/// });
-/// b.getInstallStep().dependOn(wave_step);
+/// pub fn build(b: *std.Build) !void {
+///     const target = b.standardTargetOptions(.{});
+///     const optimize = b.standardOptimizeOption(.{});
+///
+///     // Dependencies
+///     const lightmix = b.dependency("lightmix", .{});
+///
+///     // Module
+///     const mod = b.createModule(.{
+///         .root_source_file = b.path("src/main.zig"),
+///         .target = target,
+///         .optimize = optimize,
+///         .imports = &.{
+///             .{ .name = "lightmix", .module = lightmix.module("lightmix") },
+///         },
+///     });
+///
+///     // Install Wave file into `zig-out` as `result.wav` (default Wave name)
+///     const wave_step = try l.createWave(b, mod, .{
+///         .func_name = "gen",
+///         .wave = .{ .bits = 16, .format_code = .pcm },
+///     });
+///     b.getInstallStep().dependOn(wave_step);
+/// }
 /// ```
 ///
 /// The user module must export a function matching the signature specified in
