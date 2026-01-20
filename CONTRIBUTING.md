@@ -16,7 +16,7 @@ Thank you for your interest in contributing to lightmix! This document provides 
 
 ## Code of Conduct
 
-This project follows a simple principle: **Be respectful and constructive**. We welcome contributions from everyone, regardless of experience level.
+See [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md). We use [Contributor Covenant](https://www.contributor-covenant.org/version/2/0/code_of_conduct.html).
 
 ## Getting Started
 
