@@ -26,5 +26,15 @@ fn Home() -> Element {
         header {
             h1 { a { href: "/", "lightmix" } }
         }
+
+        main {
+            h1 {
+                "From "
+                code { "Recording" }
+                ", To "
+                code { "Building" }
+                "."
+            }
+        }
     }
 }

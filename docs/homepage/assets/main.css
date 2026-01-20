@@ -4,11 +4,11 @@
   color: #cccccc;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   margin: 20px;
+  padding: 3%;
 }
 
 header {
   display: flex;
-  padding: 3%;
   font-weight: inherit;
   color: inherit;
 }
