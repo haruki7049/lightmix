@@ -54,6 +54,7 @@
 
             # Markdown
             programs.mdformat.enable = true;
+            settings.formatter.mdformat.excludes = [ "CODE_OF_CONDUCT.md" ];
           };
 
           packages = {
