@@ -70,9 +70,6 @@
               # Compiler
               pkgs.zig_0_15
 
-              # C library manager
-              pkgs.pkg-config
-
               # LSP
               pkgs.nil
               pkgs.zls
@@ -82,11 +79,6 @@
 
               # zon2nix
               pkgs.zon2nix
-            ];
-
-            buildInputs = [
-              pkgs.portaudio
-              pkgs.libsndfile
             ];
           };
         };
