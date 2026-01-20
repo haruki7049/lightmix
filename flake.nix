@@ -71,6 +71,24 @@
             programs.zig.enable = true;
             settings.formatter.zig.command = lib.getExe pkgs.zig_0_15;
 
+            # Rust
+            programs.rustfmt.enable = true;
+            settings.formatter.rustfmt.command = "${rust}/bin/rustfmt";
+
+            # Prettier (for frontend languages)
+            programs.prettier.enable = true;
+            settings.formatter.prettier.excludes = [
+              # Formatted by mdformat
+              "*.md"
+
+              # Formatted by GitHub Actions (Other yaml files aren't in this repo)
+              "*.yml"
+              "*.yaml"
+            ];
+
+            # Toml
+            programs.taplo.enable = true;
+
             # GitHub Actions
             programs.actionlint.enable = true;
 
