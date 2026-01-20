@@ -5,6 +5,19 @@ fn main() {
 }
 
 fn app() -> Element {
+    rsx! {
+        Router::<Route> { }
+    }
+}
+
+#[derive(Routable, Clone, PartialEq, Debug)]
+enum Route {
+    #[route("/")]
+    Home {},
+}
+
+#[component]
+fn Home() -> Element {
     let mut count = use_signal(|| 0);
 
     rsx! {
