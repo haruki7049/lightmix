@@ -11,6 +11,13 @@
       url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Rust
+    crane.url = "github:ipetkov/crane";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -22,8 +29,9 @@
       ];
 
       perSystem =
-        { pkgs, lib, ... }:
+        { pkgs, lib, system, ... }:
         let
+          # lightmix derivation
           lightmix = pkgs.stdenv.mkDerivation {
             name = "lightmix";
             src = lib.cleanSource ./.;
@@ -37,8 +45,17 @@
               ln -s ${pkgs.callPackage ./.deps.nix { }} $ZIG_GLOBAL_CACHE_DIR/p
             '';
           };
+
+          # Rust
+          rust = pkgs.rust-bin.fromRustupToolchainFile ./docs/homepage/rust-toolchain.toml;
+          craneLib = (inputs.crane.mkLib pkgs).overrideToolchain rust;
+          overlays = [ inputs.rust-overlay.overlays.default ];
         in
         {
+          _module.args.pkgs = import inputs.nixpkgs {
+            inherit system overlays;
+          };
+
           treefmt = {
             projectRootFile = ".git/config";
 
@@ -80,6 +97,18 @@
 
               # zon2nix
               pkgs.zon2nix
+            ];
+          };
+
+          devShells.homepage = pkgs.mkShell {
+            nativeBuildInputs = [
+              # Compiler
+              rust
+              pkgs.dioxus-cli
+              pkgs.wasm-bindgen-cli_0_2_105
+
+              # LSP
+              pkgs.nil
             ];
           };
         };
