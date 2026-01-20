@@ -29,7 +29,12 @@
       ];
 
       perSystem =
-        { pkgs, lib, system, ... }:
+        {
+          pkgs,
+          lib,
+          system,
+          ...
+        }:
         let
           # lightmix derivation
           lightmix = pkgs.stdenv.mkDerivation {
