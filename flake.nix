@@ -98,6 +98,10 @@
               # zon2nix
               pkgs.zon2nix
             ];
+
+            shellHook = ''
+              export ZIG_GLOBAL_CACHE_DIR=$TMPDIR;
+            '';
           };
 
           devShells.homepage = pkgs.mkShell {
