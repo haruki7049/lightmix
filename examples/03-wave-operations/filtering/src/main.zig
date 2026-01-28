@@ -26,16 +26,13 @@ pub fn main() !void {
         samples[i] = 0.8 * @sin(radians_per_sec * t);
     }
 
-    const wave = Wave(f64).init(samples[0..], allocator, .{
+    var wave = try Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
-
-    // Chain multiple filters together
-    const filtered_wave = wave
-        .filter(decayFilter) // Apply fade-out
-        .filter(halveSampleValuesFilter); // Reduce volume
-    defer filtered_wave.deinit();
+    try wave.filter(decayFilter); // Apply fade-out
+    try wave.filter(halveSampleValuesFilter); // Reduce volume
+    defer wave.deinit();
 
     const file = try std.fs.cwd().createFile("result.wav", .{});
     defer file.close();
@@ -43,7 +40,7 @@ pub fn main() !void {
     defer allocator.free(buf);
     var writer = file.writer(buf);
 
-    try filtered_wave.write(&writer.interface, .{
+    try wave.write(&writer.interface, .{
         .allocator = allocator,
         .format_code = .pcm,
         .bits = 16,
