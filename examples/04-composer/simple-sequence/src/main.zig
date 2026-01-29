@@ -29,11 +29,11 @@ pub fn main() !void {
     defer composer.deinit();
 
     // Generate notes (quarter notes at 120 BPM = 0.5 seconds each)
-    const c4 = generateNote(261.63, allocator); // C4
+    const c4 = try generateNote(261.63, allocator); // C4
     defer c4.deinit();
-    const d4 = generateNote(293.66, allocator); // D4
+    const d4 = try generateNote(293.66, allocator); // D4
     defer d4.deinit();
-    const e4 = generateNote(329.63, allocator); // E4
+    const e4 = try generateNote(329.63, allocator); // E4
     defer e4.deinit();
 
     // Arrange notes in sequence
@@ -48,7 +48,7 @@ pub fn main() !void {
     const composed = composer.appendSlice(notes_list.items);
     defer composed.deinit();
 
-    const result = composed.finalize(.{});
+    const result = try composed.finalize(.{});
     defer result.deinit();
 
     const file = try std.fs.cwd().createFile("result.wav", .{});
@@ -68,7 +68,7 @@ pub fn main() !void {
     std.debug.print("✓ Created simple melody: C-D-E-C\n", .{});
 }
 
-fn generateNote(frequency: f64, allocator: std.mem.Allocator) Wave(f64) {
+fn generateNote(frequency: f64, allocator: std.mem.Allocator) !Wave(f64) {
     const sample_rate: f64 = 44100.0;
     const radians_per_sec: f64 = frequency * 2.0 * std.math.pi;
 
@@ -79,7 +79,7 @@ fn generateNote(frequency: f64, allocator: std.mem.Allocator) Wave(f64) {
         samples[i] = 0.3 * @sin(radians_per_sec * t) * envelope;
     }
 
-    return Wave(f64).init(samples[0..], allocator, .{
+    return try Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });

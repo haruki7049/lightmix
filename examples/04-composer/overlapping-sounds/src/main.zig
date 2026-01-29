@@ -25,13 +25,13 @@ pub fn main() !void {
     defer composer.deinit();
 
     // Create a longer sustaining note
-    const long_c = generateLongNote(261.63, allocator);
+    const long_c = try generateLongNote(261.63, allocator);
     defer long_c.deinit();
 
     // Create shorter melody notes
-    const e4 = generateNote(329.63, allocator);
+    const e4 = try generateNote(329.63, allocator);
     defer e4.deinit();
-    const g4 = generateNote(392.00, allocator);
+    const g4 = try generateNote(392.00, allocator);
     defer g4.deinit();
 
     // Arrange with overlaps: bass note holds while melody plays
@@ -45,7 +45,7 @@ pub fn main() !void {
     const composed = composer.appendSlice(arrangement.items);
     defer composed.deinit();
 
-    const result = composed.finalize(.{});
+    const result = try composed.finalize(.{});
     defer result.deinit();
 
     const file = try std.fs.cwd().createFile("result.wav", .{});
@@ -65,7 +65,7 @@ pub fn main() !void {
     std.debug.print("✓ Created overlapping arrangement\n", .{});
 }
 
-fn generateNote(frequency: f64, allocator: std.mem.Allocator) Wave(f64) {
+fn generateNote(frequency: f64, allocator: std.mem.Allocator) !Wave(f64) {
     const sample_rate: f64 = 44100.0;
     const radians_per_sec: f64 = frequency * 2.0 * std.math.pi;
 
@@ -76,13 +76,13 @@ fn generateNote(frequency: f64, allocator: std.mem.Allocator) Wave(f64) {
         samples[i] = 0.2 * @sin(radians_per_sec * t) * envelope;
     }
 
-    return Wave(f64).init(samples[0..], allocator, .{
+    return try Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
 }
 
-fn generateLongNote(frequency: f64, allocator: std.mem.Allocator) Wave(f64) {
+fn generateLongNote(frequency: f64, allocator: std.mem.Allocator) !Wave(f64) {
     const sample_rate: f64 = 44100.0;
     const radians_per_sec: f64 = frequency * 2.0 * std.math.pi;
 
@@ -93,7 +93,7 @@ fn generateLongNote(frequency: f64, allocator: std.mem.Allocator) Wave(f64) {
         samples[i] = 0.15 * @sin(radians_per_sec * t) * envelope;
     }
 
-    return Wave(f64).init(samples[0..], allocator, .{
+    return try Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });

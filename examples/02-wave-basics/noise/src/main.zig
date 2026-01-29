@@ -18,13 +18,13 @@ pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
     // Generate different types of noise
-    const white_noise = generateWhiteNoise(allocator);
+    const white_noise = try generateWhiteNoise(allocator);
     defer white_noise.deinit();
 
-    const pink_noise = generatePinkNoise(allocator);
+    const pink_noise = try generatePinkNoise(allocator);
     defer pink_noise.deinit();
 
-    const brown_noise = generateBrownNoise(allocator);
+    const brown_noise = try generateBrownNoise(allocator);
     defer brown_noise.deinit();
 
     // Save each to a file
@@ -39,7 +39,7 @@ pub fn main() !void {
 }
 
 /// White noise: completely random values
-fn generateWhiteNoise(allocator: std.mem.Allocator) Wave(f64) {
+fn generateWhiteNoise(allocator: std.mem.Allocator) !Wave(f64) {
     var prng = std.Random.DefaultPrng.init(0);
     const rand = prng.random();
 
@@ -49,14 +49,14 @@ fn generateWhiteNoise(allocator: std.mem.Allocator) Wave(f64) {
         samples[i] = (rand.float(f64) * 2.0 - 1.0) * 0.5;
     }
 
-    return Wave(f64).init(samples[0..], allocator, .{
+    return try Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
 }
 
 /// Pink noise: filtered white noise with 1/f spectrum
-fn generatePinkNoise(allocator: std.mem.Allocator) Wave(f64) {
+fn generatePinkNoise(allocator: std.mem.Allocator) !Wave(f64) {
     var prng = std.Random.DefaultPrng.init(0);
     const rand = prng.random();
 
@@ -76,14 +76,14 @@ fn generatePinkNoise(allocator: std.mem.Allocator) Wave(f64) {
         samples[i] = (b0 + b1 + b2 + white * 0.1848) * 0.15;
     }
 
-    return Wave(f64).init(samples[0..], allocator, .{
+    return try Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
 }
 
 /// Brown noise: integrated white noise (random walk)
-fn generateBrownNoise(allocator: std.mem.Allocator) Wave(f64) {
+fn generateBrownNoise(allocator: std.mem.Allocator) !Wave(f64) {
     var prng = std.Random.DefaultPrng.init(0);
     const rand = prng.random();
 
@@ -101,7 +101,7 @@ fn generateBrownNoise(allocator: std.mem.Allocator) Wave(f64) {
         samples[i] = last_value * 0.5;
     }
 
-    return Wave(f64).init(samples[0..], allocator, .{
+    return try Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });

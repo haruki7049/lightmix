@@ -22,10 +22,10 @@ pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
     // Generate guitar notes at different frequencies
-    const e2 = generateGuitarNote(82.41, allocator); // Low E string
+    const e2 = try generateGuitarNote(82.41, allocator); // Low E string
     defer e2.deinit();
 
-    const a2 = generateGuitarNote(110.00, allocator); // A string
+    const a2 = try generateGuitarNote(110.00, allocator); // A string
     defer a2.deinit();
 
     try saveWave(e2, "guitar_e2.wav", allocator);
@@ -37,7 +37,7 @@ pub fn main() !void {
 }
 
 /// Karplus-Strong guitar synthesis
-fn generateGuitarNote(frequency: f64, allocator: std.mem.Allocator) Wave(f64) {
+fn generateGuitarNote(frequency: f64, allocator: std.mem.Allocator) !Wave(f64) {
     const sample_rate: f64 = 44100.0;
     const decay: f64 = 0.996; // Decay factor (close to 1 = longer sustain)
 
@@ -65,7 +65,7 @@ fn generateGuitarNote(frequency: f64, allocator: std.mem.Allocator) Wave(f64) {
         idx = next_idx;
     }
 
-    return Wave(f64).init(result[0..], allocator, .{
+    return try Wave(f64).init(result[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });

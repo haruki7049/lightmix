@@ -29,7 +29,7 @@ pub fn main() !void {
         samples[i] = (phase * 2.0) - 1.0;
     }
 
-    const wave = Wave(f64).init(samples[0..], allocator, .{
+    const wave = try Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
