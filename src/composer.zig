@@ -125,15 +125,30 @@ pub fn inner(comptime T: type) type {
 
         /// Appends a single wave to the composition.
         ///
-        /// Returns a new Composer instance with the added wave. The original
-        /// Composer is consumed and should not be used after this call.
+        /// **Important**: This method modifies the composer in-place and consumes
+        /// the original internal data. Do not use the composer after calling this
+        /// method without reassigning the result.
         ///
         /// ## Parameters
-        /// - `self`: The composer to add to
+        /// - `self`: Pointer to the composer to modify (will be updated in-place)
         /// - `waveinfo`: Information about the wave and when it should start
         ///
-        /// ## Returns
-        /// A new Composer instance with the wave added
+        /// ## Memory Management
+        /// The old internal array is freed, and a new one is allocated with the
+        /// appended wave. The composer pointer is updated to reference the new data.
+        ///
+        /// ## Example
+        /// ```zig
+        /// var composer = Composer(f64).init(allocator, .{
+        ///     .sample_rate = 44100,
+        ///     .channels = 1,
+        /// });
+        /// defer composer.deinit();
+        ///
+        /// // Append modifies composer in-place
+        /// try composer.append(.{ .wave = wave1, .start_point = 0 });
+        /// try composer.append(.{ .wave = wave2, .start_point = 44100 });
+        /// ```
         pub fn append(self: *Self, waveinfo: WaveInfo) std.mem.Allocator.Error!void {
             var d: std.array_list.Aligned(WaveInfo, null) = .empty;
             try d.appendSlice(self.allocator, self.info);
@@ -153,15 +168,17 @@ pub fn inner(comptime T: type) type {
 
         /// Appends multiple waves to the composition.
         ///
-        /// Returns a new Composer instance with the added waves. The original
-        /// Composer is consumed and should not be used after this call.
+        /// **Important**: This method modifies the composer in-place and consumes
+        /// the original internal data. Do not use the composer after calling this
+        /// method without reassigning the result.
         ///
         /// ## Parameters
-        /// - `self`: The composer to add to
+        /// - `self`: Pointer to the composer to modify (will be updated in-place)
         /// - `append_list`: Slice of WaveInfo structures to append
         ///
-        /// ## Returns
-        /// A new Composer instance with all the waves added
+        /// ## Memory Management
+        /// The old internal array is freed, and a new one is allocated with all
+        /// appended waves. The composer pointer is updated to reference the new data.
         pub fn appendSlice(self: *Self, append_list: []const WaveInfo) std.mem.Allocator.Error!void {
             var d: std.array_list.Aligned(WaveInfo, null) = .empty;
             try d.appendSlice(self.allocator, self.info);
@@ -192,6 +209,11 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A new Wave containing the final mixed composition
+        ///
+        /// ## Performance Notes
+        /// Memory usage is proportional to: `number_of_waves × total_length × sample_size`
+        /// Each wave is temporarily padded to the full composition length before mixing.
+        /// Consider using this for up to ~100 overlapping waves on typical systems.
         pub fn finalize(self: Self, options: Wave(T).mixOptions) std.mem.Allocator.Error!Wave(T) {
             var end_point: usize = 0;
 

@@ -53,7 +53,9 @@ pub fn generate() !lightmix.Wave(f64) {
     // Generate your audio data (example: 1 second of silence)
     const data: [44100]f64 = [_]f64{0.0} ** 44100;
 
-    const wave = lightmix.Wave(f64).init(data[0..], allocator, .{
+    // Wave.init() creates a deep copy of the data
+    // The original data array can be safely discarded after this call
+    const wave = try lightmix.Wave(f64).init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
@@ -86,7 +88,7 @@ pub fn build(b: *std.Build) !void {
 
     // Use createWave to generate the wave file during build
     const wave_step = try l.createWave(b, mod, .{
-        .func_name = "generate", // Name of your wave generation function
+        .func_name = "gen", // Name of your wave generation function (default is "gen")
         .wave = .{
             .name = "result.wav", // Output filename (optional, defaults to "result.wav")
             .format_code = .pcm, // Wave format code (e.g., .pcm, .ieee_float)
@@ -118,13 +120,19 @@ You can find a complete example in [./examples/Wave/generate_by_build_zig](./exa
 
 `Wave` is a generic type function that accepts a sample type parameter. It contains PCM audio source with samples of the specified floating-point type.
 
-Supported sample types: `f64`, `f80`, `f128` (Note: `f32` is not supported in zigggwavvv 0.2.1)
+**Supported sample types:** `f64`, `f80`, `f128`
+
+⚠️ **Important Notes:**
+- **`f32` is NOT supported** due to a limitation in the zigggwavvv 0.2.1 dependency
+- `Wave.init()` creates a **deep copy** of the sample data - the caller retains ownership of the original samples
+- The allocator passed to `init()` must remain valid for the entire lifetime of the Wave
+- When mixing waves, both waves **must** have identical `sample_rate`, `channels`, and sample length, or the program will panic
 
 ```zig
 const allocator = std.heap.page_allocator; // Use your allocator
 const data: []const f64 = &[_]f64{ 0.0, 0.0, 0.0 }; // This array contains 3 float numbers, then this wave will be made from 3 samples.
 
-const wave = lightmix.Wave(f64).init(data, allocator, .{
+const wave = try lightmix.Wave(f64).init(data, allocator, .{
     .sample_rate = 44100, // Samples per second.
     .channels = 1, // Channels for this Wave. If this wave has two channels, it means this wave is stereo.
 });
@@ -153,6 +161,34 @@ try wave.write(file.writer(), .{
 
 `Composer` is a generic type function that accepts a sample type parameter (same as Wave). It contains a `Composer(T).WaveInfo` array, which contains a `Wave(T)` and the timing when it plays.
 
+⚠️ **Important Notes:**
+- `append()` and `appendSlice()` modify the Composer in-place
+- `finalize()` creates temporary padded copies of all waves, which may use significant memory for large compositions
+- All waves in a Composer must have the same `sample_rate` and `channels` as the Composer itself
+
+**Example using `init()` and `append()`:**
+
+```zig
+const allocator = std.heap.page_allocator; // Use your allocator
+const wave = generate_wave(); // Returns a Wave(f64)
+
+const Composer = lightmix.Composer(f64);
+var composer = Composer.init(allocator, .{
+    .sample_rate = 44100, // Samples per second.
+    .channels = 1, // Channels for the Wave. If this composer has two channels, it means the wave is stereo.
+});
+defer composer.deinit();
+
+// Append waves at different time points (append modifies in-place)
+try composer.append(.{ .wave = wave, .start_point = 0 });
+try composer.append(.{ .wave = wave, .start_point = 44100 }); // Play same wave 1 second later
+
+const result = try composer.finalize(.{}); // Finalize to create a Wave(f64)
+defer result.deinit(); // Don't forget to free the Wave data.
+```
+
+**Example using `init_with()` for batch initialization:**
+
 ```zig
 const allocator = std.heap.page_allocator; // Use your allocator
 const wave = generate_wave(); // Returns a Wave(f64)
@@ -162,14 +198,122 @@ const info: []const Composer.WaveInfo = &[_]Composer.WaveInfo{
     .{ .wave = wave, .start_point = 0 },
     .{ .wave = wave, .start_point = 44100 },
 };
-const composer = Composer.init_with(info, allocator, .{
+const composer = try Composer.init_with(info, allocator, .{
     .sample_rate = 44100, // Samples per second.
     .channels = 1, // Channels for the Wave. If this composer has two channels, it means the wave is stereo.
 });
 defer composer.deinit(); // Composer.info is also owned by the passed allocator, so you must free this composer.
 
-const result = composer.finalize(.{}); // Let's finalize to create a Wave(f64)!!
+const result = try composer.finalize(.{}); // Let's finalize to create a Wave(f64)!!
 defer result.deinit(); // Don't forget to free the Wave data.
+```
+
+## Common Patterns
+
+### Creating Silence or Padding
+
+```zig
+// Method 1: Using fill_zero_to_end to add silence at the end
+const wave = try Wave(f64).init(samples, allocator, .{
+    .sample_rate = 44100,
+    .channels = 1,
+});
+defer wave.deinit();
+
+// Keep first 1 second, add 1 second of silence
+const padded = try wave.fill_zero_to_end(44100, 88200);
+defer padded.deinit();
+
+// Method 2: Create pure silence
+const silence_duration = 44100; // 1 second at 44.1kHz
+var silent_samples = try allocator.alloc(f64, silence_duration);
+defer allocator.free(silent_samples);
+@memset(silent_samples, 0.0);
+
+const silence = try Wave(f64).init(silent_samples, allocator, .{
+    .sample_rate = 44100,
+    .channels = 1,
+});
+defer silence.deinit();
+```
+
+### Custom Mixer Functions
+
+By default, `mix()` adds samples together. You can provide a custom mixer function:
+
+```zig
+// Average two signals instead of adding them
+fn averageMixer(left: f64, right: f64) f64 {
+    return (left + right) / 2.0;
+}
+
+const mixed = try wave1.mix(wave2, .{ .mixer = averageMixer });
+defer mixed.deinit();
+
+// Multiplicative mixing (ring modulation)
+fn multiplyMixer(left: f64, right: f64) f64 {
+    return left * right;
+}
+
+const ring_mod = try wave1.mix(wave2, .{ .mixer = multiplyMixer });
+defer ring_mod.deinit();
+```
+
+### Overlapping Waves in Composer
+
+Create polyphonic or layered audio by starting waves at the same time:
+
+```zig
+var composer = Composer(f64).init(allocator, .{
+    .sample_rate = 44100,
+    .channels = 1,
+});
+defer composer.deinit();
+
+// Play three notes simultaneously (chord)
+try composer.append(.{ .wave = note_c, .start_point = 0 });
+try composer.append(.{ .wave = note_e, .start_point = 0 });
+try composer.append(.{ .wave = note_g, .start_point = 0 });
+
+const chord = try composer.finalize(.{});
+defer chord.deinit();
+```
+
+### When to Use Composer vs Manual Mix
+
+**Use `Composer` when:**
+- You need to sequence sounds at different time points
+- You want to overlap multiple waves that start at different times
+- You're creating musical arrangements or compositions
+
+**Use `Wave.mix()` directly when:**
+- Both waves start at the same time and have the same length
+- You need custom mixing behavior (like ring modulation)
+- You want more control over the mixing process
+- Performance is critical (avoids Composer's padding overhead)
+
+### Error Handling
+
+```zig
+const wave = Wave(f64).init(samples, allocator, .{
+    .sample_rate = 44100,
+    .channels = 1,
+}) catch |err| {
+    std.debug.print("Failed to create wave: {}\n", .{err});
+    return err;
+};
+defer wave.deinit();
+
+// Always check that waves are compatible before mixing
+if (wave1.sample_rate != wave2.sample_rate or
+    wave1.channels != wave2.channels or
+    wave1.samples.len != wave2.samples.len) {
+    std.debug.print("Waves are not compatible for mixing\n", .{});
+    return error.IncompatibleWaves;
+}
+
+const mixed = try wave1.mix(wave2, .{});
+defer mixed.deinit();
 ```
 
 ## Zig version
