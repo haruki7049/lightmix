@@ -94,7 +94,12 @@ pub fn inner(comptime T: type) type {
         /// A new Wave containing the mixed result
         ///
         /// ## Panics
-        /// Panics if the waves have different lengths, sample rates, or channel counts
+        /// **Will panic at runtime** if:
+        /// - The waves have different lengths (`self.samples.len != other.samples.len`)
+        /// - The waves have different sample rates (`self.sample_rate != other.sample_rate`)
+        /// - The waves have different channel counts (`self.channels != other.channels`)
+        ///
+        /// Always ensure both waves have matching properties before mixing.
         pub fn mix(self: Self, other: Self, options: mixOptions) std.mem.Allocator.Error!Self {
             std.debug.assert(self.samples.len == other.samples.len);
             std.debug.assert(self.sample_rate == other.sample_rate);
@@ -141,6 +146,20 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A new Wave with samples from 0 to `start`, then zeros from `start` to `end`
+        ///
+        /// ## Example
+        /// ```zig
+        /// // Create a 2-second wave
+        /// const wave = try Wave(f64).init(samples, allocator, .{
+        ///     .sample_rate = 44100,
+        ///     .channels = 1,
+        /// });
+        /// defer wave.deinit();
+        ///
+        /// // Keep first 1 second, add 1 second of silence
+        /// const padded = try wave.fill_zero_to_end(44100, 88200);
+        /// defer padded.deinit();
+        /// ```
         pub fn fill_zero_to_end(self: Self, start: usize, end: usize) !Self {
             // Initialization
             var result: std.array_list.Aligned(T, null) = .empty;
@@ -227,6 +246,18 @@ pub fn inner(comptime T: type) type {
         }
 
         /// Options for writing wave data to a file.
+        ///
+        /// ## Fields
+        /// - `allocator`: Memory allocator for temporary buffers during write
+        /// - `bits`: Bit depth for the output file (8, 16, 24, or 32 bits per sample)
+        /// - `format_code`: Audio format code (.pcm for integer PCM, .ieee_float for floating-point)
+        /// - `use_fact`: Whether to write a 'fact' chunk (required for non-PCM formats, optional for PCM)
+        /// - `use_peak`: Whether to write a 'peak' chunk containing peak amplitude information
+        /// - `peak_timestamp`: SMPTE timestamp for the peak chunk (only used if use_peak is true)
+        ///
+        /// ## Format Code Options
+        /// - `.pcm`: Standard integer PCM format (most compatible)
+        /// - `.ieee_float`: IEEE floating-point format (for precise audio editing)
         pub const WriteOptions = struct {
             allocator: std.mem.Allocator,
             use_fact: bool = false,

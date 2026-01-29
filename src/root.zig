@@ -30,7 +30,8 @@
 //!         samples[i] = @sin(t * 440.0 * 2.0 * std.math.pi);
 //!     }
 //!
-//!     const wave = Wave(f64).init(&samples, allocator, .{
+//!     // Wave.init() creates a deep copy of samples
+//!     const wave = try Wave(f64).init(&samples, allocator, .{
 //!         .sample_rate = 44100,
 //!         .channels = 1,
 //!     });
@@ -38,16 +39,16 @@
 //!
 //!     // Create a composition with multiple waves
 //!     const Composer = lightmix.Composer;
-//!     const composer = Composer(f64).init(allocator, .{
+//!     var composer = Composer(f64).init(allocator, .{
 //!         .sample_rate = 44100,
 //!         .channels = 1,
 //!     });
 //!     defer composer.deinit();
 //!
-//!     const arranged = composer.append(.{ .wave = wave, .start_point = 0 });
-//!     defer arranged.deinit();
+//!     // append() modifies the composer in-place
+//!     try composer.append(.{ .wave = wave, .start_point = 0 });
 //!
-//!     const result = arranged.finalize(.{});
+//!     const result = try composer.finalize(.{});
 //!     defer result.deinit();
 //! }
 //! ```
