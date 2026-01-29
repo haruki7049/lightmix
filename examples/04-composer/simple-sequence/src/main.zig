@@ -22,7 +22,7 @@ pub fn main() !void {
     const allocator = gpa.allocator();
 
     // Create composer
-    const composer = Composer(f64).init(allocator, .{
+    var composer = Composer(f64).init(allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
@@ -45,10 +45,9 @@ pub fn main() !void {
     try notes_list.append(allocator, .{ .wave = e4, .start_point = 44100 }); // 1.0s
     try notes_list.append(allocator, .{ .wave = c4, .start_point = 66150 }); // 1.5s
 
-    const composed = try composer.appendSlice(notes_list.items);
-    defer composed.deinit();
+    try composer.appendSlice(notes_list.items);
 
-    const result = try composed.finalize(.{});
+    const result = try composer.finalize(.{});
     defer result.deinit();
 
     const file = try std.fs.cwd().createFile("result.wav", .{});
