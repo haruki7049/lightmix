@@ -22,19 +22,19 @@ pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
     // Generate three notes of a C major chord
-    const c4 = generateSineWave(261.63, 0.3, allocator); // C4 - root
+    const c4 = try generateSineWave(261.63, 0.3, allocator); // C4 - root
     defer c4.deinit();
-    const e4 = generateSineWave(329.63, 0.3, allocator); // E4 - major third
+    const e4 = try generateSineWave(329.63, 0.3, allocator); // E4 - major third
     defer e4.deinit();
-    const g4 = generateSineWave(392.00, 0.3, allocator); // G4 - perfect fifth
+    const g4 = try generateSineWave(392.00, 0.3, allocator); // G4 - perfect fifth
     defer g4.deinit();
 
     // Mix the first two notes
-    const c_e_mix = c4.mix(e4, .{});
+    const c_e_mix = try c4.mix(e4, .{});
     defer c_e_mix.deinit();
 
     // Mix in the third note to complete the chord
-    const chord = c_e_mix.mix(g4, .{});
+    const chord = try c_e_mix.mix(g4, .{});
     defer chord.deinit();
 
     // Save the result
@@ -58,7 +58,7 @@ pub fn main() !void {
     std.debug.print("  G4: 392.00 Hz\n", .{});
 }
 
-fn generateSineWave(frequency: f64, volume: f64, allocator: std.mem.Allocator) Wave(f64) {
+fn generateSineWave(frequency: f64, volume: f64, allocator: std.mem.Allocator) !Wave(f64) {
     const sample_rate: f64 = 44100.0;
     const radians_per_sec: f64 = frequency * 2.0 * std.math.pi;
 
@@ -68,7 +68,7 @@ fn generateSineWave(frequency: f64, volume: f64, allocator: std.mem.Allocator) W
         samples[i] = volume * @sin(radians_per_sec * t);
     }
 
-    return Wave(f64).init(samples[0..], allocator, .{
+    return try Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });

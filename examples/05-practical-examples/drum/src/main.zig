@@ -17,7 +17,7 @@ const Wave = lightmix.Wave;
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
-    const snare_wave = generateSnare(allocator);
+    const snare_wave = try generateSnare(allocator);
     defer snare_wave.deinit();
 
     const file = try std.fs.cwd().createFile("result.wav", .{});
@@ -37,31 +37,27 @@ pub fn main() !void {
     std.debug.print("✓ Generated snare drum sound\n", .{});
 }
 
-fn generateSnare(allocator: std.mem.Allocator) Wave(f64) {
+fn generateSnare(allocator: std.mem.Allocator) !Wave(f64) {
     // Generate pink noise for snare wires
-    const noise = generatePinkNoise(allocator);
+    var noise: Wave(f64) = try generatePinkNoise(allocator);
+    // Apply aggressive decay to noise
+    try noise.filter(fastDecayFilter);
+    try noise.filter(fastDecayFilter);
+    try noise.filter(fastDecayFilter);
+    defer noise.deinit();
 
     // Generate low sine for drum body
-    const tone = generateDrumTone(allocator);
-
-    // Apply aggressive decay to noise
-    const decayed_noise = noise
-        .filter(fastDecayFilter)
-        .filter(fastDecayFilter)
-        .filter(fastDecayFilter);
-    defer decayed_noise.deinit();
-
+    var tone = try generateDrumTone(allocator);
     // Apply decay to tone
-    const decayed_tone = tone
-        .filter(fastDecayFilter)
-        .filter(halveSampleValuesFilter);
-    defer decayed_tone.deinit();
+    try tone.filter(fastDecayFilter);
+    try tone.filter(halveSampleValuesFilter);
+    defer tone.deinit();
 
     // Mix together
-    return decayed_noise.mix(decayed_tone, .{});
+    return noise.mix(tone, .{});
 }
 
-fn generatePinkNoise(allocator: std.mem.Allocator) Wave(f64) {
+fn generatePinkNoise(allocator: std.mem.Allocator) !Wave(f64) {
     var prng = std.Random.DefaultPrng.init(0);
     const rand = prng.random();
 
@@ -78,13 +74,13 @@ fn generatePinkNoise(allocator: std.mem.Allocator) Wave(f64) {
         samples[i] = (b0 + b1 + b2 + white * 0.1848) * 0.3;
     }
 
-    return Wave(f64).init(samples[0..], allocator, .{
+    return try Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
 }
 
-fn generateDrumTone(allocator: std.mem.Allocator) Wave(f64) {
+fn generateDrumTone(allocator: std.mem.Allocator) !Wave(f64) {
     const frequency: f64 = 200.0; // Low frequency for drum body
     const sample_rate: f64 = 44100.0;
     const radians_per_sec: f64 = frequency * 2.0 * std.math.pi;
@@ -95,7 +91,7 @@ fn generateDrumTone(allocator: std.mem.Allocator) Wave(f64) {
         samples[i] = 0.4 * @sin(radians_per_sec * t);
     }
 
-    return Wave(f64).init(samples[0..], allocator, .{
+    return try Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });

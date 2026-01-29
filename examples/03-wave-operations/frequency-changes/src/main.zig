@@ -17,15 +17,15 @@ pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
     // Generate original 440Hz sine wave (A4)
-    const original = generateSineWave(440.0, allocator);
+    const original = try generateSineWave(440.0, allocator);
     defer original.deinit();
 
     // One octave higher (880Hz - A5)
-    const octave_up = generateSineWave(880.0, allocator);
+    const octave_up = try generateSineWave(880.0, allocator);
     defer octave_up.deinit();
 
     // One octave lower (220Hz - A3)
-    const octave_down = generateSineWave(220.0, allocator);
+    const octave_down = try generateSineWave(220.0, allocator);
     defer octave_down.deinit();
 
     try saveWave(original, "a4_original.wav", allocator);
@@ -38,7 +38,7 @@ pub fn main() !void {
     std.debug.print("  a3_octave_down.wav - 220 Hz (A3, -1 octave)\n", .{});
 }
 
-fn generateSineWave(frequency: f64, allocator: std.mem.Allocator) Wave(f64) {
+fn generateSineWave(frequency: f64, allocator: std.mem.Allocator) !Wave(f64) {
     const sample_rate: f64 = 44100.0;
     const radians_per_sec: f64 = frequency * 2.0 * std.math.pi;
 
@@ -48,7 +48,7 @@ fn generateSineWave(frequency: f64, allocator: std.mem.Allocator) Wave(f64) {
         samples[i] = 0.5 * @sin(radians_per_sec * t);
     }
 
-    return Wave(f64).init(samples[0..], allocator, .{
+    return try Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });

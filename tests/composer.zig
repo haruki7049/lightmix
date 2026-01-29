@@ -14,7 +14,7 @@ test "Compose multiple soundless Wave" {
     const data: []const f64 = generate_soundless_data(44100, allocator);
     defer allocator.free(data);
 
-    const wave = Wave(f64).init(data, allocator, .{
+    const wave: Wave(f64) = try Wave(f64).init(data, allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
@@ -28,7 +28,7 @@ test "Compose multiple soundless Wave" {
     const appended_composer = composer.appendSlice(append_list.items);
     defer appended_composer.deinit();
 
-    const result = appended_composer.finalize(.{});
+    const result = try appended_composer.finalize(.{});
     defer result.deinit();
 
     // Create TmpDir

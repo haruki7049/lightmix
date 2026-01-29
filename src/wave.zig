@@ -49,8 +49,8 @@ pub fn inner(comptime T: type) type {
             samples: []const T,
             allocator: std.mem.Allocator,
             options: InitOptions,
-        ) Self {
-            const owned_samples = allocator.alloc(T, samples.len) catch @panic("Out of memory");
+        ) std.mem.Allocator.Error!Self {
+            const owned_samples = try allocator.alloc(T, samples.len);
             @memcpy(owned_samples, samples);
 
             return Self{
@@ -95,7 +95,7 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Panics
         /// Panics if the waves have different lengths, sample rates, or channel counts
-        pub fn mix(self: Self, other: Self, options: mixOptions) Self {
+        pub fn mix(self: Self, other: Self, options: mixOptions) std.mem.Allocator.Error!Self {
             std.debug.assert(self.samples.len == other.samples.len);
             std.debug.assert(self.sample_rate == other.sample_rate);
             std.debug.assert(self.channels == other.channels);
@@ -116,10 +116,10 @@ pub fn inner(comptime T: type) type {
                 const right: T = other.samples[i];
                 const result: T = options.mixer(left, right);
 
-                samples.append(self.allocator, result) catch @panic("Out of memory");
+                try samples.append(self.allocator, result);
             }
 
-            const result: []const T = samples.toOwnedSlice(self.allocator) catch @panic("Out of memory");
+            const result: []const T = try samples.toOwnedSlice(self.allocator);
 
             return Self{
                 .samples = result,
@@ -307,21 +307,19 @@ pub fn inner(comptime T: type) type {
         /// defer decayed_wave.deinit();
         /// ```
         pub fn filter_with(
-            self: Self,
+            self: *Self,
             comptime args_type: type,
             comptime filter_fn: anytype,
             args: args_type,
-        ) Self {
+        ) anyerror!void {
+            const result: Self = try filter_fn(T, self.*, args);
+
             // To destroy original samples array
             // If we don't do this, we may catch some memory leaks by not to free original samples array
-            defer self.deinit();
-
-            const result: Self = filter_fn(T, self, args) catch |err| {
-                std.debug.print("{any}\n", .{err});
-                @panic("Error happened in filter_with function...");
-            };
-
-            return result;
+            defer {
+                self.deinit();
+                self.* = result;
+            }
         }
 
         /// Applies a filter function to the wave.
@@ -384,19 +382,17 @@ pub fn inner(comptime T: type) type {
         /// defer decayed_wave.deinit();
         /// ```
         pub fn filter(
-            self: Self,
+            self: *Self,
             comptime filter_fn: anytype,
-        ) Self {
+        ) anyerror!void {
+            const result: Self = try filter_fn(T, self.*);
+
             // To destroy original samples array
             // If we don't do this, we may catch some memory leaks by not to free original samples array
-            defer self.deinit();
-
-            const result: Self = filter_fn(T, self) catch |err| {
-                std.debug.print("{any}\n", .{err});
-                @panic("Error happened in filter function...");
-            };
-
-            return result;
+            defer {
+                self.deinit();
+                self.* = result;
+            }
         }
 
         test "read & deinit" {
@@ -433,7 +429,7 @@ pub fn inner(comptime T: type) type {
             };
 
             const samples: [44100]T = generator.sinewave();
-            const wave = Self.init(samples[0..], allocator, .{
+            const wave = try Self.init(samples[0..], allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -462,13 +458,13 @@ pub fn inner(comptime T: type) type {
             };
 
             const samples: [44100]T = generator.sinewave();
-            const wave = Self.init(samples[0..], allocator, .{
+            const wave = try Self.init(samples[0..], allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
             defer wave.deinit();
 
-            const result: Self = wave.mix(wave, .{});
+            const result: Self = try wave.mix(wave, .{});
             defer result.deinit();
 
             try testing.expectEqual(wave.sample_rate, 44100);
@@ -498,7 +494,7 @@ pub fn inner(comptime T: type) type {
             };
 
             const samples: [44100]T = generator.sinewave();
-            const wave = Self.init(samples[0..], allocator, .{
+            const wave = try Self.init(samples[0..], allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -523,11 +519,12 @@ pub fn inner(comptime T: type) type {
         test "filter_with" {
             const allocator = testing.allocator;
             const samples: []const T = &[_]T{};
-            const wave = Self.init(samples[0..], allocator, .{
+
+            var wave = try Self.init(samples[0..], allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
-            })
-                .filter_with(ArgsForTesting, test_filter_with_args, .{ .samples = 3 });
+            });
+            try wave.filter_with(ArgsForTesting, test_filter_with_args, .{ .samples = 3 });
             defer wave.deinit();
 
             try testing.expectEqual(wave.sample_rate, 44100);
@@ -542,11 +539,12 @@ pub fn inner(comptime T: type) type {
         test "filter" {
             const allocator = testing.allocator;
             const samples: []const T = &[_]T{};
-            const wave = Self.init(samples, allocator, .{
+
+            var wave = try Self.init(samples, allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
-            })
-                .filter(test_filter_without_args);
+            });
+            try wave.filter(test_filter_without_args);
             defer wave.deinit();
 
             try testing.expectEqual(wave.sample_rate, 44100);
@@ -563,14 +561,15 @@ pub fn inner(comptime T: type) type {
         test "filter memory leaks' check" {
             const allocator = testing.allocator;
             const samples: []const T = &[_]T{};
-            const wave = Self.init(samples, allocator, .{
+
+            var wave = try Self.init(samples, allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
-            })
-                .filter(test_filter_without_args)
-                .filter(test_filter_without_args)
-                .filter(test_filter_without_args)
-                .filter(test_filter_without_args);
+            });
+            try wave.filter(test_filter_without_args);
+            try wave.filter(test_filter_without_args);
+            try wave.filter(test_filter_without_args);
+            try wave.filter(test_filter_without_args);
             defer wave.deinit();
 
             try testing.expectEqual(wave.sample_rate, 44100);
@@ -587,7 +586,8 @@ pub fn inner(comptime T: type) type {
         test "init with empty samples" {
             const allocator = testing.allocator;
             const samples: []const T = &[_]T{};
-            const wave = Self.init(samples, allocator, .{
+
+            const wave = try Self.init(samples, allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -601,7 +601,7 @@ pub fn inner(comptime T: type) type {
         test "init creates deep copy of samples" {
             const allocator = testing.allocator;
             var original_samples = [_]T{ 1.0, 2.0, 3.0 };
-            const wave = Self.init(&original_samples, allocator, .{
+            const wave = try Self.init(&original_samples, allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -621,7 +621,7 @@ pub fn inner(comptime T: type) type {
             const samples: []const T = &[_]T{ 1.0, 2.0, 3.0, 4.0 };
 
             // Mono
-            const wave_mono = Self.init(samples, allocator, .{
+            const wave_mono = try Self.init(samples, allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -629,7 +629,7 @@ pub fn inner(comptime T: type) type {
             try testing.expectEqual(wave_mono.channels, 1);
 
             // Stereo
-            const wave_stereo = Self.init(samples, allocator, .{
+            const wave_stereo = try Self.init(samples, allocator, .{
                 .sample_rate = 44100,
                 .channels = 2,
             });
@@ -642,19 +642,19 @@ pub fn inner(comptime T: type) type {
             const samples1: []const T = &[_]T{ 1.0, 2.0, 3.0 };
             const samples2: []const T = &[_]T{ 0.5, 1.0, 1.5 };
 
-            const wave1 = Self.init(samples1, allocator, .{
+            const wave1 = try Self.init(samples1, allocator, .{
                 .sample_rate = 48000,
                 .channels = 2,
             });
             defer wave1.deinit();
 
-            const wave2 = Self.init(samples2, allocator, .{
+            const wave2 = try Self.init(samples2, allocator, .{
                 .sample_rate = 48000,
                 .channels = 2,
             });
             defer wave2.deinit();
 
-            const result = wave1.mix(wave2, .{});
+            const result: Self = try wave1.mix(wave2, .{});
             defer result.deinit();
 
             try testing.expectEqual(result.sample_rate, 48000);
@@ -710,7 +710,7 @@ fn test_filter_with_args(
     for (0..args.samples) |_|
         try result.append(original.allocator, 0.0);
 
-    return inner(SampleType).init(result.items, original.allocator, .{
+    return try inner(SampleType).init(result.items, original.allocator, .{
         .sample_rate = original.sample_rate,
         .channels = original.channels,
     });

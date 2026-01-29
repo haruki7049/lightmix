@@ -31,7 +31,7 @@ pub fn main() !void {
         samples[i] = volume * @sin(radians_per_sec * t);
     }
 
-    const wave = Wave(f64).init(samples[0..], allocator, .{
+    const wave = try Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });

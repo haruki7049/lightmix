@@ -34,7 +34,7 @@ pub fn main() !void {
         samples[i] = if (@mod(phase, 1.0) < 0.5) volume else -volume;
     }
 
-    const wave = Wave(f64).init(samples[0..], allocator, .{
+    const wave = try Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });

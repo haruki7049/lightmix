@@ -38,7 +38,7 @@ pub fn main() !void {
     }
 
     // Create a Wave object from our samples
-    const wave = Wave(f64).init(samples[0..], allocator, .{
+    const wave = try Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1, // Mono audio
     });

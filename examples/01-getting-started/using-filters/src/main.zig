@@ -31,15 +31,12 @@ pub fn main() !void {
         samples[i] = 0.5 * @sin(radians_per_sec * t);
     }
 
-    const wave = Wave(f64).init(samples[0..], allocator, .{
+    var wave = try Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
-
-    // Apply a decay filter to create a fade-out effect
-    // Note: filter() consumes the original wave, so no defer needed
-    const decayed_wave = wave.filter(decayFilter);
-    defer decayed_wave.deinit();
+    try wave.filter(decayFilter);
+    defer wave.deinit();
 
     // Save the result
     const file = try std.fs.cwd().createFile("result.wav", .{});
@@ -48,7 +45,7 @@ pub fn main() !void {
     defer allocator.free(buf);
     var writer = file.writer(buf);
 
-    try decayed_wave.write(&writer.interface, .{
+    try wave.write(&writer.interface, .{
         .allocator = allocator,
         .format_code = .pcm,
         .bits = 16,

@@ -190,7 +190,7 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A new Wave containing the final mixed composition
-        pub fn finalize(self: Self, options: Wave(T).mixOptions) Wave(T) {
+        pub fn finalize(self: Self, options: Wave(T).mixOptions) std.mem.Allocator.Error!Wave(T) {
             var end_point: usize = 0;
 
             // Calculate the length for emitted wave
@@ -212,7 +212,7 @@ pub fn inner(comptime T: type) type {
                 const padded_at_start_and_last: []const T = padding_for_last(padded_at_start, end_point, self.allocator);
                 defer self.allocator.free(padded_at_start_and_last);
 
-                const wave = Wave(T).init(padded_at_start_and_last, self.allocator, .{
+                const wave = try Wave(T).init(padded_at_start_and_last, self.allocator, .{
                     .sample_rate = self.sample_rate,
                     .channels = self.channels,
                 });
@@ -231,13 +231,13 @@ pub fn inner(comptime T: type) type {
             const empty_samples: []const T = generate_soundless_samples(end_point, self.allocator);
             defer self.allocator.free(empty_samples);
 
-            var result = Wave(T).init(empty_samples, self.allocator, .{
+            var result = try Wave(T).init(empty_samples, self.allocator, .{
                 .sample_rate = self.sample_rate,
                 .channels = self.channels,
             });
 
             for (padded_waveinfo_slice) |waveinfo| {
-                const wave = result.mix(waveinfo.wave, options);
+                const wave = try result.mix(waveinfo.wave, options);
                 result.deinit();
                 waveinfo.wave.deinit();
                 result = wave;

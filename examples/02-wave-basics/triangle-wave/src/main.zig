@@ -33,7 +33,7 @@ pub fn main() !void {
             3.0 - 4.0 * phase; // Falling: +1 to -1
     }
 
-    const wave = Wave(f64).init(samples[0..], allocator, .{
+    const wave = try Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
