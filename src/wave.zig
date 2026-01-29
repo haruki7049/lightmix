@@ -316,10 +316,10 @@ pub fn inner(comptime T: type) type {
 
             // To destroy original samples array
             // If we don't do this, we may catch some memory leaks by not to free original samples array
-            defer {
-                self.deinit();
-                self.* = result;
-            }
+            self.deinit();
+
+            // Assign the result into self
+            self.* = result;
         }
 
         /// Applies a filter function to the wave.
@@ -389,10 +389,10 @@ pub fn inner(comptime T: type) type {
 
             // To destroy original samples array
             // If we don't do this, we may catch some memory leaks by not to free original samples array
-            defer {
-                self.deinit();
-                self.* = result;
-            }
+            self.deinit();
+
+            // Assign the result into self
+            self.* = result;
         }
 
         test "read & deinit" {
