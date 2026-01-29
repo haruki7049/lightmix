@@ -134,20 +134,21 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A new Composer instance with the wave added
-        pub fn append(self: Self, waveinfo: WaveInfo) std.mem.Allocator.Error!Self {
+        pub fn append(self: *Self, waveinfo: WaveInfo) std.mem.Allocator.Error!void {
             var d: std.array_list.Aligned(WaveInfo, null) = .empty;
             try d.appendSlice(self.allocator, self.info);
             try d.append(self.allocator, waveinfo);
 
-            const result: []const WaveInfo = try d.toOwnedSlice(self.allocator);
-
-            return Self{
+            const result: Self = Self{
                 .allocator = self.allocator,
-                .info = result,
+                .info = try d.toOwnedSlice(self.allocator),
 
                 .sample_rate = self.sample_rate,
                 .channels = self.channels,
             };
+
+            self.deinit();
+            self.* = result;
         }
 
         /// Appends multiple waves to the composition.
@@ -161,20 +162,21 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A new Composer instance with all the waves added
-        pub fn appendSlice(self: Self, append_list: []const WaveInfo) std.mem.Allocator.Error!Self {
+        pub fn appendSlice(self: *Self, append_list: []const WaveInfo) std.mem.Allocator.Error!void {
             var d: std.array_list.Aligned(WaveInfo, null) = .empty;
             try d.appendSlice(self.allocator, self.info);
             try d.appendSlice(self.allocator, append_list);
 
-            const result: []const WaveInfo = try d.toOwnedSlice(self.allocator);
-
-            return Self{
+            const result: Self = Self{
                 .allocator = self.allocator,
-                .info = result,
+                .info = try d.toOwnedSlice(self.allocator),
 
                 .sample_rate = self.sample_rate,
                 .channels = self.channels,
             };
+
+            self.deinit();
+            self.* = result;
         }
 
         /// Finalizes the composition by mixing all waves together.
