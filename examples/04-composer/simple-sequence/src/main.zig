@@ -45,7 +45,7 @@ pub fn main() !void {
     try notes_list.append(allocator, .{ .wave = e4, .start_point = 44100 }); // 1.0s
     try notes_list.append(allocator, .{ .wave = c4, .start_point = 66150 }); // 1.5s
 
-    const composed = composer.appendSlice(notes_list.items);
+    const composed = try composer.appendSlice(notes_list.items);
     defer composed.deinit();
 
     const result = try composed.finalize(.{});

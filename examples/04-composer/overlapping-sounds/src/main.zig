@@ -42,7 +42,7 @@ pub fn main() !void {
     try arrangement.append(allocator, .{ .wave = e4, .start_point = 0 }); // Melody starts with bass
     try arrangement.append(allocator, .{ .wave = g4, .start_point = 22050 }); // Second melody note at 0.5s
 
-    const composed = composer.appendSlice(arrangement.items);
+    const composed = try composer.appendSlice(arrangement.items);
     defer composed.deinit();
 
     const result = try composed.finalize(.{});
