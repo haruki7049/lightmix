@@ -125,9 +125,9 @@ pub fn inner(comptime T: type) type {
 
         /// Appends a single wave to the composition.
         ///
-        /// **Important**: This method modifies the composer in-place and consumes
-        /// the original internal data. Do not use the composer after calling this
-        /// method without reassigning the result.
+        /// **Important**: This method modifies the composer in-place. After calling
+        /// this method, the composer can continue to be used normally for additional
+        /// operations like more appends or finalization.
         ///
         /// ## Parameters
         /// - `self`: Pointer to the composer to modify (will be updated in-place)
@@ -168,9 +168,9 @@ pub fn inner(comptime T: type) type {
 
         /// Appends multiple waves to the composition.
         ///
-        /// **Important**: This method modifies the composer in-place and consumes
-        /// the original internal data. Do not use the composer after calling this
-        /// method without reassigning the result.
+        /// **Important**: This method modifies the composer in-place. After calling
+        /// this method, the composer can continue to be used normally for additional
+        /// operations like more appends or finalization.
         ///
         /// ## Parameters
         /// - `self`: Pointer to the composer to modify (will be updated in-place)
