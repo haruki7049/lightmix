@@ -43,8 +43,8 @@ pub fn inner(comptime T: type) type {
             wave: Wave(T),
             start_point: usize,
 
-            fn to_wave(self: WaveInfo, allocator: std.mem.Allocator) Wave(T) {
-                var padding_samples: []T = allocator.alloc(T, self.start_point) catch @panic("Out of memory");
+            fn to_wave(self: WaveInfo, allocator: std.mem.Allocator) std.mem.Allocator.Error!Wave(T) {
+                var padding_samples: []T = try allocator.alloc(T, self.start_point);
 
                 for (0..padding_samples.len) |i| {
                     padding_samples[i] = 0.0;
@@ -53,7 +53,7 @@ pub fn inner(comptime T: type) type {
                 const slices: []const []const T = &[_][]const T{ padding_samples, self.wave.samples };
                 const samples = std.mem.concat(allocator, T, slices);
 
-                const result: Wave(T) = Wave(T).init(samples, allocator, .{
+                const result: Wave(T) = try Wave(T).init(samples, allocator, .{
                     .sample_rate = self.wave.sample_rate,
                     .channels = self.wave.channels,
                 });
@@ -110,13 +110,13 @@ pub fn inner(comptime T: type) type {
             info: []const WaveInfo,
             allocator: std.mem.Allocator,
             options: InitOptions,
-        ) Self {
+        ) std.mem.Allocator.Error!Self {
             var list: std.array_list.Aligned(WaveInfo, null) = .empty;
-            list.appendSlice(allocator, info) catch @panic("Out of memory");
+            try list.appendSlice(allocator, info);
 
             return Self{
                 .allocator = allocator,
-                .info = list.toOwnedSlice(allocator) catch @panic("Out of memory"),
+                .info = try list.toOwnedSlice(allocator),
 
                 .sample_rate = options.sample_rate,
                 .channels = options.channels,
@@ -134,12 +134,12 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A new Composer instance with the wave added
-        pub fn append(self: Self, waveinfo: WaveInfo) Self {
+        pub fn append(self: Self, waveinfo: WaveInfo) std.mem.Allocator.Error!Self {
             var d: std.array_list.Aligned(WaveInfo, null) = .empty;
-            d.appendSlice(self.allocator, self.info) catch @panic("Out of memory");
-            d.append(self.allocator, waveinfo) catch @panic("Out of memory");
+            try d.appendSlice(self.allocator, self.info);
+            try d.append(self.allocator, waveinfo);
 
-            const result: []const WaveInfo = d.toOwnedSlice(self.allocator) catch @panic("Out of memory");
+            const result: []const WaveInfo = try d.toOwnedSlice(self.allocator);
 
             return Self{
                 .allocator = self.allocator,
@@ -161,12 +161,12 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A new Composer instance with all the waves added
-        pub fn appendSlice(self: Self, append_list: []const WaveInfo) Self {
+        pub fn appendSlice(self: Self, append_list: []const WaveInfo) std.mem.Allocator.Error!Self {
             var d: std.array_list.Aligned(WaveInfo, null) = .empty;
-            d.appendSlice(self.allocator, self.info) catch @panic("Out of memory");
-            d.appendSlice(self.allocator, append_list) catch @panic("Out of memory");
+            try d.appendSlice(self.allocator, self.info);
+            try d.appendSlice(self.allocator, append_list);
 
-            const result: []const WaveInfo = d.toOwnedSlice(self.allocator) catch @panic("Out of memory");
+            const result: []const WaveInfo = try d.toOwnedSlice(self.allocator);
 
             return Self{
                 .allocator = self.allocator,
@@ -206,10 +206,10 @@ pub fn inner(comptime T: type) type {
 
             // Filter each WaveInfo to append padding both of start and last
             for (self.info) |waveinfo| {
-                const padded_at_start: []const T = padding_for_start(waveinfo.wave.samples, waveinfo.start_point, self.allocator);
+                const padded_at_start: []const T = try padding_for_start(waveinfo.wave.samples, waveinfo.start_point, self.allocator);
                 defer self.allocator.free(padded_at_start);
 
-                const padded_at_start_and_last: []const T = padding_for_last(padded_at_start, end_point, self.allocator);
+                const padded_at_start_and_last: []const T = try padding_for_last(padded_at_start, end_point, self.allocator);
                 defer self.allocator.free(padded_at_start_and_last);
 
                 const wave = try Wave(T).init(padded_at_start_and_last, self.allocator, .{
@@ -222,13 +222,13 @@ pub fn inner(comptime T: type) type {
                     .start_point = waveinfo.start_point,
                 };
 
-                padded_waveinfo_list.append(self.allocator, wi) catch @panic("Out of memory");
+                try padded_waveinfo_list.append(self.allocator, wi);
             }
 
-            const padded_waveinfo_slice: []const WaveInfo = padded_waveinfo_list.toOwnedSlice(self.allocator) catch @panic("Out of memory");
+            const padded_waveinfo_slice: []const WaveInfo = try padded_waveinfo_list.toOwnedSlice(self.allocator);
             defer self.allocator.free(padded_waveinfo_slice);
 
-            const empty_samples: []const T = generate_soundless_samples(end_point, self.allocator);
+            const empty_samples: []const T = try generate_soundless_samples(end_point, self.allocator);
             defer self.allocator.free(empty_samples);
 
             var result = try Wave(T).init(empty_samples, self.allocator, .{
@@ -246,24 +246,24 @@ pub fn inner(comptime T: type) type {
             return result;
         }
 
-        fn padding_for_start(samples: []const T, start_point: usize, allocator: std.mem.Allocator) []const T {
+        fn padding_for_start(samples: []const T, start_point: usize, allocator: std.mem.Allocator) std.mem.Allocator.Error![]const T {
             const padding_length: usize = start_point;
             var padding: std.array_list.Aligned(T, null) = .empty;
             defer padding.deinit(allocator);
 
             // Append padding
             for (0..padding_length) |_|
-                padding.append(allocator, 0.0) catch @panic("Out of memory");
+                try padding.append(allocator, 0.0);
 
             // Append samples slice
-            padding.appendSlice(allocator, samples) catch @panic("Out of memory");
+            try padding.appendSlice(allocator, samples);
 
-            const result: []const T = padding.toOwnedSlice(allocator) catch @panic("Out of memory");
+            const result: []const T = try padding.toOwnedSlice(allocator);
 
             return result;
         }
 
-        fn padding_for_last(samples: []const T, end_point: usize, allocator: std.mem.Allocator) []const T {
+        fn padding_for_last(samples: []const T, end_point: usize, allocator: std.mem.Allocator) std.mem.Allocator.Error![]const T {
             std.debug.assert(samples.len <= end_point);
 
             const padding_length: usize = end_point - samples.len;
@@ -271,26 +271,26 @@ pub fn inner(comptime T: type) type {
             defer padding.deinit(allocator);
 
             // Append samples slice
-            padding.appendSlice(allocator, samples) catch @panic("Out of memory");
+            try padding.appendSlice(allocator, samples);
 
             // Append padding
             for (0..padding_length) |_|
-                padding.append(allocator, 0.0) catch @panic("Out of memory");
+                try padding.append(allocator, 0.0);
 
-            const result: []const T = padding.toOwnedSlice(allocator) catch @panic("Out of memory");
+            const result: []const T = try padding.toOwnedSlice(allocator);
 
             return result;
         }
 
-        fn generate_soundless_samples(length: usize, allocator: std.mem.Allocator) []const T {
+        fn generate_soundless_samples(length: usize, allocator: std.mem.Allocator) std.mem.Allocator.Error![]const T {
             var list: std.array_list.Aligned(T, null) = .empty;
             defer list.deinit(allocator);
 
             // Append empty wave
             for (0..length) |_|
-                list.append(allocator, 0.0) catch @panic("Out of memory");
+                try list.append(allocator, 0.0);
 
-            const result: []const T = list.toOwnedSlice(allocator) catch @panic("Out of memory");
+            const result: []const T = try list.toOwnedSlice(allocator);
 
             return result;
         }

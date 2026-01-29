@@ -25,7 +25,7 @@ test "Compose multiple soundless Wave" {
     try append_list.append(allocator, .{ .wave = wave, .start_point = 0 });
     try append_list.append(allocator, .{ .wave = wave, .start_point = 0 });
 
-    const appended_composer = composer.appendSlice(append_list.items);
+    const appended_composer = try composer.appendSlice(append_list.items);
     defer appended_composer.deinit();
 
     const result = try appended_composer.finalize(.{});
