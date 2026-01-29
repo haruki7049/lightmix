@@ -18,7 +18,7 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    const composer = Composer(f64).init(allocator, .{
+    var composer = Composer(f64).init(allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
@@ -42,10 +42,9 @@ pub fn main() !void {
     try arrangement.append(allocator, .{ .wave = e4, .start_point = 0 }); // Melody starts with bass
     try arrangement.append(allocator, .{ .wave = g4, .start_point = 22050 }); // Second melody note at 0.5s
 
-    const composed = try composer.appendSlice(arrangement.items);
-    defer composed.deinit();
+    try composer.appendSlice(arrangement.items);
 
-    const result = try composed.finalize(.{});
+    const result = try composer.finalize(.{});
     defer result.deinit();
 
     const file = try std.fs.cwd().createFile("result.wav", .{});
