@@ -20,13 +20,13 @@ const Wave = @import("./root.zig").Wave;
 /// defer composer.deinit();
 ///
 /// // Append waves at specific time points
-/// const composed = composer
-///     .append(.{ .wave = wave1, .start_point = 0 })
+/// const composed = try (try composer
+///     .append(.{ .wave = wave1, .start_point = 0 }))
 ///     .append(.{ .wave = wave2, .start_point = 22050 });
 /// defer composed.deinit();
 ///
 /// // Finalize to create the mixed result
-/// const result = composed.finalize(.{});
+/// const result = try composed.finalize(.{});
 /// defer result.deinit();
 /// ```
 pub fn inner(comptime T: type) type {

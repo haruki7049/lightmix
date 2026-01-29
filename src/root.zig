@@ -44,10 +44,10 @@
 //!     });
 //!     defer composer.deinit();
 //!
-//!     const arranged = composer.append(.{ .wave = wave, .start_point = 0 });
+//!     const arranged = try composer.append(.{ .wave = wave, .start_point = 0 });
 //!     defer arranged.deinit();
 //!
-//!     const result = arranged.finalize(.{});
+//!     const result = try arranged.finalize(.{});
 //!     defer result.deinit();
 //! }
 //! ```
