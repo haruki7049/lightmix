@@ -298,13 +298,13 @@ pub fn inner(comptime T: type) type {
         ///     samples[i] = 0.5 * @sin(radians_per_sec * t);
         /// }
         ///
-        /// const wave: Wave(f64) = Wave(f64).init(samples[0..], allocator, .{
+        /// var wave = try Wave(f64).init(samples[0..], allocator, .{
         ///     .sample_rate = 44100,
         ///     .channels = 1,
         /// });
+        /// defer wave.deinit();
         ///
-        /// const decayed_wave: Wave(f64) = wave.filter(decay);
-        /// defer decayed_wave.deinit();
+        /// try wave.filter_with(DecayWithDebugPrintArgs, decay_with_debug_print, .{ .string = "Hello" });
         /// ```
         pub fn filter_with(
             self: *Self,
@@ -373,13 +373,13 @@ pub fn inner(comptime T: type) type {
         ///     samples[i] = 0.5 * @sin(radians_per_sec * t);
         /// }
         ///
-        /// const wave: Wave(f64) = Wave(f64).init(samples[0..], allocator, .{
+        /// var wave = try Wave(f64).init(samples[0..], allocator, .{
         ///     .sample_rate = 44100,
         ///     .channels = 1,
         /// });
+        /// defer wave.deinit();
         ///
-        /// const decayed_wave: Wave(f64) = wave.filter(decay);
-        /// defer decayed_wave.deinit();
+        /// try wave.filter(decay);
         /// ```
         pub fn filter(
             self: *Self,

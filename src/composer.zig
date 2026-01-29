@@ -13,20 +13,18 @@ const Wave = @import("./root.zig").Wave;
 /// ## Usage
 /// ```zig
 /// const Composer = lightmix.Composer;
-/// const composer = Composer(f64).init(allocator, .{
+/// var composer = Composer(f64).init(allocator, .{
 ///     .sample_rate = 44100,
 ///     .channels = 1,
 /// });
 /// defer composer.deinit();
 ///
 /// // Append waves at specific time points
-/// const composed = composer
-///     .append(.{ .wave = wave1, .start_point = 0 })
-///     .append(.{ .wave = wave2, .start_point = 22050 });
-/// defer composed.deinit();
+/// composer = try composer.append(.{ .wave = wave1, .start_point = 0 });
+/// composer = try composer.append(.{ .wave = wave2, .start_point = 22050 });
 ///
 /// // Finalize to create the mixed result
-/// const result = composed.finalize(.{});
+/// const result = try composer.finalize(.{});
 /// defer result.deinit();
 /// ```
 pub fn inner(comptime T: type) type {
@@ -134,6 +132,17 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A new Composer instance with the wave added
+        ///
+        /// ## Example Usage
+        /// ```zig
+        /// var composer = Composer(f64).init(allocator, .{
+        ///     .sample_rate = 44100,
+        ///     .channels = 1,
+        /// });
+        /// defer composer.deinit();
+        ///
+        /// composer = try composer.append(.{ .wave = wave, .start_point = 0 });
+        /// ```
         pub fn append(self: Self, waveinfo: WaveInfo) std.mem.Allocator.Error!Self {
             var d: std.array_list.Aligned(WaveInfo, null) = .empty;
             try d.appendSlice(self.allocator, self.info);
@@ -161,6 +170,21 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A new Composer instance with all the waves added
+        ///
+        /// ## Example Usage
+        /// ```zig
+        /// var composer = Composer(f64).init(allocator, .{
+        ///     .sample_rate = 44100,
+        ///     .channels = 1,
+        /// });
+        /// defer composer.deinit();
+        ///
+        /// const waves: []const Composer(f64).WaveInfo = &[_]Composer(f64).WaveInfo{
+        ///     .{ .wave = wave1, .start_point = 0 },
+        ///     .{ .wave = wave2, .start_point = 22050 },
+        /// };
+        /// composer = try composer.appendSlice(waves);
+        /// ```
         pub fn appendSlice(self: Self, append_list: []const WaveInfo) std.mem.Allocator.Error!Self {
             var d: std.array_list.Aligned(WaveInfo, null) = .empty;
             try d.appendSlice(self.allocator, self.info);
