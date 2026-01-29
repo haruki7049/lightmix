@@ -92,6 +92,18 @@ pub fn build(b: *std.Build) void {
 /// ## Returns
 /// A build step that can be added as a dependency to install the generated WAV file
 ///
+/// ## Errors
+/// Returns errors from:
+/// - File system operations (creating cache directory, writing files)
+/// - Memory allocation failures
+/// - The user-provided wave generation function (if it returns an error)
+///
+/// ## Notes
+/// - The first build may take longer as it compiles the wave generation code
+/// - Generated wave files are cached in `.zig-cache/lightmix/`
+/// - The wave generation function runs at build time, not runtime
+/// - Large wave files may require significant build-time memory
+///
 /// ## Usage
 /// ```zig
 /// const std = @import("std");

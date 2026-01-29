@@ -316,6 +316,38 @@ const mixed = try wave1.mix(wave2, .{});
 defer mixed.deinit();
 ```
 
+## Performance and Memory Considerations
+
+### Memory Management
+
+- **Wave ownership**: `Wave.init()` creates a deep copy of sample data. The caller retains ownership of the original data.
+- **Allocator lifetime**: The allocator passed to `init()` must remain valid for the entire lifetime of the Wave or Composer.
+- **Always use `defer`**: Call `wave.deinit()` or `composer.deinit()` to free allocated memory.
+- **Filter operations**: Both `filter()` and `filter_with()` automatically free the original wave's memory.
+
+### Performance Tips
+
+- **Composer overhead**: `finalize()` creates temporary padded copies of all waves. For large compositions (100+ overlapping waves), consider:
+  - Finalizing in stages and mixing the results
+  - Using direct `Wave.mix()` when possible
+  - Ensuring waves are already the correct length to minimize padding
+
+- **Mixing**: Direct `Wave.mix()` is more efficient than Composer for waves that start at the same time and have the same length.
+
+- **Sample types**: `f64` provides a good balance of precision and performance. `f128` offers higher precision but uses more memory and may be slower on some platforms.
+
+### Memory Usage Examples
+
+```zig
+// A 1-minute stereo Wave at 44.1kHz using f64 samples:
+// Memory = 44100 samples/sec × 60 seconds × 2 channels × 8 bytes/sample
+//        = ~42 MB
+
+// Composer with 10 overlapping 10-second waves:
+// Peak memory during finalize() ≈ 10 waves × 10 seconds × 44100 × 2 × 8 bytes
+//                                 ≈ 70 MB temporary + final wave
+```
+
 ## Zig version
 
 0.15.2
