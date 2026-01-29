@@ -5,7 +5,7 @@ const Composer = lightmix.Composer;
 
 test "Compose multiple soundless Wave" {
     const allocator = std.testing.allocator;
-    const composer = Composer(f64).init(allocator, .{
+    var composer = Composer(f64).init(allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
@@ -25,10 +25,9 @@ test "Compose multiple soundless Wave" {
     try append_list.append(allocator, .{ .wave = wave, .start_point = 0 });
     try append_list.append(allocator, .{ .wave = wave, .start_point = 0 });
 
-    const appended_composer = try composer.appendSlice(append_list.items);
-    defer appended_composer.deinit();
+    try composer.appendSlice(append_list.items);
 
-    const result = try appended_composer.finalize(.{});
+    const result = try composer.finalize(.{});
     defer result.deinit();
 
     // Create TmpDir
