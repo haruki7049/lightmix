@@ -20,10 +20,9 @@ const Wave = @import("./root.zig").Wave;
 /// defer composer.deinit();
 ///
 /// // Append waves at specific time points
-/// const composed = try (try composer
-///     .append(.{ .wave = wave1, .start_point = 0 }))
-///     .append(.{ .wave = wave2, .start_point = 22050 });
+/// var composed = try composer.append(.{ .wave = wave1, .start_point = 0 });
 /// defer composed.deinit();
+/// composed = try composed.append(.{ .wave = wave2, .start_point = 22050 });
 ///
 /// // Finalize to create the mixed result
 /// const result = try composed.finalize(.{});
@@ -45,6 +44,7 @@ pub fn inner(comptime T: type) type {
 
             fn to_wave(self: WaveInfo, allocator: std.mem.Allocator) std.mem.Allocator.Error!Wave(T) {
                 var padding_samples: []T = try allocator.alloc(T, self.start_point);
+                defer allocator.free(padding_samples);
 
                 for (0..padding_samples.len) |i| {
                     padding_samples[i] = 0.0;
