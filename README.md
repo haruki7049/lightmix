@@ -53,7 +53,9 @@ pub fn generate() !lightmix.Wave(f64) {
     // Generate your audio data (example: 1 second of silence)
     const data: [44100]f64 = [_]f64{0.0} ** 44100;
 
-    const wave = lightmix.Wave(f64).init(data[0..], allocator, .{
+    // Wave.init() creates a deep copy of the data
+    // The original data array can be safely discarded after this call
+    const wave: lightmix.Wave(f64) = try lightmix.Wave(f64).init(data[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
@@ -86,7 +88,7 @@ pub fn build(b: *std.Build) !void {
 
     // Use createWave to generate the wave file during build
     const wave_step = try l.createWave(b, mod, .{
-        .func_name = "generate", // Name of your wave generation function
+        .func_name = "generate", // Name of your wave generation function (optional, defaults to "gen")
         .wave = .{
             .name = "result.wav", // Output filename (optional, defaults to "result.wav")
             .format_code = .pcm, // Wave format code (e.g., .pcm, .ieee_float)
@@ -118,13 +120,15 @@ You can find a complete example in [./examples/Wave/generate_by_build_zig](./exa
 
 `Wave` is a generic type function that accepts a sample type parameter. It contains PCM audio source with samples of the specified floating-point type.
 
-Supported sample types: `f64`, `f80`, `f128` (Note: `f32` is not supported in zigggwavvv 0.2.1)
+Both waves must have identical `sample_rate`, `channels`, and sample length, or the program will panic.
+
+Supported sample types: `f64`, `f80`, `f128`.
 
 ```zig
 const allocator = std.heap.page_allocator; // Use your allocator
 const data: []const f64 = &[_]f64{ 0.0, 0.0, 0.0 }; // This array contains 3 float numbers, then this wave will be made from 3 samples.
 
-const wave = lightmix.Wave(f64).init(data, allocator, .{
+const wave: lightmix.Wave(f64) = try lightmix.Wave(f64).init(data, allocator, .{
     .sample_rate = 44100, // Samples per second.
     .channels = 1, // Channels for this Wave. If this wave has two channels, it means this wave is stereo.
 });
@@ -157,18 +161,17 @@ try wave.write(file.writer(), .{
 const allocator = std.heap.page_allocator; // Use your allocator
 const wave = generate_wave(); // Returns a Wave(f64)
 
-const Composer = lightmix.Composer(f64);
-const info: []const Composer.WaveInfo = &[_]Composer.WaveInfo{
+const info: []const lightmix.Composer(f64).WaveInfo = &[_]Composer.WaveInfo{
     .{ .wave = wave, .start_point = 0 },
     .{ .wave = wave, .start_point = 44100 },
 };
-const composer = Composer.init_with(info, allocator, .{
+const composer: lightmix.Composer(f64) = try lightmix.Composer(f64).init_with(info, allocator, .{
     .sample_rate = 44100, // Samples per second.
     .channels = 1, // Channels for the Wave. If this composer has two channels, it means the wave is stereo.
 });
 defer composer.deinit(); // Composer.info is also owned by the passed allocator, so you must free this composer.
 
-const result = composer.finalize(.{}); // Let's finalize to create a Wave(f64)!!
+const result: lightmix.Wave(f64) = composer.finalize(.{}); // Let's finalize to create a Wave(f64)!!
 defer result.deinit(); // Don't forget to free the Wave data.
 ```
 

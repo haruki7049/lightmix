@@ -45,6 +45,9 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A new Wave instance containing a copy of the sample data
+        ///
+        /// ## Errors
+        /// - Allocator error (errors.OutOfMemory)
         pub fn init(
             samples: []const T,
             allocator: std.mem.Allocator,
@@ -93,8 +96,8 @@ pub fn inner(comptime T: type) type {
         /// ## Returns
         /// A new Wave containing the mixed result
         ///
-        /// ## Panics
-        /// Panics if the waves have different lengths, sample rates, or channel counts
+        /// ## Errors
+        /// - Allocator error (errors.OutOfMemory)
         pub fn mix(self: Self, other: Self, options: mixOptions) std.mem.Allocator.Error!Self {
             std.debug.assert(self.samples.len == other.samples.len);
             std.debug.assert(self.sample_rate == other.sample_rate);
@@ -141,7 +144,10 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A new Wave with samples from 0 to `start`, then zeros from `start` to `end`
-        pub fn fill_zero_to_end(self: Self, start: usize, end: usize) !Self {
+        ///
+        /// ## Errors
+        /// - Allocator error (errors.OutOfMemory)
+        pub fn fill_zero_to_end(self: Self, start: usize, end: usize) std.mem.Allocator.Error!Self {
             // Initialization
             var result: std.array_list.Aligned(T, null) = .empty;
             try result.appendSlice(self.allocator, self.samples);

@@ -92,6 +92,12 @@ pub fn build(b: *std.Build) void {
 /// ## Returns
 /// A build step that can be added as a dependency to install the generated WAV file
 ///
+/// ## Errors
+/// Returns errors from:
+/// - File system operations (creating cache directory, writing files)
+/// - Memory allocation failures
+/// - The user-provided wave generation function (if it returns an error)
+///
 /// ## Usage
 /// ```zig
 /// const std = @import("std");
@@ -129,7 +135,7 @@ pub fn createWave(
     b: *std.Build,
     mod: *std.Build.Module,
     options: CreateWaveOptions,
-) !*std.Build.Step {
+) anyerror!*std.Build.Step {
     // Create .zig-cache/lightmix directory
     b.cache_root.handle.access("lightmix", .{}) catch {
         try b.cache_root.handle.makeDir("lightmix");
