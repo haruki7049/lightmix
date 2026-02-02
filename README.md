@@ -123,6 +123,7 @@ You can find a complete example in [./examples/Wave/generate_by_build_zig](./exa
 **Supported sample types:** `f64`, `f80`, `f128`
 
 ⚠️ **Important Notes:**
+
 - **`f32` is NOT supported** due to a limitation in the zigggwavvv 0.2.1 dependency
 - `Wave.init()` creates a **deep copy** of the sample data - the caller retains ownership of the original samples
 - The allocator passed to `init()` must remain valid for the entire lifetime of the Wave
@@ -162,6 +163,7 @@ try wave.write(file.writer(), .{
 `Composer` is a generic type function that accepts a sample type parameter (same as Wave). It contains a `Composer(T).WaveInfo` array, which contains a `Wave(T)` and the timing when it plays.
 
 ⚠️ **Important Notes:**
+
 - `append()` and `appendSlice()` modify the Composer in-place
 - `finalize()` creates temporary padded copies of all waves, which may use significant memory for large compositions
 - All waves in a Composer must have the same `sample_rate` and `channels` as the Composer itself
@@ -282,11 +284,13 @@ defer chord.deinit();
 ### When to Use Composer vs Manual Mix
 
 **Use `Composer` when:**
+
 - You need to sequence sounds at different time points
 - You want to overlap multiple waves that start at different times
 - You're creating musical arrangements or compositions
 
 **Use `Wave.mix()` directly when:**
+
 - Both waves start at the same time and have the same length
 - You need custom mixing behavior (like ring modulation)
 - You want more control over the mixing process
@@ -328,6 +332,7 @@ defer mixed.deinit();
 ### Performance Tips
 
 - **Composer overhead**: `finalize()` creates temporary padded copies of all waves. For large compositions (100+ overlapping waves), consider:
+
   - Finalizing in stages and mixing the results
   - Using direct `Wave.mix()` when possible
   - Ensuring waves are already the correct length to minimize padding
