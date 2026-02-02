@@ -123,17 +123,28 @@ pub fn inner(comptime T: type) type {
             };
         }
 
-        /// Appends a single wave to the composition.
-        ///
-        /// Returns a new Composer instance with the added wave. The original
-        /// Composer is consumed and should not be used after this call.
+        /// Appends a single wave to the composition. This method modifies the composer in-place.
         ///
         /// ## Parameters
-        /// - `self`: The composer to add to
+        /// - `self`: Pointer to the composer to modify (will be updated in-place)
         /// - `waveinfo`: Information about the wave and when it should start
         ///
-        /// ## Returns
-        /// A new Composer instance with the wave added
+        /// ## Memory Management
+        /// The old internal array is freed, and a new one is allocated with the
+        /// appended wave. The composer pointer is updated to reference the new data.
+        ///
+        /// ## Example
+        /// ```
+        /// var composer: Composer(f64) = Composer(f64).init(allocator, .{
+        ///     .sample_rate = 44100,
+        ///     .channels = 1,
+        /// });
+        /// defer composer.deinit();
+        ///
+        /// // Append modifies composer in-place
+        /// try composer.append(.{ .wave = wave1, .start_point = 0 });
+        /// try composer.append(.{ .wave = wave2, .start_point = 44100 });
+        /// ```
         pub fn append(self: *Self, waveinfo: WaveInfo) std.mem.Allocator.Error!void {
             var d: std.array_list.Aligned(WaveInfo, null) = .empty;
             try d.appendSlice(self.allocator, self.info);
@@ -147,8 +158,8 @@ pub fn inner(comptime T: type) type {
                 .channels = self.channels,
             };
 
-            self.deinit();
-            self.* = result;
+            self.deinit(); // Free the old one now
+            self.* = result; // Then copy the new one (result variable)
         }
 
         /// Appends multiple waves to the composition.
