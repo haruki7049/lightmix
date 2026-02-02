@@ -201,6 +201,11 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A new Wave containing the final mixed composition
+        ///
+        /// ## Performance Notes
+        /// Memory usage is proportional to: `number_of_waves × total_length × sample_size`
+        /// Each wave is temporarily padded to the full composition length before mixing.
+        /// Consider using this for up to ~100 overlapping waves on typical systems.
         pub fn finalize(self: Self, options: Wave(T).mixOptions) std.mem.Allocator.Error!Wave(T) {
             var end_point: usize = 0;
 
