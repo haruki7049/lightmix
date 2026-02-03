@@ -142,7 +142,12 @@ pub fn createWave(
     };
 
     // Create a wave file in .zig-cache/lightmix
-    const tmp_path: []const u8 = try std.fs.path.join(b.allocator, &[_][]const u8{ ".zig-cache", "lightmix", options.wave.name });
+    const tmp_path: []const u8 = try std.fs.path.join(b.allocator, &[_][]const u8{
+        try b.build_root.handle.realpathAlloc(b.allocator, "."),
+        ".zig-cache",
+        "lightmix",
+        options.wave.name,
+    });
     // Generate temporary Zig code that calls the user's function
     const gen_source = try std.fmt.allocPrint(b.allocator,
         \\const std = @import("std");
