@@ -161,7 +161,7 @@ try wave.write(file.writer(), .{
 const allocator = std.heap.page_allocator; // Use your allocator
 const wave = generate_wave(); // Returns a Wave(f64)
 
-const info: []const lightmix.Composer(f64).WaveInfo = &[_]Composer.WaveInfo{
+const info: []const lightmix.Composer(f64).WaveInfo = &.{
     .{ .wave = wave, .start_point = 0 },
     .{ .wave = wave, .start_point = 44100 },
 };
