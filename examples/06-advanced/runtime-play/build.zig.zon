@@ -1,0 +1,16 @@
+.{
+    .name = .runtime_play,
+    .version = "0.0.0",
+    .fingerprint = 0xe6c2d04f8c10927a, // Changing this has security and trust implications.
+    .minimum_zig_version = "0.15.2",
+
+    .dependencies = .{
+        .lightmix = .{ .path = "../../.." },
+    },
+
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
