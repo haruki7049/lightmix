@@ -1,5 +1,6 @@
 const std = @import("std");
 const zigggwavvv = @import("zigggwavvv");
+const zaudio = @import("zaudio");
 const testing = std.testing;
 
 /// Wave type function: Creates a Wave type for the specified sample type.
@@ -400,6 +401,57 @@ pub fn inner(comptime T: type) type {
             // Assign the result into self
             self.* = result;
         }
+
+        pub fn play(
+            self: Self,
+            allocator: std.mem.Allocator,
+            play_options: PlayOptions,
+        ) anyerror!void {
+            zaudio.init(allocator);
+            defer zaudio.deinit();
+
+            const engine: *zaudio.Engine = try zaudio.Engine.create(null);
+            defer engine.destroy();
+
+            var file: std.fs.File, const tmp: std.testing.TmpDir, const path: []const u8 = try tmp_file(allocator);
+            defer {
+                file.close();
+                allocator.destroy(path);
+
+                if (play_options.do_cleanup) {
+                    tmp.cleanup();
+                }
+            }
+
+            // Write Wave into file's writer
+            {
+                const buf = try allocator.alloc(u8, 10 * 1024 * 1024);
+                defer allocator.free(buf);
+                var writer = file.writer(buf);
+
+                self.write(&writer.interface, write_options);
+            }
+
+            const fullpath: [:0]const u8 = tmp.dir.realpathAlloc(allocator, path);
+            const sound: *zaudio.Sound = try engine.createSoundFromFile(fullpath, .{});
+            defer sound.destroy();
+
+            try sound.start();
+        }
+
+        fn tmp_file(allocator: std.mem.Allocator) !struct { std.fs.File, std.testing.TmpDir, []const u8 } {
+            const timestamp: i64 = std.time.timestamp();
+            const timestamp_str: []const u8 = try std.fmt.allocPrint(allocator, "{s}", .{timestamp});
+
+            const tmp = std.testing.tmpDir(.{});
+            const file = try tmp.dir.createFile(timestamp_str ++ ".wav", .{});
+
+            return .{ file, tmp, timestamp_str };
+        }
+
+        pub const PlayOptions = struct {
+            do_cleanup: bool,
+        };
 
         test "read & deinit" {
             const allocator = testing.allocator;

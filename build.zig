@@ -10,6 +10,7 @@ pub fn build(b: *std.Build) void {
 
     // Dependencies
     const zigggwavvv = b.dependency("zigggwavvv", .{});
+    const zaudio = b.dependency("zaudio", .{});
 
     // Library module declaration
     const lib_mod = b.addModule("lightmix", .{
@@ -18,8 +19,10 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .imports = &.{
             .{ .name = "zigggwavvv", .module = zigggwavvv.module("zigggwavvv") },
+            .{ .name = "zaudio", .module = zaudio.module("root") },
         },
     });
+    lib_mod.linkLibrary(zaudio.artifact("miniaudio"));
 
     // Library installation
     const lib = b.addLibrary(.{
