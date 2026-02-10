@@ -121,7 +121,7 @@ pub fn build(b: *std.Build) void {
 ///     });
 ///
 ///     // Install Wave file into `zig-out` as `result.wav` (default Wave name)
-///     const wave_step = try l.createWave(b, mod, .{
+///     const wave_step = try l.addWave(b, mod, .{
 ///         .func_name = "gen",
 ///         .wave = .{ .bits = 16, .format_code = .pcm },
 ///     });
@@ -131,7 +131,7 @@ pub fn build(b: *std.Build) void {
 ///
 /// The user module must export a function matching the signature specified in
 /// `options.func_name` (default: "gen") that returns `!lightmix.Wave(T)`.
-pub fn createWave(
+pub fn addWave(
     b: *std.Build,
     mod: *std.Build.Module,
     options: CreateWaveOptions,
