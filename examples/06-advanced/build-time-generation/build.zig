@@ -16,11 +16,11 @@ pub fn build(b: *std.Build) !void {
         },
     });
 
-    const wave_step = try l.createWave(b, mod, .{
+    const wave = try l.addWave(b, mod, .{
         // .func_name = "gen", // The default value of func_name is "gen"
         .wave = .{ .bits = 16, .format_code = .pcm },
     });
-    b.getInstallStep().dependOn(wave_step);
+    l.installWave(b, wave);
 
     // Unit tests
     const unit_tests = b.addTest(.{
