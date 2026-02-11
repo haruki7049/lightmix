@@ -19,11 +19,11 @@ pub fn build(b: *std.Build) !void {
             .{ .name = "temperaments", .module = temperaments.module("temperaments") },
         },
     });
-    const wave_step: *std.Build.Step = try l.createWave(b, mod, .{
+    const wave = try l.addWave(b, mod, .{
         .func_name = "gen",
         .wave = .{ .bits = 16, .format_code = .pcm },
     });
-    b.getInstallStep().dependOn(wave_step);
+    l.installWave(b, wave);
 
     const mod_tests = b.addTest(.{
         .root_module = mod,
