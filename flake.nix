@@ -83,13 +83,15 @@
               pkgs.zon2nix
             ];
 
-            buildInputs = lib.optionals pkgs.stdenv.isDarwin [
-              pkgs.apple-sdk
-            ] ++ lib.optionals pkgs.stdenv.isLinux [
-              pkgs.alsa-lib
-              pkgs.pulseaudio
-              pkgs.pipewire
-            ];
+            buildInputs =
+              lib.optionals pkgs.stdenv.isDarwin [
+                pkgs.apple-sdk
+              ]
+              ++ lib.optionals pkgs.stdenv.isLinux [
+                pkgs.alsa-lib
+                pkgs.pulseaudio
+                pkgs.pipewire
+              ];
           };
         };
     };
