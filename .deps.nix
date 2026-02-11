@@ -15,6 +15,20 @@ linkFarm "zig-packages" [
     };
   }
   {
+    name = "system_sdk-0.3.0-dev-alwUNnYaaAJAtIdE2fg4NQfDqEKs7QCXy_qYukAOBfmF";
+    path = fetchzip {
+      url = "https://github.com/zig-gamedev/system_sdk/archive/c0dbf11cdc17da5904ea8a17eadc54dee26567ec.tar.gz";
+      hash = "sha256-O3+Z4F58yESes3AMR3yfgqzJjM35BjwxGULgjKgJ6cE=";
+    };
+  }
+  {
+    name = "zaudio-0.11.0-dev-_M-91kHvPwAlW8MCRI4XiTbTeihqB8Zspgiuw-6Gqgdz";
+    path = fetchzip {
+      url = "https://github.com/zig-gamedev/zaudio/archive/bb93ad665b89e302d4515a36b44cb8e73eaf6766.tar.gz";
+      hash = "sha256-iMGK3w/SQ6IxD2vW1x0nwKshhdzNLAsbngx0Vo1Svgc=";
+    };
+  }
+  {
     name = "zigggwavvv-0.3.0-iR5xWtfEAAAd1ca3u6kOrPIFzODMgHiUIZQWava6XIwD";
     path = fetchzip {
       url = "https://github.com/haruki7049/zigggwavvv/archive/refs/tags/0.3.0.tar.gz";
