@@ -23,7 +23,7 @@ pub fn gen() !Wave(f128) {
         .channels = 1,
     });
 
-    try wave.play(allocator, .{}, .{ .do_cleanup = true });
+    try wave.play(allocator);
 
     return wave;
 }

@@ -15,6 +15,9 @@ pub fn build(b: *std.Build) !void {
             .{ .name = "lightmix", .module = lightmix.module("lightmix") },
         },
     });
+    mod.linkSystemLibrary("alsa", .{});
+    mod.linkSystemLibrary("libpulse", .{});
+    mod.linkSystemLibrary("libpipewire-0.3", .{});
 
     const wave_step: *std.Build.Step = try l.createWave(b, mod, .{
         .func_name = "gen",

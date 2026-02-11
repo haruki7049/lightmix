@@ -405,38 +405,30 @@ pub fn inner(comptime T: type) type {
         pub fn play(
             self: Self,
             allocator: std.mem.Allocator,
-            play_options: PlayOptions,
         ) anyerror!void {
             zaudio.init(allocator);
             defer zaudio.deinit();
 
-            const engine: *zaudio.Engine = try zaudio.Engine.create(null);
+            var engine: *zaudio.Engine = try zaudio.Engine.create(null);
             defer engine.destroy();
 
-            var file: std.fs.File, const tmp: std.testing.TmpDir, const path: []const u8 = try tmp_file(allocator);
-            defer {
-                file.close();
-                allocator.destroy(path);
+            const samples = try allocator.alloc(f32, self.samples.len);
+            defer allocator.free(samples);
 
-                if (play_options.do_cleanup) {
-                    tmp.cleanup();
-                }
+            for (self.samples, 0..) |orig_sample, i| {
+                samples[i] = @as(f32, @floatCast(orig_sample));
             }
 
-            // Write Wave into file's writer
-            {
-                const buf = try allocator.alloc(u8, 10 * 1024 * 1024);
-                defer allocator.free(buf);
-                var writer = file.writer(buf);
-
-                self.write(&writer.interface, write_options);
-            }
-
-            const fullpath: [:0]const u8 = tmp.dir.realpathAlloc(allocator, path);
-            const sound: *zaudio.Sound = try engine.createSoundFromFile(fullpath, .{});
+            const buffer = try zaudio.AudioBuffer.create(zaudio.AudioBuffer.Config.init(.float32, self.channels, samples.len, samples.ptr));
+            defer buffer.destroy();
+            const sound = try engine.createSoundFromDataSource(buffer.asDataSourceMut(), .{}, null);
             defer sound.destroy();
 
             try sound.start();
+
+            while (!sound.isAtEnd()) {
+                std.Thread.sleep(10 * std.time.ns_per_ms);
+            }
         }
 
         fn tmp_file(allocator: std.mem.Allocator) !struct { std.fs.File, std.testing.TmpDir, []const u8 } {
