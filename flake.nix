@@ -83,7 +83,7 @@
               pkgs.zon2nix
             ];
 
-            buildInputs = [
+            buildInputs = lib.optionals pkgs.stdenv.isDarwin [
               pkgs.apple-sdk
             ];
           };
