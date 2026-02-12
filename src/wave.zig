@@ -133,6 +133,23 @@ pub fn inner(comptime T: type) type {
             };
         }
 
+        /// Separates the wave into two parts at a specified point.
+        ///
+        /// This function splits the wave's samples into two new Wave instances:
+        /// one containing samples from the start to the separation point,
+        /// and another containing samples from the separation point to the end.
+        ///
+        /// ## Parameters
+        /// - `self`: The wave to separate
+        /// - `options`: Separation options (allocator and separation point)
+        ///
+        /// ## Returns
+        /// A SeparateResult containing two Wave instances (initial and terminal)
+        ///
+        /// ## Errors
+        /// - `SeparatingZeroLengthWave`: If the wave has no samples
+        /// - `TooBigSeparatePoint`: If the separation point exceeds the wave length
+        /// - `OutOfMemory`: Allocator error when memory allocation fails
         pub fn separate(
             self: Self,
             options: SeparateOptions,
@@ -173,18 +190,27 @@ pub fn inner(comptime T: type) type {
             return result;
         }
 
+        /// Options for separating a wave into two parts.
         pub const SeparateOptions = struct {
+            /// Memory allocator for the new wave instances
             allocator: std.mem.Allocator,
+            /// Sample index at which to split the wave (exclusive for initial, inclusive for terminal)
             separate_point: usize,
         };
 
+        /// Result of separating a wave into two parts.
         pub const SeparateResult = struct {
+            /// The first part of the wave (from start to separation point)
             initial: Self,
+            /// The second part of the wave (from separation point to end)
             terminal: Self,
         };
 
+        /// Errors that can occur when separating a wave.
         pub const SeparateErrors = error{
+            /// Attempted to separate a wave with zero samples
             SeparatingZeroLengthWave,
+            /// The separation point exceeds the wave's sample length
             TooBigSeparatePoint,
         };
 
