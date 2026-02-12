@@ -134,12 +134,58 @@ pub fn inner(comptime T: type) type {
         }
 
         pub fn separate(
-            //self: Self,
-        ) anyerror!Separated {}
+            self: Self,
+            options: SeparateOptions,
+        ) (SeparateErrors || std.mem.Allocator.Error)!Separated {
+            if (self.samples.len == 0)
+                return error.SeparatingZeroLengthWave;
+
+            if (self.samples.len < options.separate_point)
+                return error.TooBigSeparatePoint;
+
+            const initial_len = options.separate_point;
+            const terminal_len = self.samples.len - options.separate_point;
+            var initial: []T = try options.allocator.alloc(T, initial_len);
+            var terminal: []T = try options.allocator.alloc(T, terminal_len);
+
+            for (0..initial.len) |i| {
+                initial[i] = self.samples[i];
+            }
+            for (0..terminal.len) |i| {
+                terminal[i] = self.samples[initial_len + i];
+            }
+
+            const result = Separated{
+                .initial = Self{
+                    .allocator = options.allocator,
+                    .samples = initial,
+                    .sample_rate = self.sample_rate,
+                    .channels = self.channels,
+                },
+                .terminal = Self{
+                    .allocator = options.allocator,
+                    .samples = terminal,
+                    .sample_rate = self.sample_rate,
+                    .channels = self.channels,
+                },
+            };
+
+            return result;
+        }
+
+        pub const SeparateOptions = struct {
+            allocator: std.mem.Allocator,
+            separate_point: usize,
+        };
 
         pub const Separated = struct {
             initial: Self,
             terminal: Self,
+        };
+
+        pub const SeparateErrors = error{
+            SeparatingZeroLengthWave,
+            TooBigSeparatePoint,
         };
 
         /// Truncates the wave at a start point and fills with zeros to the end point.
@@ -690,6 +736,26 @@ pub fn inner(comptime T: type) type {
             try testing.expect(wave.sample_rate > 0);
             try testing.expect(wave.channels > 0);
             try testing.expect(wave.samples.len > 0);
+        }
+
+        test "separate func separates a Wave" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 1.0, 2.0, 3.0, 4.0, 5.0 };
+            const original = try Self.init(samples, allocator, .{
+                .sample_rate = 41000,
+                .channels = 1,
+            });
+            defer original.deinit();
+
+            const result = try original.separate(.{
+                .allocator = allocator,
+                .separate_point = 3,
+            });
+            defer result.initial.deinit();
+            defer result.terminal.deinit();
+
+            try testing.expectEqualSlices(T, result.initial.samples, &.{ 1.0, 2.0, 3.0 });
+            try testing.expectEqualSlices(T, result.terminal.samples, &.{ 4.0, 5.0 });
         }
     };
 }
