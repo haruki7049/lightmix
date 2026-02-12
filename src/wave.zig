@@ -136,7 +136,7 @@ pub fn inner(comptime T: type) type {
         pub fn separate(
             self: Self,
             options: SeparateOptions,
-        ) (SeparateErrors || std.mem.Allocator.Error)!Separated {
+        ) (SeparateErrors || std.mem.Allocator.Error)!SeparateResult {
             if (self.samples.len == 0)
                 return error.SeparatingZeroLengthWave;
 
@@ -155,7 +155,7 @@ pub fn inner(comptime T: type) type {
                 terminal[i] = self.samples[initial_len + i];
             }
 
-            const result = Separated{
+            const result = SeparateResult{
                 .initial = Self{
                     .allocator = options.allocator,
                     .samples = initial,
@@ -178,7 +178,7 @@ pub fn inner(comptime T: type) type {
             separate_point: usize,
         };
 
-        pub const Separated = struct {
+        pub const SeparateResult = struct {
             initial: Self,
             terminal: Self,
         };
