@@ -133,6 +133,15 @@ pub fn inner(comptime T: type) type {
             };
         }
 
+        pub fn separate(
+            //self: Self,
+        ) anyerror!Separated {}
+
+        pub const Separated = struct {
+            initial: Self,
+            terminal: Self,
+        };
+
         /// Truncates the wave at a start point and fills with zeros to the end point.
         ///
         /// This is useful for creating silence or padding at the end of a wave.
