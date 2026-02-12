@@ -149,7 +149,7 @@ pub fn inner(comptime T: type) type {
         /// ## Errors
         /// - `SeparatingZeroLengthWave`: If the wave has no samples
         /// - `TooBigSeparatePoint`: If the separation point exceeds the wave length
-        /// - Allocator error (errors.OutOfMemory)
+        /// - `OutOfMemory`: Allocator error when memory allocation fails
         pub fn separate(
             self: Self,
             options: SeparateOptions,
