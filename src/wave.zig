@@ -133,6 +133,87 @@ pub fn inner(comptime T: type) type {
             };
         }
 
+        /// Separates the wave into two parts at a specified point.
+        ///
+        /// This function splits the wave's samples into two new Wave instances:
+        /// one containing samples from the start to the separation point,
+        /// and another containing samples from the separation point to the end.
+        ///
+        /// ## Parameters
+        /// - `self`: The wave to separate
+        /// - `options`: Separation options (allocator and separation point)
+        ///
+        /// ## Returns
+        /// A SeparateResult containing two Wave instances (initial and terminal)
+        ///
+        /// ## Errors
+        /// - `SeparatingZeroLengthWave`: If the wave has no samples
+        /// - `TooBigSeparatePoint`: If the separation point exceeds the wave length
+        /// - `OutOfMemory`: Allocator error when memory allocation fails
+        pub fn separate(
+            self: Self,
+            options: SeparateOptions,
+        ) (SeparateErrors || std.mem.Allocator.Error)!SeparateResult {
+            if (self.samples.len == 0)
+                return error.SeparatingZeroLengthWave;
+
+            if (self.samples.len < options.separate_point)
+                return error.TooBigSeparatePoint;
+
+            const initial_len = options.separate_point;
+            const terminal_len = self.samples.len - options.separate_point;
+            var initial: []T = try options.allocator.alloc(T, initial_len);
+            var terminal: []T = try options.allocator.alloc(T, terminal_len);
+
+            for (0..initial.len) |i| {
+                initial[i] = self.samples[i];
+            }
+            for (0..terminal.len) |i| {
+                terminal[i] = self.samples[initial_len + i];
+            }
+
+            const result = SeparateResult{
+                .initial = Self{
+                    .allocator = options.allocator,
+                    .samples = initial,
+                    .sample_rate = self.sample_rate,
+                    .channels = self.channels,
+                },
+                .terminal = Self{
+                    .allocator = options.allocator,
+                    .samples = terminal,
+                    .sample_rate = self.sample_rate,
+                    .channels = self.channels,
+                },
+            };
+
+            return result;
+        }
+
+        /// Options for separating a wave into two parts.
+        pub const SeparateOptions = struct {
+            /// Memory allocator for the new wave instances
+            allocator: std.mem.Allocator,
+            /// Sample index at which to split the wave (exclusive for initial, inclusive for terminal)
+            separate_point: usize,
+        };
+
+        /// Result of separating a wave into two parts.
+        pub const SeparateResult = struct {
+            /// The first part of the wave (from start to separation point)
+            initial: Self,
+            /// The second part of the wave (from separation point to end)
+            terminal: Self,
+        };
+
+        /// Errors that can occur when separating a wave.
+        pub const SeparateErrors = error{
+            /// Attempted to separate a wave with zero samples
+            SeparatingZeroLengthWave,
+            /// The separation point exceeds the wave's sample length
+            TooBigSeparatePoint,
+        };
+
         /// Truncates the wave at a start point and fills with zeros to the end point.
         ///
         /// This is useful for creating silence or padding at the end of a wave.
@@ -681,6 +762,26 @@ pub fn inner(comptime T: type) type {
             try testing.expect(wave.sample_rate > 0);
             try testing.expect(wave.channels > 0);
             try testing.expect(wave.samples.len > 0);
+        }
+
+        test "separate func separates a Wave" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 1.0, 2.0, 3.0, 4.0, 5.0 };
+            const original = try Self.init(samples, allocator, .{
+                .sample_rate = 41000,
+                .channels = 1,
+            });
+            defer original.deinit();
+
+            const result = try original.separate(.{
+                .allocator = allocator,
+                .separate_point = 3,
+            });
+            defer result.initial.deinit();
+            defer result.terminal.deinit();
+
+            try testing.expectEqualSlices(T, result.initial.samples, &.{ 1.0, 2.0, 3.0 });
+            try testing.expectEqualSlices(T, result.terminal.samples, &.{ 4.0, 5.0 });
         }
     };
 }
