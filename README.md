@@ -32,13 +32,13 @@ You can find some examples in [./examples](./examples) directory. If you want to
 
 ## Build-time Wave file generation
 
-lightmix provides a helper function `addWaveInstallFile` in `build.zig` that allows you to generate and install Wave files during the build process.
+lightmix provides a helper function `addWave` in `build.zig` that allows you to generate and install Wave files during the build process.
 
-### `createWave` function in `build.zig`
+### `addWave` function in `build.zig`
 
-The `createWave` function is a build-time helper that allows you to generate Wave files as part of your build process. This means you can write a Zig function that generates audio, and the build system will automatically create the WAV file when you run `zig build`.
+The `addWave` function is a build-time helper that allows you to generate Wave files as part of your build process. This means you can write a Zig function that generates audio, and the build system will automatically create the WAV file when you run `zig build`.
 
-#### How to use `createWave`
+#### How to use `addWave`
 
 1. First, create a module with a function that generates a Wave:
 
@@ -64,7 +64,7 @@ pub fn generate() !lightmix.Wave(f64) {
 }
 ```
 
-2. In your `build.zig`, use the `createWave` function:
+2. In your `build.zig`, use the `addWave` function:
 
 ```zig
 const std = @import("std");
@@ -86,8 +86,8 @@ pub fn build(b: *std.Build) !void {
         },
     });
 
-    // Use createWave to generate the wave file during build
-    const wave_step = try l.createWave(b, mod, .{
+    // Use addWave to generate the wave file during build
+    const wave = try l.addWave(b, mod, .{
         .func_name = "generate", // Name of your wave generation function (optional, defaults to "gen")
         .wave = .{
             .name = "result.wav", // Output filename (optional, defaults to "result.wav")
@@ -98,13 +98,15 @@ pub fn build(b: *std.Build) !void {
     });
 
     // Add to the install step so it runs during `zig build`
-    b.getInstallStep().dependOn(wave_step);
+    // You can use installWave helper or access wave.step directly
+    l.installWave(b, wave);
+    // Or: b.getInstallStep().dependOn(wave.step);
 }
 ```
 
 3. Run `zig build` to generate the wave file. The file will be created in `zig-out/share/result.wav` (or your configured path).
 
-#### `createWave` Options
+#### `addWave` Options
 
 - **`func_name`**: The name of the function in your module that generates the Wave. The function must have the signature `pub fn name() !lightmix.Wave(T)` where T is your chosen sample type (e.g., f64) (default: `"gen"`)
 - **`path`**: The installation directory relative to the install prefix (default: `.{ .custom = "share" }`)

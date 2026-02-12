@@ -90,7 +90,7 @@ pub fn build(b: *std.Build) void {
 /// - `options`: Configuration options for wave generation
 ///
 /// ## Returns
-/// A build step that can be added as a dependency to install the generated WAV file
+/// A pointer to a value typed CompileWave
 ///
 /// ## Errors
 /// Returns errors from:
@@ -121,21 +121,21 @@ pub fn build(b: *std.Build) void {
 ///     });
 ///
 ///     // Install Wave file into `zig-out` as `result.wav` (default Wave name)
-///     const wave_step = try l.createWave(b, mod, .{
+///     const wave = try l.addWave(b, mod, .{
 ///         .func_name = "gen",
 ///         .wave = .{ .bits = 16, .format_code = .pcm },
 ///     });
-///     b.getInstallStep().dependOn(wave_step);
+///     b.getInstallStep().dependOn(wave.step);
 /// }
 /// ```
 ///
 /// The user module must export a function matching the signature specified in
 /// `options.func_name` (default: "gen") that returns `!lightmix.Wave(T)`.
-pub fn createWave(
+pub fn addWave(
     b: *std.Build,
     mod: *std.Build.Module,
     options: CreateWaveOptions,
-) anyerror!*std.Build.Step {
+) anyerror!*CompileWave {
     // Create .zig-cache/lightmix directory
     b.cache_root.handle.access("lightmix", .{}) catch {
         try b.cache_root.handle.makeDir("lightmix");
@@ -208,8 +208,20 @@ pub fn createWave(
     );
     install_wave.step.dependOn(&run_gen.step);
 
-    return &install_wave.step;
+    var result = CompileWave{
+        .step = &install_wave.step,
+        .root_module = mod,
+        .name = options.wave.name,
+    };
+    return &result;
 }
+
+/// A return type for addWave function.
+pub const CompileWave = struct {
+    step: *std.Build.Step,
+    root_module: *std.Build.Module,
+    name: []const u8,
+};
 
 /// Options for configuring compile-time wave generation.
 ///
@@ -243,3 +255,24 @@ pub const WavefileOptions = struct {
     /// Audio encoding format such as .pcm (PCM integer) or .ieee_float (floating-point).
     format_code: z_wav.FormatCode,
 };
+
+/// A helper function to install Wave file from a pointer of a value typed CompileWave.
+///
+/// This function does as the following:
+///
+/// ```
+/// b.getInstallStep().dependOn(wave.step);
+/// ```
+///
+/// ## Usage
+/// ```
+/// // Install Wave file into `zig-out` as `result.wav` (default Wave name)
+/// const wave = try l.addWave(b, mod, .{
+///     .func_name = "gen",
+///     .wave = .{ .bits = 16, .format_code = .pcm },
+/// });
+/// l.installWave(b, wave);
+/// ```
+pub fn installWave(b: *std.Build, wave: *CompileWave) void {
+    b.getInstallStep().dependOn(wave.step);
+}
