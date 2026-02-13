@@ -3,6 +3,10 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     systems.url = "github:nix-systems/default";
     flake-compat.url = "github:edolstra/flake-compat";
+    zig-overlay = {
+      url = "github:mitchellh/zig-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
@@ -22,7 +26,12 @@
       ];
 
       perSystem =
-        { pkgs, lib, ... }:
+        {
+          pkgs,
+          lib,
+          system,
+          ...
+        }:
         let
           lightmix = pkgs.stdenv.mkDerivation {
             name = "lightmix";
@@ -39,6 +48,11 @@
           };
         in
         {
+          _module.args.pkgs = import inputs.nixpkgs {
+            inherit system;
+            overlays = [ inputs.zig-overlay.overlays.default ];
+          };
+
           treefmt = {
             projectRootFile = ".git/config";
 
@@ -69,7 +83,7 @@
           devShells.default = pkgs.mkShell {
             nativeBuildInputs = [
               # Compiler
-              pkgs.zig_0_15
+              pkgs.zigpkgs."0.15.2"
               pkgs.pkg-config
 
               # LSP
