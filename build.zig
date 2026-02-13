@@ -24,6 +24,12 @@ pub fn build(b: *std.Build) void {
     });
     lib_mod.linkLibrary(zaudio.artifact("miniaudio"));
 
+    // apple-sdk framework linking if your machine runs macOS
+    if (target.result.os.tag == .macos) {
+        const sdkroot: []const u8 = "/nix/store/8pk2m0fn7z5dlb86z5qlv1pxa8w68idx-apple-sdk-14.4/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks";
+        lib_mod.addSystemFrameworkPath(.{ .cwd_relative = sdkroot });
+    }
+
     // Library installation
     const lib = b.addLibrary(.{
         .linkage = .static,
