@@ -27,7 +27,7 @@ pub fn build(b: *std.Build) !void {
             .{ .name = "zaudio", .module = zaudio.module("root") },
         },
     });
-    lib_mod.addOptions("runtime-play-feature", options);
+    lib_mod.addOptions("options", options);
 
     if (runtime_play_feature) {
         // miniaudio linking
