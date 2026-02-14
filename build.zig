@@ -4,7 +4,7 @@ const z_wav = @import("zigggwavvv");
 pub const Wave = @import("./src/wave.zig");
 pub const Composer = @import("./src/composer.zig");
 
-pub fn build(b: *std.Build) void {
+pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
@@ -25,9 +25,11 @@ pub fn build(b: *std.Build) void {
     lib_mod.linkLibrary(zaudio.artifact("miniaudio"));
 
     // apple-sdk framework linking if your machine runs macOS
+    // This needs SDKROOT environment variable
     if (target.result.os.tag == .macos) {
-        const sdkroot: []const u8 = "/nix/store/8pk2m0fn7z5dlb86z5qlv1pxa8w68idx-apple-sdk-14.4/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks";
-        lib_mod.addSystemFrameworkPath(.{ .cwd_relative = sdkroot });
+        const sdkroot_envvar: []const u8 = b.graph.env_map.get("SDKROOT") orelse @panic("SDKROOT is null");
+        const sdkroot: []const u8 = try std.mem.concat(b.allocator, u8, &.{ sdkroot_envvar, "/System/Library/Frameworks" });
+        lib_mod.addFrameworkPath(.{ .cwd_relative = sdkroot });
     }
 
     // Library installation
