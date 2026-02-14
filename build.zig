@@ -300,3 +300,6 @@ pub const WavefileOptions = struct {
 pub fn installWave(b: *std.Build, wave: *CompileWave) void {
     b.getInstallStep().dependOn(wave.step);
 }
+
+pub fn addPlay(b: *std.Build, wave: *CompileWave) void {
+}

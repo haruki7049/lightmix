@@ -16,12 +16,15 @@ pub fn build(b: *std.Build) !void {
         },
     });
 
-    // Wave Installation
     const wave = try l.addWave(b, mod, .{
         // .func_name = "gen", // The default value of func_name is "gen"
         .wave = .{ .bits = 16, .format_code = .pcm },
     });
     l.installWave(b, wave);
+
+    const play_wave = l.addPlay(wave);
+    const play_step = b.step("play", "Play produced Wave file");
+    play_step.dependOn(&play_wave.step);
 
     // Unit tests
     const unit_tests = b.addTest(.{
