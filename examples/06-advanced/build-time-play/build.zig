@@ -16,12 +16,21 @@ pub fn build(b: *std.Build) !void {
         },
     });
 
-    // Wave Installation
+    if (target.result.os.tag == .linux) {
+        mod.linkSystemLibrary("alsa", .{});
+        mod.linkSystemLibrary("libpulse", .{});
+        mod.linkSystemLibrary("libpipewire-0.3", .{});
+    }
+
     const wave = try l.addWave(b, mod, .{
         // .func_name = "gen", // The default value of func_name is "gen"
         .wave = .{ .bits = 16, .format_code = .pcm },
     });
     l.installWave(b, wave);
+
+    const play = try l.addPlay(b, wave, .{});
+    const play_step = b.step("play", "Play produced Wave file");
+    play_step.dependOn(&play.step);
 
     // Unit tests
     const unit_tests = b.addTest(.{
