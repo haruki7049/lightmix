@@ -96,16 +96,6 @@ pub fn build(b: *std.Build) !void {
     docs_step.dependOn(&docs_install.step);
 }
 
-pub const RuntimePlayFeatureOption = struct {
-    audio_systems: []const AudioSystem,
-};
-
-pub const AudioSystem = enum {
-    Alsa,
-    PulseAudio,
-    Pipewire,
-};
-
 /// Creates a build step that generates a WAV file at compile time.
 ///
 /// This function enables compile-time audio generation by calling a user-defined
