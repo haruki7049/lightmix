@@ -25,7 +25,7 @@ pub fn build(b: *std.Build) !void {
 
     const options = b.addOptions();
     const runtime_play_feature = b.option(bool, "runtime-play", "Whether your app can play throuth lightmix or not") orelse false;
-    options.addOption(bool, "runtime-play", runtime_play_feature);
+    options.addOption(bool, "runtime_play", runtime_play_feature);
 
     if (runtime_play_feature) {
         // miniaudio linking
