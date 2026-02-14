@@ -12,6 +12,11 @@ pub fn build(b: *std.Build) !void {
     const zigggwavvv = b.dependency("zigggwavvv", .{});
     const zaudio = b.dependency("zaudio", .{});
 
+    // Compile Options
+    const options = b.addOptions();
+    const runtime_play_feature = b.option(bool, "runtime_play", "Whether your app can play throuth lightmix or not") orelse false;
+    options.addOption(bool, "runtime-play-feature", runtime_play_feature);
+
     // Library module declaration
     const lib_mod = b.addModule("lightmix", .{
         .root_source_file = b.path("src/root.zig"),
@@ -22,10 +27,7 @@ pub fn build(b: *std.Build) !void {
             .{ .name = "zaudio", .module = zaudio.module("root") },
         },
     });
-
-    const options = b.addOptions();
-    const runtime_play_feature = b.option(bool, "runtime-play", "Whether your app can play throuth lightmix or not") orelse false;
-    options.addOption(bool, "runtime_play", runtime_play_feature);
+    lib_mod.addOptions("runtime-play-feature", options);
 
     if (runtime_play_feature) {
         // miniaudio linking
