@@ -88,6 +88,10 @@
               pkgs.pulseaudio
               pkgs.pipewire
             ];
+
+            shellHook = ''
+              unset NIX_CFLAGS_COMPILE
+            '';
           };
         };
     };
