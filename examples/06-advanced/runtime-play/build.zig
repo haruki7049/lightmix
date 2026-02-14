@@ -5,7 +5,7 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const lightmix = b.dependency("lightmix", .{ .runtime_play = true });
+    const lightmix = b.dependency("lightmix", .{});
 
     const mod = b.addModule("modular-composing", .{
         .root_source_file = b.path("src/root.zig"),
