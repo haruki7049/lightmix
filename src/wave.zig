@@ -1,5 +1,6 @@
 const std = @import("std");
 const zigggwavvv = @import("zigggwavvv");
+const zaudio = @import("zaudio");
 const testing = std.testing;
 
 /// Wave type function: Creates a Wave type for the specified sample type.
@@ -481,6 +482,49 @@ pub fn inner(comptime T: type) type {
             // Assign the result into self
             self.* = result;
         }
+
+        pub fn play(
+            self: Self,
+            allocator: std.mem.Allocator,
+        ) anyerror!void {
+            zaudio.init(allocator);
+            defer zaudio.deinit();
+
+            var engine: *zaudio.Engine = try zaudio.Engine.create(null);
+            defer engine.destroy();
+
+            const samples = try allocator.alloc(f32, self.samples.len);
+            defer allocator.free(samples);
+
+            for (self.samples, 0..) |orig_sample, i| {
+                samples[i] = @as(f32, @floatCast(orig_sample));
+            }
+
+            const buffer = try zaudio.AudioBuffer.create(zaudio.AudioBuffer.Config.init(.float32, self.channels, samples.len, samples.ptr));
+            defer buffer.destroy();
+            const sound = try engine.createSoundFromDataSource(buffer.asDataSourceMut(), .{}, null);
+            defer sound.destroy();
+
+            try sound.start();
+
+            while (!sound.isAtEnd()) {
+                std.Thread.sleep(10 * std.time.ns_per_ms);
+            }
+        }
+
+        fn tmp_file(allocator: std.mem.Allocator) !struct { std.fs.File, std.testing.TmpDir, []const u8 } {
+            const timestamp: i64 = std.time.timestamp();
+            const timestamp_str: []const u8 = try std.fmt.allocPrint(allocator, "{s}", .{timestamp});
+
+            const tmp = std.testing.tmpDir(.{});
+            const file = try tmp.dir.createFile(timestamp_str ++ ".wav", .{});
+
+            return .{ file, tmp, timestamp_str };
+        }
+
+        pub const PlayOptions = struct {
+            do_cleanup: bool,
+        };
 
         test "read & deinit" {
             const allocator = testing.allocator;

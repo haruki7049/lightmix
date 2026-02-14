@@ -70,6 +70,7 @@
             nativeBuildInputs = [
               # Compiler
               pkgs.zig_0_15
+              pkgs.pkg-config
 
               # LSP
               pkgs.nil
@@ -81,6 +82,16 @@
               # zon2nix
               pkgs.zon2nix
             ];
+
+            buildInputs = lib.optionals pkgs.stdenv.isLinux [
+              pkgs.alsa-lib
+              pkgs.pulseaudio
+              pkgs.pipewire
+            ];
+
+            shellHook = ''
+              unset NIX_CFLAGS_COMPILE
+            '';
           };
         };
     };
