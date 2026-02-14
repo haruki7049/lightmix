@@ -22,15 +22,16 @@ pub fn build(b: *std.Build) !void {
             .{ .name = "zaudio", .module = zaudio.module("root") },
         },
     });
-    lib_mod.linkLibrary(zaudio.artifact("miniaudio"));
 
-    // apple-sdk framework linking if your machine runs macOS
-    // This needs SDKROOT environment variable
-    if (target.result.os.tag == .macos) {
-        const sdkroot_envvar: []const u8 = b.graph.env_map.get("SDKROOT") orelse @panic("SDKROOT is null");
-        const sdkroot: []const u8 = try std.mem.concat(b.allocator, u8, &.{ sdkroot_envvar, "/System/Library/Frameworks" });
-        lib_mod.addFrameworkPath(.{ .cwd_relative = sdkroot });
-    }
+    // // TODO: Create compile options to ignore these program when user don't use runtime play feature
+    //lib_mod.linkLibrary(zaudio.artifact("miniaudio"));
+    // // apple-sdk framework linking if your machine runs macOS
+    // // This needs SDKROOT environment variable
+    // if (target.result.os.tag == .macos) {
+    //     const sdkroot_envvar: []const u8 = b.graph.env_map.get("SDKROOT") orelse @panic("SDKROOT is null");
+    //     const sdkroot: []const u8 = try std.mem.concat(b.allocator, u8, &.{ sdkroot_envvar, "/System/Library/Frameworks" });
+    //     lib_mod.addFrameworkPath(.{ .cwd_relative = sdkroot });
+    // }
 
     // Library installation
     const lib = b.addLibrary(.{
