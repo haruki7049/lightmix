@@ -7,8 +7,8 @@ pub fn build(b: *std.Build) !void {
 
     const lightmix = b.dependency("lightmix", .{});
 
-    const mod = b.addModule("modular-composing", .{
-        .root_source_file = b.path("src/root.zig"),
+    const exe_mod = b.createModule(.{
+        .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
         .imports = &.{
@@ -17,22 +17,31 @@ pub fn build(b: *std.Build) !void {
     });
 
     if (target.result.os.tag == .linux) {
-        mod.linkSystemLibrary("alsa", .{});
-        mod.linkSystemLibrary("libpulse", .{});
-        mod.linkSystemLibrary("libpipewire-0.3", .{});
+        exe_mod.linkSystemLibrary("alsa", .{});
+        exe_mod.linkSystemLibrary("libpulse", .{});
+        exe_mod.linkSystemLibrary("libpipewire-0.3", .{});
     }
 
-    const wave_step: *std.Build.Step = try l.createWave(b, mod, .{
-        .func_name = "gen",
-        .wave = .{ .bits = 16, .format_code = .pcm },
+    const exe = b.addExecutable(.{
+        .name = "noise",
+        .root_module = exe_mod,
     });
-    b.getInstallStep().dependOn(wave_step);
+    b.installArtifact(exe);
 
-    const mod_tests = b.addTest(.{
-        .root_module = mod,
+    const run_cmd = b.addRunArtifact(exe);
+    run_cmd.step.dependOn(b.getInstallStep());
+    if (b.args) |args| {
+        run_cmd.addArgs(args);
+    }
+
+    const run_step = b.step("run", "Run the app");
+    run_step.dependOn(&run_cmd.step);
+
+    const exe_unit_tests = b.addTest(.{
+        .root_module = exe_mod,
     });
-    const run_mod_tests = b.addRunArtifact(mod_tests);
+    const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
 
     const test_step = b.step("test", "Run tests");
-    test_step.dependOn(&run_mod_tests.step);
+    test_step.dependOn(&run_exe_unit_tests.step);
 }

@@ -2,7 +2,7 @@ const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
 
-pub fn gen() !Wave(f128) {
+pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
     // Generate a 440Hz sine wave (A4 note)
@@ -24,6 +24,4 @@ pub fn gen() !Wave(f128) {
     });
 
     try wave.play(allocator);
-
-    return wave;
 }
