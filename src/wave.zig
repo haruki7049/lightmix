@@ -1,5 +1,4 @@
 const std = @import("std");
-const compile_options = @import("options");
 const zigggwavvv = @import("zigggwavvv");
 const zaudio = @import("zaudio");
 const testing = std.testing;
@@ -407,9 +406,6 @@ pub fn inner(comptime T: type) type {
             self: Self,
             allocator: std.mem.Allocator,
         ) anyerror!void {
-            if (compile_options.runtime_play_feature)
-                @compileError("The runtime-play-feature is not enabled. Please enable this feature to link library.");
-
             zaudio.init(allocator);
             defer zaudio.deinit();
 
