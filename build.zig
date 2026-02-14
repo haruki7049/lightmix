@@ -23,15 +23,29 @@ pub fn build(b: *std.Build) !void {
         },
     });
 
-    // // TODO: Create compile options to ignore these program when user don't use runtime play feature
-    //lib_mod.linkLibrary(zaudio.artifact("miniaudio"));
-    // // apple-sdk framework linking if your machine runs macOS
-    // // This needs SDKROOT environment variable
-    // if (target.result.os.tag == .macos) {
-    //     const sdkroot_envvar: []const u8 = b.graph.env_map.get("SDKROOT") orelse @panic("SDKROOT is null");
-    //     const sdkroot: []const u8 = try std.mem.concat(b.allocator, u8, &.{ sdkroot_envvar, "/System/Library/Frameworks" });
-    //     lib_mod.addFrameworkPath(.{ .cwd_relative = sdkroot });
-    // }
+    const options = b.addOptions();
+    const runtime_play_feature = b.option(bool, "runtime-play", "Whether your app can play throuth lightmix or not") orelse false;
+    options.addOption(bool, "runtime-play", runtime_play_feature);
+
+    if (runtime_play_feature) {
+        // miniaudio linking
+        lib_mod.linkLibrary(zaudio.artifact("miniaudio"));
+
+        // Each platforms' dependencies
+
+        // # macOS
+        // apple-sdk framework linking is needed if your machine runs macOS.
+        // This needs SDKROOT environment variable.
+        // Your SDKROOT should be a string as "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk".
+        // Also you can use pkgs.apple-sdk on nixpkgs with "pkgs.mkShell". You should have SDKROOT environment variable by pkgs.apple-sdk's hook when you use "pkgs.mkShell".
+        //
+        // I must write below programs, because "miniaudio" linking needs macOS SDK on macOS.
+        if (target.result.os.tag == .macos) {
+            const sdkroot_envvar: []const u8 = b.graph.env_map.get("SDKROOT") orelse @panic("SDKROOT is null");
+            const sdkroot: []const u8 = try std.mem.concat(b.allocator, u8, &.{ sdkroot_envvar, "/System/Library/Frameworks" });
+            lib_mod.addFrameworkPath(.{ .cwd_relative = sdkroot });
+        }
+    }
 
     // Library installation
     const lib = b.addLibrary(.{
