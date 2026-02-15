@@ -195,7 +195,6 @@ pub fn addWave(
         \\
         \\    const header_size = 44;
         \\    const total_size = header_size + (wave.samples.len * wave.channels * bytes_per_sample);
-        \\    std.debug.print("{{d}}\n", .{{total_size}});
         \\
         \\    const file = try std.fs.cwd().createFile("{s}", .{{}});
         \\    defer file.close();
