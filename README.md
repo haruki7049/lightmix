@@ -114,7 +114,7 @@ pub fn build(b: *std.Build) !void {
 - **`wave.bits`**: The bit depth for the wave file, which is typed u16
 - **`wave.format_code`**: Audio encoding format (e.g., .pcm, .ieee_float)
 
-You can find a complete example in [./examples/Wave/generate_by_build_zig](./examples/Wave/generate_by_build_zig).
+You can find a complete example in [./examples/06-advanced/build-time-generation](./examples/06-advanced/build-time-generation).
 
 ## lightmix's types
 
