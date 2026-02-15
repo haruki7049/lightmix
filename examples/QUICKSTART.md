@@ -40,10 +40,12 @@ Follow this recommended order:
    - `guitar` - realistic string sound
    - `drum` - percussion synthesis
 
-1. **06-advanced/** - Advanced techniques (2 examples)
+1. **06-advanced/** - Advanced techniques (4 examples)
 
    - `build-time-generation` - compile-time audio
-   - `modular-architecture` - organize complex projects
+   - `build-time-play`
+   - `modular-composing` - organize complex projects
+   - `runtime-play`
 
 ## 🎵 Example Categories
 
