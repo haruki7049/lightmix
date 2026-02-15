@@ -190,25 +190,32 @@ pub fn addWave(
         \\    const wave = try user_module.{s}(allocator);
         \\    defer wave.deinit();
         \\
+        \\    const bits = {d};
+        \\    const bytes_per_sample = (bits + 7) / 8;
+        \\
+        \\    const header_size = 44;
+        \\    const total_size = header_size + (wave.samples.len * wave.channels * bytes_per_sample);
+        \\    std.debug.print("{{d}}\n", .{{total_size}});
+        \\
         \\    const file = try std.fs.cwd().createFile("{s}", .{{}});
         \\    defer file.close();
-        \\    const buf = try allocator.alloc(u8, 10 * 1024 * 1024);
+        \\    const buf = try allocator.alloc(u8, total_size);
         \\    defer allocator.free(buf);
         \\    var writer = file.writer(buf);
         \\
         \\    try wave.write(&writer.interface, .{{
         \\        .allocator = allocator,
         \\        .format_code = .{s},
-        \\        .bits = {d},
+        \\        .bits = bits,
         \\    }});
         \\
         \\    try writer.interface.flush();
         \\}}
     , .{
         options.func_name,
+        options.wave.bits,
         tmp_path,
         @tagName(options.wave.format_code),
-        options.wave.bits,
     });
 
     // Create a write files step to generate the temporary source
