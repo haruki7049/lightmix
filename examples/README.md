@@ -70,6 +70,8 @@ See how to combine techniques to create realistic instrument sounds.
 Ready for more? These examples show advanced lightmix features.
 
 - **build-time-generation** - Generate audio files at compile-time
+- **build-time-play**
+- **runtime-play**
 - **modular-composing** - Organize complex audio projects with modules
 
 **What you'll learn:** Build system integration, code organization, reusable components
