@@ -154,7 +154,7 @@ pub fn build(b: *std.Build) !void {
 /// ```
 ///
 /// The user module must export a function matching the signature specified in
-/// `options.func_name` (default: "gen") that returns `!lightmix.Wave(T)`.
+/// `options.func_name` (default: "gen") that returns `!lightmix.Wave(T)`, and receives an argument `std.mem.Allocator`.
 pub fn addWave(
     b: *std.Build,
     mod: *std.Build.Module,
