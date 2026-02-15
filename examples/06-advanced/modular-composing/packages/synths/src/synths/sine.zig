@@ -28,8 +28,10 @@ pub fn gen(
     }
 
     // Initialize and return the Wave object
-    return Wave(f64).init(samples, allocator, .{
+    return Wave(f64){
+        .samples = samples,
+        .allocator = allocator,
         .sample_rate = sample_rate,
         .channels = channels,
-    });
+    };
 }
