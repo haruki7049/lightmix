@@ -176,10 +176,18 @@ pub fn addWave(
     const gen_source = try std.fmt.allocPrint(b.allocator,
         \\const std = @import("std");
         \\const user_module = @import("user_module");
-        \\const allocator = std.heap.page_allocator;
+        \\
+        \\var gpa = std.heap.GeneralPurposeAllocator(.{{}}){{}};
+        \\const allocator = gpa.allocator();
         \\
         \\pub fn main() !void {{
-        \\    const wave = try user_module.{s}();
+        \\    defer {{
+        \\        const leaked = gpa.deinit();
+        \\        if (leaked == .leak)
+        \\            @panic("Memory leak happened");
+        \\    }}
+        \\
+        \\    const wave = try user_module.{s}(allocator);
         \\    defer wave.deinit();
         \\
         \\    const file = try std.fs.cwd().createFile("{s}", .{{}});
@@ -336,10 +344,18 @@ pub fn addPlay(
     const play_source = try std.fmt.allocPrint(b.allocator,
         \\const std = @import("std");
         \\const user_module = @import("user_module");
-        \\const allocator = std.heap.page_allocator;
+        \\
+        \\var gpa = std.heap.GeneralPurposeAllocator(.{{}}){{}};
+        \\const allocator = gpa.allocator();
         \\
         \\pub fn main() !void {{
-        \\    const wave = try user_module.{s}();
+        \\    defer {{
+        \\        const leaked = gpa.deinit();
+        \\        if (leaked == .leak)
+        \\            @panic("Memory leak happened");
+        \\    }}
+        \\
+        \\    const wave = try user_module.{s}(allocator);
         \\    defer wave.deinit();
         \\    try wave.play(allocator);
         \\}}
