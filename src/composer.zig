@@ -340,7 +340,7 @@ pub fn inner(comptime T: type) type {
             const allocator = testing.allocator;
             var reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
 
-            const wave = try Wave(T).read(allocator, &reader);
+            const wave = try Wave(T).read(.wav, allocator, &reader);
             defer wave.deinit();
 
             const info: []const WaveInfo = &[_]WaveInfo{ .{ .wave = wave, .start_point = 0 }, .{ .wave = wave, .start_point = 0 } };
@@ -362,7 +362,7 @@ pub fn inner(comptime T: type) type {
 
             var reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
 
-            const wave = try Wave(T).read(allocator, &reader);
+            const wave = try Wave(T).read(.wav, allocator, &reader);
             defer wave.deinit();
 
             const appended_composer = composer.append(.{ .wave = wave, .start_point = 0 });
@@ -381,7 +381,7 @@ pub fn inner(comptime T: type) type {
 
             var reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
 
-            const wave = try Wave(T).read(allocator, &reader);
+            const wave = try Wave(T).read(.wav, allocator, &reader);
             defer wave.deinit();
 
             var append_list: std.array_list.Aligned(WaveInfo, null) = .empty;
