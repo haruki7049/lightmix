@@ -44,7 +44,7 @@ pub fn inner(comptime T: type) type {
             ///
             /// ## Errors
             /// Returns errors from the underlying format decoder or allocation failures
-            pub fn exec(self: LowLevelInterfaces, allocator: std.mem.Allocator, reader: anytype) anyerror!LowLevelWave {
+            pub fn read(self: LowLevelInterfaces, allocator: std.mem.Allocator, reader: anytype) anyerror!LowLevelWave {
                 return switch (self) {
                     .wav => {
                         const v = try zigggwavvv.Wave(T).read(allocator, reader);
@@ -318,7 +318,7 @@ pub fn inner(comptime T: type) type {
             allocator: std.mem.Allocator,
             reader: anytype,
         ) anyerror!Self {
-            const lowlevel_wave = try file_extension.exec(allocator, reader);
+            const lowlevel_wave = try file_extension.read(allocator, reader);
 
             return Self{
                 .samples = lowlevel_wave.samples,
