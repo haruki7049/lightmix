@@ -28,9 +28,22 @@ pub fn inner(comptime T: type) type {
         sample_rate: u32,
         channels: u16,
 
+        /// Supported audio file formats for reading wave data.
         pub const LowLevelInterfaces = enum {
             wav,
 
+            /// Reads wave data using the specified file format.
+            ///
+            /// ## Parameters
+            /// - `self`: The file format to use for decoding
+            /// - `allocator`: Memory allocator for sample data
+            /// - `reader`: A reader interface providing the raw file bytes
+            ///
+            /// ## Returns
+            /// A `LowLevelWave` containing the decoded samples, sample rate, and channel count
+            ///
+            /// ## Errors
+            /// Returns errors from the underlying format decoder or allocation failures
             pub fn exec(self: LowLevelInterfaces, allocator: std.mem.Allocator, reader: anytype) anyerror!LowLevelWave {
                 return switch (self) {
                     .wav => {
@@ -45,6 +58,7 @@ pub fn inner(comptime T: type) type {
                 };
             }
 
+            /// Raw wave data returned by low-level format decoders.
             pub const LowLevelWave = struct {
                 samples: []const T,
                 sample_rate: u32,
@@ -287,17 +301,18 @@ pub fn inner(comptime T: type) type {
             self.allocator.free(self.samples);
         }
 
-        /// Reads wave data from a WAV file reader.
+        /// Reads wave data from a file using the specified format.
         ///
         /// ## Parameters
+        /// - `file_extension`: The file format to use for decoding (e.g. `.wav`)
         /// - `allocator`: Memory allocator for sample data
-        /// - `reader`: A reader interface for reading WAV file data
+        /// - `reader`: A reader interface for reading the audio file data
         ///
         /// ## Returns
         /// A new Wave instance containing the audio data from the file
         ///
         /// ## Errors
-        /// Returns errors from the underlying WAV parser or allocation failures
+        /// Returns errors from the underlying format decoder or allocation failures
         pub fn read(
             file_extension: LowLevelInterfaces,
             allocator: std.mem.Allocator,
@@ -341,12 +356,18 @@ pub fn inner(comptime T: type) type {
 
         /// Options for writing wave data to a file.
         pub const WriteOptions = struct {
+            /// Memory allocator used for intermediate buffers during encoding
             allocator: std.mem.Allocator,
+            /// Whether to include a `fact` chunk in the output file
             use_fact: bool = false,
+            /// Whether to include a `PEAK` chunk in the output file
             use_peak: bool = false,
+            /// Timestamp value written into the `PEAK` chunk (only used when `use_peak` is true)
             peak_timestamp: u32 = 0,
 
+            /// Bits per sample (e.g. 16 or 24)
             bits: u16,
+            /// Audio format code (e.g. PCM or IEEE float)
             format_code: zigggwavvv.FormatCode,
         };
 
@@ -361,11 +382,8 @@ pub fn inner(comptime T: type) type {
         /// - `filter_fn`: The filter function to apply
         /// - `args`: Arguments to pass to the filter function
         ///
-        /// ## Returns
-        /// A new Wave containing the filtered result
-        ///
-        /// ## Panics
-        /// Panics if the filter function returns an error
+        /// ## Errors
+        /// Returns any error produced by `filter_fn` or allocation failures
         ///
         /// ## Example Usage
         /// ```zig
@@ -444,11 +462,8 @@ pub fn inner(comptime T: type) type {
         /// - `self`: The wave to filter (will be freed after filtering)
         /// - `filter_fn`: The filter function to apply
         ///
-        /// ## Returns
-        /// A new Wave containing the filtered result
-        ///
-        /// ## Panics
-        /// Panics if the filter function returns an error
+        /// ## Errors
+        /// Returns any error produced by `filter_fn` or allocation failures
         ///
         /// ## Example Usage
         /// ```zig
@@ -508,6 +523,17 @@ pub fn inner(comptime T: type) type {
             self.* = result;
         }
 
+        /// Plays the wave audio through the system audio output.
+        ///
+        /// Initializes the audio engine, converts samples to f32, and blocks until
+        /// playback completes.
+        ///
+        /// ## Parameters
+        /// - `self`: The wave to play
+        /// - `allocator`: Memory allocator used for the intermediate f32 sample buffer
+        ///
+        /// ## Errors
+        /// Returns errors from the audio engine initialization or playback
         pub fn play(
             self: Self,
             allocator: std.mem.Allocator,
@@ -547,6 +573,7 @@ pub fn inner(comptime T: type) type {
             return .{ file, tmp, timestamp_str };
         }
 
+        /// Options for the `play` function (reserved for future use).
         pub const PlayOptions = struct {
             do_cleanup: bool,
         };
