@@ -316,7 +316,7 @@ pub fn inner(comptime T: type) type {
             const samples: []const T = &[_]T{ 1.0, 1.0 };
             const start_point: usize = 10;
 
-            const result: []const T = padding_for_start(samples, start_point, allocator);
+            const result: []const T = try padding_for_start(samples, start_point, allocator);
             defer allocator.free(result);
 
             try testing.expectEqual(samples.len + start_point, result.len);
@@ -345,7 +345,7 @@ pub fn inner(comptime T: type) type {
 
             const info: []const WaveInfo = &[_]WaveInfo{ .{ .wave = wave, .start_point = 0 }, .{ .wave = wave, .start_point = 0 } };
 
-            const composer = Self.init_with(info, allocator, .{
+            const composer = try Self.init_with(info, allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -354,26 +354,24 @@ pub fn inner(comptime T: type) type {
 
         test "append" {
             const allocator = testing.allocator;
-            const composer = Self.init(allocator, .{
+            var reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
+            var composer = Self.init(allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
             defer composer.deinit();
 
-            var reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
-
             const wave = try Wave(T).read(.wav, allocator, &reader);
             defer wave.deinit();
 
-            const appended_composer = composer.append(.{ .wave = wave, .start_point = 0 });
-            defer appended_composer.deinit();
+            try composer.append(.{ .wave = wave, .start_point = 0 });
 
-            try testing.expectEqualSlices(WaveInfo, appended_composer.info, &[_]WaveInfo{.{ .wave = wave, .start_point = 0 }});
+            try testing.expectEqualSlices(WaveInfo, composer.info, &[_]WaveInfo{.{ .wave = wave, .start_point = 0 }});
         }
 
         test "appendSlice" {
             const allocator = testing.allocator;
-            const composer = Self.init(allocator, .{
+            var composer = Self.init(allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -388,16 +386,14 @@ pub fn inner(comptime T: type) type {
             defer append_list.deinit(allocator);
             try append_list.append(allocator, .{ .wave = wave, .start_point = 0 });
             try append_list.append(allocator, .{ .wave = wave, .start_point = 0 });
+            try composer.appendSlice(append_list.items);
 
-            const appended_composer = composer.appendSlice(append_list.items);
-            defer appended_composer.deinit();
-
-            try testing.expectEqualSlices(WaveInfo, appended_composer.info, &[_]WaveInfo{ .{ .wave = wave, .start_point = 0 }, .{ .wave = wave, .start_point = 0 } });
+            try testing.expectEqualSlices(WaveInfo, composer.info, &[_]WaveInfo{ .{ .wave = wave, .start_point = 0 }, .{ .wave = wave, .start_point = 0 } });
         }
 
         test "finalize" {
             const allocator = testing.allocator;
-            const composer = Self.init(allocator, .{
+            var composer = Self.init(allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -410,7 +406,7 @@ pub fn inner(comptime T: type) type {
                 samples[i] = 1.0;
             }
 
-            const wave = Wave(T).init(samples, allocator, .{
+            const wave = try Wave(T).init(samples, allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -420,11 +416,9 @@ pub fn inner(comptime T: type) type {
             defer append_list.deinit(allocator);
             try append_list.append(allocator, .{ .wave = wave, .start_point = 0 });
             try append_list.append(allocator, .{ .wave = wave, .start_point = 44100 });
+            try composer.appendSlice(append_list.items);
 
-            const appended_composer = composer.appendSlice(append_list.items);
-            defer appended_composer.deinit();
-
-            const result = appended_composer.finalize(.{});
+            const result = try composer.finalize(.{});
             defer result.deinit();
 
             try testing.expectEqual(result.samples.len, 88200);
