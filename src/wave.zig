@@ -28,6 +28,30 @@ pub fn inner(comptime T: type) type {
         sample_rate: u32,
         channels: u16,
 
+        pub const LowLevelInterfaces = enum {
+            wav,
+
+            pub fn exec(self: LowLevelInterfaces, allocator: std.mem.Allocator, reader: anytype) anyerror!LowLevelWave {
+                return switch (self) {
+                    .wav => {
+                        const v = try zigggwavvv.Wave(T).read(allocator, reader);
+
+                        return .{
+                            .samples = v.samples,
+                            .sample_rate = v.sample_rate,
+                            .channels = v.channels,
+                        };
+                    },
+                };
+            }
+
+            pub const LowLevelWave = struct {
+                samples: []const T,
+                sample_rate: u32,
+                channels: u16,
+            };
+        };
+
         /// Options for initializing a Wave instance.
         pub const InitOptions = struct {
             sample_rate: u32,
@@ -275,16 +299,17 @@ pub fn inner(comptime T: type) type {
         /// ## Errors
         /// Returns errors from the underlying WAV parser or allocation failures
         pub fn read(
+            file_extension: LowLevelInterfaces,
             allocator: std.mem.Allocator,
             reader: anytype,
         ) anyerror!Self {
-            const zigggwavvv_wave = try zigggwavvv.Wave(T).read(allocator, reader);
+            const lowlevel_wave = try file_extension.exec(allocator, reader);
 
             return Self{
-                .samples = zigggwavvv_wave.samples,
+                .samples = lowlevel_wave.samples,
                 .allocator = allocator,
-                .sample_rate = zigggwavvv_wave.sample_rate,
-                .channels = zigggwavvv_wave.channels,
+                .sample_rate = lowlevel_wave.sample_rate,
+                .channels = lowlevel_wave.channels,
             };
         }
         /// Writes wave data to a WAV file writer.
@@ -529,7 +554,7 @@ pub fn inner(comptime T: type) type {
         test "read & deinit" {
             const allocator = testing.allocator;
             var reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
-            const wave = try Self.read(allocator, &reader);
+            const wave = try Self.read(.wav, allocator, &reader);
             defer wave.deinit();
 
             try testing.expectApproxEqAbs(wave.samples[0], 0.0, 0.00001);
@@ -799,7 +824,7 @@ pub fn inner(comptime T: type) type {
         test "read with different sample rates" {
             const allocator = testing.allocator;
             var reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
-            const wave = try Self.read(allocator, &reader);
+            const wave = try Self.read(.wav, allocator, &reader);
             defer wave.deinit();
 
             // Verify the wave has valid properties
