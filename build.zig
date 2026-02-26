@@ -203,7 +203,6 @@ pub fn addWave(
         \\    var writer = file.writer(buf);
         \\
         \\    try wave.write(&writer.interface, .{{
-        \\        .allocator = allocator,
         \\        .format_code = .{s},
         \\        .bits = bits,
         \\    }});

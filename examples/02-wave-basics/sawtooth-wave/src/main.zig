@@ -40,8 +40,7 @@ pub fn main() !void {
     const buf = try allocator.alloc(u8, 10 * 1024 * 1024);
     var writer = file.writer(buf);
 
-    try wave.write(&writer.interface, .{
-        .allocator = allocator,
+    try wave.write(.wav, &writer.interface, .{
         .bits = 16,
         .format_code = .pcm,
     });
