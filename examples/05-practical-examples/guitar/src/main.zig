@@ -78,8 +78,7 @@ fn saveWave(wave: Wave(f64), filename: []const u8, allocator: std.mem.Allocator)
     defer allocator.free(buf);
     var writer = file.writer(buf);
 
-    try wave.write(&writer.interface, .{
-        .allocator = allocator,
+    try wave.write(.wav, &writer.interface, .{
         .format_code = .pcm,
         .bits = 16,
     });
