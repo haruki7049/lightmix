@@ -58,6 +58,16 @@ pub fn inner(comptime T: type) type {
                 };
             }
 
+            /// Writes wave data using the specified file format.
+            ///
+            /// ## Parameters
+            /// - `self`: The file format to use for encoding
+            /// - `wave`: The wave instance to write
+            /// - `writer`: A writer interface for the output bytes
+            /// - `options`: Format-specific write options (see `writeOptions`)
+            ///
+            /// ## Errors
+            /// Returns errors from the underlying format encoder or I/O failures
             pub fn write(self: LowLevelInterfaces, wave: Self, writer: anytype, options: writeOptions(self)) anyerror!void {
                 switch (self) {
                     .wav => {
@@ -80,12 +90,20 @@ pub fn inner(comptime T: type) type {
                 }
             }
 
+            /// Returns the format-specific options type for `write`.
+            ///
+            /// ## Parameters
+            /// - `interface`: The file format whose options type to return
+            ///
+            /// ## Returns
+            /// The options struct type corresponding to the given format
             pub fn writeOptions(interface: LowLevelInterfaces) type {
                 return switch (interface) {
                     .wav => writeWavOptions,
                 };
             }
 
+            /// Options for writing wave data to a WAV file.
             pub const writeWavOptions = struct {
                 /// Whether to include a `fact` chunk in the output file
                 use_fact: bool = false,
@@ -369,15 +387,16 @@ pub fn inner(comptime T: type) type {
                 .channels = lowlevel_wave.channels,
             };
         }
-        /// Writes wave data to a WAV file writer.
+        /// Writes wave data to a file writer using the specified format.
         ///
         /// ## Parameters
         /// - `self`: The wave to write
-        /// - `writer`: A writer interface for writing WAV file data
-        /// - `options`: Write options (format, bits per sample, etc.)
+        /// - `file_extension`: The file format to use for encoding (e.g. `.wav`)
+        /// - `writer`: A writer interface for writing the audio file data
+        /// - `options`: Format-specific write options (e.g. bit depth, format code)
         ///
         /// ## Errors
-        /// Returns errors from the underlying WAV writer or I/O failures
+        /// Returns errors from the underlying format encoder or I/O failures
         pub fn write(self: Self, file_extension: LowLevelInterfaces, writer: anytype, options: LowLevelInterfaces.writeOptions(file_extension)) anyerror!void {
             try file_extension.write(self, writer, options);
         }

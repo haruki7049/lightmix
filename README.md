@@ -89,11 +89,11 @@ pub fn build(b: *std.Build) !void {
     // Use addWave to generate the wave file during build
     const wave = try l.addWave(b, mod, .{
         .func_name = "generate", // Name of your wave generation function (optional, defaults to "gen")
-        .wave = .{
+        .format = .{ .wav = .{
             .name = "result.wav", // Output filename (optional, defaults to "result.wav")
             .format_code = .pcm, // Wave format code (e.g., .pcm, .ieee_float)
             .bits = 16, // The bits depth for this wave (e.g., 8, 16, 24, 32)
-        },
+        } },
         .path = .{ .custom = "share" }, // Install directory (optional, defaults to "share")
     });
 
