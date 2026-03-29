@@ -21,7 +21,10 @@ pub fn build(b: *std.Build) !void {
     });
     const wave = try l.addWave(b, mod, .{
         .func_name = "gen",
-        .wave = .{ .bits = 16, .format_code = .pcm },
+        .format = .{ .wav = .{
+            .bits = 16,
+            .format_code = .pcm,
+        } },
     });
     l.installWave(b, wave);
 
