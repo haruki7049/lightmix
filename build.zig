@@ -147,7 +147,7 @@ pub fn build(b: *std.Build) !void {
 ///     // Install Wave file into `zig-out` as `result.wav` (default Wave name)
 ///     const wave = try l.addWave(b, mod, .{
 ///         .func_name = "gen",
-///         .wave = .{ .bits = 16, .format_code = .pcm },
+///         .format = .{ .wav = .{ .bits = 16, .format_code = .pcm } },
 ///     });
 ///     b.getInstallStep().dependOn(wave.step);
 /// }
@@ -291,13 +291,19 @@ pub const CreateWaveOptions = struct {
     /// Defaults to the "share" directory.
     path: std.Build.InstallDir = .{ .custom = "share" },
 
+    /// Output format and codec-specific options for the wave file to generate.
     format: FormatOptions,
 };
 
+/// Tagged union that selects the output format and carries its format-specific options.
 pub const FormatOptions = union(enum) {
     wav: WavOptions,
 };
 
+/// Options for configuring a WAV file's output properties.
+///
+/// This struct specifies the output filename, bit depth, and audio format
+/// for the generated WAV file.
 pub const WavOptions = struct {
     /// The output filename for the wave file (e.g., "result.wav", "audio.wav").
     name: []const u8 = "result.wav",
@@ -322,7 +328,7 @@ pub const WavOptions = struct {
 /// // Install Wave file into `zig-out` as `result.wav` (default Wave name)
 /// const wave = try l.addWave(b, mod, .{
 ///     .func_name = "gen",
-///     .wave = .{ .bits = 16, .format_code = .pcm },
+///     .format = .{ .wav = .{ .bits = 16, .format_code = .pcm } },
 /// });
 /// l.installWave(b, wave);
 /// ```
@@ -348,7 +354,7 @@ pub fn installWave(b: *std.Build, wave: *CompileWave) void {
 /// ## Usage
 /// ```zig
 /// const wave = try l.addWave(b, mod, .{
-///     .wave = .{ .bits = 16, .format_code = .pcm },
+///     .format = .{ .wav = .{ .bits = 16, .format_code = .pcm } },
 /// });
 /// const play = try l.addPlay(b, wave, .{});
 /// l.installPlay(b, play);
@@ -416,7 +422,7 @@ pub fn addPlay(
 /// // Play Wave at build time
 /// const wave = try l.addWave(b, mod, .{
 ///     .func_name = "gen",
-///     .wave = .{ .bits = 16, .format_code = .pcm },
+///     .format = .{ .wav = .{ .bits = 16, .format_code = .pcm } },
 /// });
 /// const play = try l.addPlay(b, wave, .{});
 /// l.installPlay(b, play);
