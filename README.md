@@ -47,7 +47,7 @@ The `addWave` function is a build-time helper that allows you to generate Wave f
 const std = @import("std");
 const lightmix = @import("lightmix");
 
-pub fn generate() !lightmix.Wave(f64) {
+pub fn generate(allocator: std.mem.Allocator) !lightmix.Wave(f64) {
     const allocator = std.heap.page_allocator;
 
     // Generate your audio data (example: 1 second of silence)
