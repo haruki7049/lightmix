@@ -41,8 +41,7 @@ test "Compose multiple soundless Wave" {
     var writer = file.writer(buf);
 
     // Write Wave into the file
-    try result.write(&writer.interface, .{
-        .allocator = allocator,
+    try result.write(.wav, &writer.interface, .{
         .format_code = .pcm,
         .bits = 16,
     });

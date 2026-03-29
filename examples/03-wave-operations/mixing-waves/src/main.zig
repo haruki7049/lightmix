@@ -44,8 +44,7 @@ pub fn main() !void {
     defer allocator.free(buf);
     var writer = file.writer(buf);
 
-    try chord.write(&writer.interface, .{
-        .allocator = allocator,
+    try chord.write(.wav, &writer.interface, .{
         .format_code = .pcm,
         .bits = 16,
     });

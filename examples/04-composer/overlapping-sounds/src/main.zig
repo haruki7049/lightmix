@@ -53,8 +53,7 @@ pub fn main() !void {
     defer allocator.free(buf);
     var writer = file.writer(buf);
 
-    try result.write(&writer.interface, .{
-        .allocator = allocator,
+    try result.write(.wav, &writer.interface, .{
         .format_code = .pcm,
         .bits = 16,
     });

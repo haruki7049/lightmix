@@ -52,8 +52,7 @@ pub fn main() !void {
     var writer = file.writer(buf);
 
     // Write as 16-bit integer PCM (most common format)
-    try wave.write(&writer.interface, .{
-        .allocator = allocator,
+    try wave.write(.wav, &writer.interface, .{
         .format_code = .pcm,
         .bits = 16,
     });

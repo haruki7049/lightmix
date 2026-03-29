@@ -160,101 +160,114 @@ pub fn addWave(
     mod: *std.Build.Module,
     options: CreateWaveOptions,
 ) anyerror!*CompileWave {
-    // Create .zig-cache/lightmix directory
-    b.cache_root.handle.access("lightmix", .{}) catch {
-        try b.cache_root.handle.makeDir("lightmix");
+    return switch (options.format) {
+        .wav => Generator.Wav.gen(b, mod, options),
     };
-
-    // Create a wave file in .zig-cache/lightmix
-    const tmp_path: []const u8 = try std.fs.path.join(b.allocator, &[_][]const u8{
-        try b.build_root.handle.realpathAlloc(b.allocator, "."),
-        ".zig-cache",
-        "lightmix",
-        options.wave.name,
-    });
-    // Generate temporary Zig code that calls the user's function
-    const gen_source = try std.fmt.allocPrint(b.allocator,
-        \\const std = @import("std");
-        \\const user_module = @import("user_module");
-        \\
-        \\var gpa = std.heap.GeneralPurposeAllocator(.{{}}){{}};
-        \\const allocator = gpa.allocator();
-        \\
-        \\pub fn main() !void {{
-        \\    defer {{
-        \\        const leaked = gpa.deinit();
-        \\        if (leaked == .leak)
-        \\            @panic("Memory leak happened");
-        \\    }}
-        \\
-        \\    const wave = try user_module.{s}(allocator);
-        \\    defer wave.deinit();
-        \\
-        \\    const bits = {d};
-        \\    const bytes_per_sample = (bits + 7) / 8;
-        \\
-        \\    const header_size = 44;
-        \\    const total_size = header_size + (wave.samples.len * wave.channels * bytes_per_sample);
-        \\
-        \\    const file = try std.fs.cwd().createFile("{s}", .{{}});
-        \\    defer file.close();
-        \\    const buf = try allocator.alloc(u8, total_size);
-        \\    defer allocator.free(buf);
-        \\    var writer = file.writer(buf);
-        \\
-        \\    try wave.write(&writer.interface, .{{
-        \\        .allocator = allocator,
-        \\        .format_code = .{s},
-        \\        .bits = bits,
-        \\    }});
-        \\
-        \\    try writer.interface.flush();
-        \\}}
-    , .{
-        options.func_name,
-        options.wave.bits,
-        tmp_path,
-        @tagName(options.wave.format_code),
-    });
-
-    // Create a write files step to generate the temporary source
-    const write_files = b.addWriteFiles();
-    const gen_file = write_files.add("wave_gen.zig", gen_source);
-
-    // Create executable that generates the wave
-    const gen_exe = b.addExecutable(.{
-        .name = "wave_generator",
-        .root_module = b.createModule(.{
-            .root_source_file = gen_file,
-            .target = b.graph.host,
-            .optimize = .Debug,
-            .imports = &.{
-                .{ .name = "user_module", .module = mod },
-            },
-        }),
-    });
-
-    // Run the generator during build
-    const run_gen = b.addRunArtifact(gen_exe);
-
-    const src_path: []const u8 = try std.fs.path.join(b.allocator, &[_][]const u8{ ".zig-cache", "lightmix", options.wave.name });
-    // Install the generated wave file
-    const install_wave = b.addInstallFileWithDir(
-        b.path(src_path),
-        options.path,
-        options.wave.name,
-    );
-    install_wave.step.dependOn(&run_gen.step);
-
-    const result = try b.allocator.create(CompileWave);
-    result.* = CompileWave{
-        .step = &install_wave.step,
-        .root_module = mod,
-        .name = options.wave.name,
-        .create_wave_options = options,
-    };
-    return result;
 }
+
+const Generator = struct {
+    const Wav = struct {
+        fn gen(
+            b: *std.Build,
+            mod: *std.Build.Module,
+            options: CreateWaveOptions,
+        ) anyerror!*CompileWave {
+            // Create .zig-cache/lightmix directory
+            b.cache_root.handle.access("lightmix", .{}) catch {
+                try b.cache_root.handle.makeDir("lightmix");
+            };
+
+            // Create a wave file in .zig-cache/lightmix
+            const tmp_path: []const u8 = try std.fs.path.join(b.allocator, &[_][]const u8{
+                try b.build_root.handle.realpathAlloc(b.allocator, "."),
+                ".zig-cache",
+                "lightmix",
+                options.format.wav.name,
+            });
+            // Generate temporary Zig code that calls the user's function
+            const gen_source = try std.fmt.allocPrint(b.allocator,
+                \\const std = @import("std");
+                \\const user_module = @import("user_module");
+                \\
+                \\var gpa = std.heap.GeneralPurposeAllocator(.{{}}){{}};
+                \\const allocator = gpa.allocator();
+                \\
+                \\pub fn main() !void {{
+                \\    defer {{
+                \\        const leaked = gpa.deinit();
+                \\        if (leaked == .leak)
+                \\            @panic("Memory leak happened");
+                \\    }}
+                \\
+                \\    const wave = try user_module.{s}(allocator);
+                \\    defer wave.deinit();
+                \\
+                \\    const bits = {d};
+                \\    const bytes_per_sample = (bits + 7) / 8;
+                \\
+                \\    const header_size = 44;
+                \\    const total_size = header_size + (wave.samples.len * wave.channels * bytes_per_sample);
+                \\
+                \\    const file = try std.fs.cwd().createFile("{s}", .{{}});
+                \\    defer file.close();
+                \\    const buf = try allocator.alloc(u8, total_size);
+                \\    defer allocator.free(buf);
+                \\    var writer = file.writer(buf);
+                \\
+                \\    try wave.write(.wav, &writer.interface, .{{
+                \\        .format_code = .{s},
+                \\        .bits = bits,
+                \\    }});
+                \\
+                \\    try writer.interface.flush();
+                \\}}
+            , .{
+                options.func_name,
+                options.format.wav.bits,
+                tmp_path,
+                @tagName(options.format.wav.format_code),
+            });
+
+            // Create a write files step to generate the temporary source
+            const write_files = b.addWriteFiles();
+            const gen_file = write_files.add("wave_gen.zig", gen_source);
+
+            // Create executable that generates the wave
+            const gen_exe = b.addExecutable(.{
+                .name = "wave_generator",
+                .root_module = b.createModule(.{
+                    .root_source_file = gen_file,
+                    .target = b.graph.host,
+                    .optimize = .Debug,
+                    .imports = &.{
+                        .{ .name = "user_module", .module = mod },
+                    },
+                }),
+            });
+
+            // Run the generator during build
+            const run_gen = b.addRunArtifact(gen_exe);
+
+            const src_path: []const u8 = try std.fs.path.join(b.allocator, &[_][]const u8{ ".zig-cache", "lightmix", options.format.wav.name });
+            // Install the generated wave file
+            const install_wave = b.addInstallFileWithDir(
+                b.path(src_path),
+                options.path,
+                options.format.wav.name,
+            );
+            install_wave.step.dependOn(&run_gen.step);
+
+            const result = try b.allocator.create(CompileWave);
+            result.* = CompileWave{
+                .step = &install_wave.step,
+                .root_module = mod,
+                .name = options.format.wav.name,
+                .create_wave_options = options,
+            };
+            return result;
+        }
+    };
+};
 
 /// A return type for addWave function.
 pub const CompileWave = struct {
@@ -278,15 +291,14 @@ pub const CreateWaveOptions = struct {
     /// Defaults to the "share" directory.
     path: std.Build.InstallDir = .{ .custom = "share" },
 
-    /// Configuration for the wave file output (filename, bit depth, and format).
-    wave: WavefileOptions,
+    format: FormatOptions,
 };
 
-/// Options for configuring a wave file's output properties.
-///
-/// This struct specifies the output filename, bit depth, and audio format
-/// for the generated WAV file.
-pub const WavefileOptions = struct {
+pub const FormatOptions = union(enum) {
+    wav: WavOptions,
+};
+
+pub const WavOptions = struct {
     /// The output filename for the wave file (e.g., "result.wav", "audio.wav").
     name: []const u8 = "result.wav",
 

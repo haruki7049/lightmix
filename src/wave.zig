@@ -44,7 +44,7 @@ pub fn inner(comptime T: type) type {
             ///
             /// ## Errors
             /// Returns errors from the underlying format decoder or allocation failures
-            pub fn exec(self: LowLevelInterfaces, allocator: std.mem.Allocator, reader: anytype) anyerror!LowLevelWave {
+            pub fn read(self: LowLevelInterfaces, allocator: std.mem.Allocator, reader: anytype) anyerror!LowLevelWave {
                 return switch (self) {
                     .wav => {
                         const v = try zigggwavvv.Wave(T).read(allocator, reader);
@@ -57,6 +57,48 @@ pub fn inner(comptime T: type) type {
                     },
                 };
             }
+
+            pub fn write(self: LowLevelInterfaces, wave: Self, writer: anytype, options: writeOptions(self)) anyerror!void {
+                switch (self) {
+                    .wav => {
+                        const zigggwavvv_wave = zigggwavvv.Wave(T).init(.{
+                            .format_code = options.format_code,
+                            .sample_rate = wave.sample_rate,
+                            .channels = wave.channels,
+                            .bits = options.bits,
+                            .samples = try wave.allocator.dupe(T, wave.samples),
+                        });
+                        defer zigggwavvv_wave.deinit(wave.allocator);
+
+                        try zigggwavvv_wave.write(writer, .{
+                            .allocator = wave.allocator,
+                            .use_fact = options.use_fact,
+                            .use_peak = options.use_peak,
+                            .peak_timestamp = options.peak_timestamp,
+                        });
+                    },
+                }
+            }
+
+            pub fn writeOptions(interface: LowLevelInterfaces) type {
+                return switch (interface) {
+                    .wav => writeWavOptions,
+                };
+            }
+
+            pub const writeWavOptions = struct {
+                /// Whether to include a `fact` chunk in the output file
+                use_fact: bool = false,
+                /// Whether to include a `PEAK` chunk in the output file
+                use_peak: bool = false,
+                /// Timestamp value written into the `PEAK` chunk (only used when `use_peak` is true)
+                peak_timestamp: u32 = 0,
+
+                /// Bits per sample (e.g. 16 or 24)
+                bits: u16,
+                /// Audio format code (e.g. PCM or IEEE float)
+                format_code: zigggwavvv.FormatCode,
+            };
 
             /// Raw wave data returned by low-level format decoders.
             pub const LowLevelWave = struct {
@@ -318,7 +360,7 @@ pub fn inner(comptime T: type) type {
             allocator: std.mem.Allocator,
             reader: anytype,
         ) anyerror!Self {
-            const lowlevel_wave = try file_extension.exec(allocator, reader);
+            const lowlevel_wave = try file_extension.read(allocator, reader);
 
             return Self{
                 .samples = lowlevel_wave.samples,
@@ -336,40 +378,9 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Errors
         /// Returns errors from the underlying WAV writer or I/O failures
-        pub fn write(self: Self, writer: anytype, options: WriteOptions) anyerror!void {
-            const zigggwavvv_wave = zigggwavvv.Wave(T).init(.{
-                .format_code = options.format_code,
-                .sample_rate = self.sample_rate,
-                .channels = self.channels,
-                .bits = options.bits,
-                .samples = try options.allocator.dupe(T, self.samples),
-            });
-            defer zigggwavvv_wave.deinit(options.allocator);
-
-            try zigggwavvv_wave.write(writer, .{
-                .allocator = options.allocator,
-                .use_fact = options.use_fact,
-                .use_peak = options.use_peak,
-                .peak_timestamp = options.peak_timestamp,
-            });
+        pub fn write(self: Self, file_extension: LowLevelInterfaces, writer: anytype, options: LowLevelInterfaces.writeOptions(file_extension)) anyerror!void {
+            try file_extension.write(self, writer, options);
         }
-
-        /// Options for writing wave data to a file.
-        pub const WriteOptions = struct {
-            /// Memory allocator used for intermediate buffers during encoding
-            allocator: std.mem.Allocator,
-            /// Whether to include a `fact` chunk in the output file
-            use_fact: bool = false,
-            /// Whether to include a `PEAK` chunk in the output file
-            use_peak: bool = false,
-            /// Timestamp value written into the `PEAK` chunk (only used when `use_peak` is true)
-            peak_timestamp: u32 = 0,
-
-            /// Bits per sample (e.g. 16 or 24)
-            bits: u16,
-            /// Audio format code (e.g. PCM or IEEE float)
-            format_code: zigggwavvv.FormatCode,
-        };
 
         /// Applies a filter function with custom arguments to the wave.
         ///
