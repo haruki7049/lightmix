@@ -6,8 +6,8 @@
 
     .dependencies = .{
         .zigggwavvv = .{
-            .url = "https://github.com/haruki7049/zigggwavvv/archive/refs/tags/0.3.0.tar.gz",
-            .hash = "zigggwavvv-0.3.0-iR5xWtfEAAAd1ca3u6kOrPIFzODMgHiUIZQWava6XIwD",
+            .url = "https://github.com/haruki7049/zigggwavvv/archive/refs/tags/1.0.0.tar.gz",
+            .hash = "zigggwavvv-1.0.0-iR5xWiDEAAD6QVEQLTO2j1OfcisaJgUfwo0hLAJnb6hS",
         },
         .zaudio = .{
             .url = "https://github.com/zig-gamedev/zaudio/archive/bb93ad665b89e302d4515a36b44cb8e73eaf6766.tar.gz",
