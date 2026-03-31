@@ -19,6 +19,14 @@ pub fn build(b: *std.Build) !void {
             .{ .name = "temperaments", .module = temperaments.module("temperaments") },
         },
     });
+
+    // Library linking on Linux
+    if (target.result.os.tag == .linux) {
+        mod.linkSystemLibrary("alsa", .{});
+        mod.linkSystemLibrary("libpulse", .{});
+        mod.linkSystemLibrary("libpipewire-0.3", .{});
+    }
+
     const wave = try l.addWave(b, mod, .{
         .func_name = "gen",
         .format = .{ .wav = .{
@@ -27,6 +35,10 @@ pub fn build(b: *std.Build) !void {
         } },
     });
     l.installWave(b, wave);
+
+    const play_step = b.step("play", "Play the produced Wave file");
+    const play = try l.addPlay(b, wave, .{});
+    play_step.dependOn(&play.step);
 
     const mod_tests = b.addTest(.{
         .root_module = mod,

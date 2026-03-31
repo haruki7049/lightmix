@@ -581,7 +581,10 @@ pub fn inner(comptime T: type) type {
                 samples[i] = @as(f32, @floatCast(orig_sample));
             }
 
-            const buffer = try zaudio.AudioBuffer.create(zaudio.AudioBuffer.Config.init(.float32, self.channels, samples.len, samples.ptr));
+            var buffer_config = zaudio.AudioBuffer.Config.init(.float32, self.channels, samples.len, samples.ptr);
+            buffer_config.sample_rate = self.sample_rate;
+            buffer_config.channels = self.channels;
+            const buffer = try zaudio.AudioBuffer.create(buffer_config);
             defer buffer.destroy();
             const sound = try engine.createSoundFromDataSource(buffer.asDataSourceMut(), .{}, null);
             defer sound.destroy();
