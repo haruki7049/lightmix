@@ -564,10 +564,9 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Errors
         /// Returns errors from the audio engine initialization or playback
-        pub fn play(
-            self: Self,
-            allocator: std.mem.Allocator,
-        ) anyerror!void {
+        pub fn play(self: Self) anyerror!void {
+            const allocator = self.allocator;
+
             zaudio.init(allocator);
             defer zaudio.deinit();
 
