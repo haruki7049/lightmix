@@ -381,7 +381,7 @@ pub fn addPlay(
         \\
         \\    const wave = try user_module.{s}(allocator);
         \\    defer wave.deinit();
-        \\    try wave.play(allocator);
+        \\    try wave.play();
         \\}}
         \\
     , .{wave.create_wave_options.func_name});

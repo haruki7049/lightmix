@@ -23,5 +23,5 @@ pub fn main() !void {
         .channels = 1,
     });
 
-    try wave.play(allocator);
+    try wave.play();
 }
