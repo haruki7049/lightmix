@@ -560,7 +560,6 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Parameters
         /// - `self`: The wave to play
-        /// - `allocator`: Memory allocator used for the intermediate f32 sample buffer
         ///
         /// ## Errors
         /// Returns errors from the audio engine initialization or playback
