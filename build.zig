@@ -184,6 +184,13 @@ const Generator = struct {
                 "lightmix",
                 options.format.wav.name,
             });
+            const tmp_path_in_zig: []const u8 = try std.mem.replaceOwned(
+                u8,
+                b.allocator,
+                tmp_path,
+                "\\",
+                "/",
+            );
             // Generate temporary Zig code that calls the user's function
             const gen_source = try std.fmt.allocPrint(b.allocator,
                 \\const std = @import("std");
@@ -224,7 +231,7 @@ const Generator = struct {
             , .{
                 options.func_name,
                 options.format.wav.bits,
-                tmp_path,
+                tmp_path_in_zig,
                 @tagName(options.format.wav.format_code),
             });
 
