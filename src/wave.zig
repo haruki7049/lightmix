@@ -579,7 +579,7 @@ pub fn inner(comptime T: type) type {
                 samples[i] = @as(f32, @floatCast(orig_sample));
             }
 
-            var buffer_config = zaudio.AudioBuffer.Config.init(.float32, self.channels, samples.len, samples.ptr);
+            var buffer_config = zaudio.AudioBuffer.Config.init(.float32, self.channels, samples.len / self.channels, samples.ptr);
             buffer_config.sample_rate = self.sample_rate;
             buffer_config.channels = self.channels;
             const buffer = try zaudio.AudioBuffer.create(buffer_config);
