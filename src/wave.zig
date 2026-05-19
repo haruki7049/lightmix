@@ -581,7 +581,6 @@ pub fn inner(comptime T: type) type {
 
             var buffer_config = zaudio.AudioBuffer.Config.init(.float32, self.channels, samples.len / self.channels, samples.ptr);
             buffer_config.sample_rate = self.sample_rate;
-            buffer_config.channels = self.channels;
             const buffer = try zaudio.AudioBuffer.create(buffer_config);
             defer buffer.destroy();
             const sound = try engine.createSoundFromDataSource(buffer.asDataSourceMut(), .{}, null);
