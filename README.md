@@ -144,13 +144,27 @@ You can write your `Wave` to a wave file, such as `result.wav`.
 const wave = generate_wave(); // Returns a Wave(f64)
 
 // Second, you must create a file, typed as `std.fs.File`.
-var file = try std.fs.cwd().createFile("result.wav", .{});
+const file = try std.fs.cwd().createFile("result.wav", .{});
 defer file.close();
 
+// Wav file size calculation
+const bits = 16;
+const bytes_per_sample = (bits + 7) / 8;
+const header_size = 44;
+const total_size = header_size + (wave.samples.len * wave.channels * bytes_per_sample);
+
+// Create a buffer for file writer
+const buf = try allocator.alloc(u8, total_size);
+defer allocator.free(buf);
+
+// Create a std.fs.File.Writer variable from the file.
+// It has an `interface` variable typed `std.Io.Writer`.
+var writer = file.writer(buf);
+
 // Then, write down your wave!!
-try wave.write(file.writer(), .{
+try wave.write(.wav, &writer.interface, .{
     .allocator = allocator,
-    .bits = 16, // Bit depth for the output file
+    .bits = bits, // Bit depth for the output file
     .format_code = .pcm, // Format code (e.g., .pcm or .ieee_float)
 });
 ```
