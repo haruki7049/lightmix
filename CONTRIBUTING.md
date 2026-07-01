@@ -11,6 +11,7 @@ Thank you for your interest in contributing to lightmix! This document provides 
 - [Coding Guidelines](#coding-guidelines)
 - [Testing](#testing)
 - [Submitting Changes](#submitting-changes)
+- [Tagging Rules](#tagging-rules)
 - [Documentation](#documentation)
 - [Audio-Specific Guidelines](#audio-specific-guidelines)
 
@@ -283,6 +284,12 @@ Add filter chaining example
 - `test: Add tests for X`
 - `refactor: Improve code structure`
 - `perf: Optimize performance of X`
+
+## Tagging Rules
+
+- Use [Semantic Versioning](https://semver.org/).
+- Use `{major}.{minor}.{patch}`, `{major}.{minor}.{patch}-{preRelease}`, or `{major}.{minor}.{patch}+{buildMetadata}`.
+- Don't prefix the tag with `v`. Use `1.0.0`, not `v1.0.0`.
 
 ## Documentation
 
