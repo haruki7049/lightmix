@@ -354,11 +354,25 @@ pub fn inner(comptime T: type) type {
                 .channels = self.channels,
             };
         }
+
         /// Frees the memory allocated for the wave's sample data.
         ///
         /// This must be called when you're done with a Wave instance to avoid memory leaks.
         pub fn deinit(self: Self) void {
             self.allocator.free(self.samples);
+        }
+
+        /// Copies self.samples to newly allocated `Wave(T)`. Caller owns the memory.
+        pub fn clone(self: Self, allocator: ?std.mem.Allocator) std.mem.Allocator.Error!Self {
+            const gpa = allocator orelse self.allocator;
+            const clonedSamples = try gpa.dupe(T, self.samples);
+
+            return Self{
+                .samples = clonedSamples,
+                .allocator = gpa,
+                .channels = self.channels,
+                .sample_rate = self.sample_rate,
+            };
         }
 
         /// Reads wave data from a file using the specified format.
@@ -387,6 +401,7 @@ pub fn inner(comptime T: type) type {
                 .channels = lowlevel_wave.channels,
             };
         }
+
         /// Writes wave data to a file writer using the specified format.
         ///
         /// ## Parameters
