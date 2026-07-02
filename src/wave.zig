@@ -667,6 +667,68 @@ pub fn inner(comptime T: type) type {
             try testing.expectEqual(wave.channels, 1);
         }
 
+        test "clone creates deep copy of samples" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 1.0, 2.0, 3.0 };
+
+            const wave = try Self.init(samples, allocator, .{
+                .sample_rate = 44100,
+                .channels = 2,
+            });
+            defer wave.deinit();
+
+            const cloned = try wave.clone(null);
+            defer cloned.deinit();
+
+            // Cloned wave must keep the same sample_rate and channels
+            try testing.expectEqual(wave.sample_rate, cloned.sample_rate);
+            try testing.expectEqual(wave.channels, cloned.channels);
+            try testing.expectEqualSlices(T, wave.samples, cloned.samples);
+
+            // Samples must live in a different allocation, not just an aliased slice
+            try testing.expect(wave.samples.ptr != cloned.samples.ptr);
+        }
+
+        test "clone with explicit allocator" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 4.0, 5.0, 6.0, 7.0 };
+
+            const wave = try Self.init(samples, allocator, .{
+                .sample_rate = 48000,
+                .channels = 1,
+            });
+            defer wave.deinit();
+
+            var arena = std.heap.ArenaAllocator.init(testing.allocator);
+            defer arena.deinit();
+
+            // Passing a different allocator should make the clone use it,
+            // instead of falling back to wave.allocator
+            const cloned = try wave.clone(arena.allocator());
+
+            try testing.expectEqual(wave.sample_rate, cloned.sample_rate);
+            try testing.expectEqual(wave.channels, cloned.channels);
+            try testing.expectEqualSlices(T, wave.samples, cloned.samples);
+        }
+
+        test "clone with empty samples" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{};
+
+            const wave = try Self.init(samples, allocator, .{
+                .sample_rate = 44100,
+                .channels = 1,
+            });
+            defer wave.deinit();
+
+            const cloned = try wave.clone(null);
+            defer cloned.deinit();
+
+            try testing.expectEqual(cloned.samples.len, 0);
+            try testing.expectEqual(wave.sample_rate, cloned.sample_rate);
+            try testing.expectEqual(wave.channels, cloned.channels);
+        }
+
         test "mix" {
             const allocator = testing.allocator;
             const generator = struct {
