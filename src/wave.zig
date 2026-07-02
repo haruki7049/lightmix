@@ -362,7 +362,39 @@ pub fn inner(comptime T: type) type {
             self.allocator.free(self.samples);
         }
 
-        /// Copies self.samples to newly allocated `Wave(T)`. Caller owns the memory.
+        /// Creates a deep copy of this wave's samples into a newly allocated `Wave(T)`.
+        ///
+        /// If `allocator` is `null`, the wave's own allocator (`self.allocator`) is reused.
+        /// Otherwise, the provided allocator is used for the new samples buffer instead.
+        /// The caller owns the returned Wave and is responsible for calling `deinit()` on it.
+        ///
+        /// ## Parameters
+        /// - `self`: The wave to clone
+        /// - `allocator`: Optional allocator to use for the clone; defaults to `self.allocator` when `null`
+        ///
+        /// ## Returns
+        /// A new Wave instance with a deep copy of `self.samples`, sharing the same
+        /// `sample_rate` and `channels`
+        ///
+        /// ## Errors
+        /// - Allocator error (errors.OutOfMemory)
+        ///
+        /// ## Example
+        /// ```zig
+        /// const wave: Wave(f64) = try Wave(f64).init(samples, allocator, .{
+        ///     .sample_rate = 44100,
+        ///     .channels = 1,
+        /// });
+        /// defer wave.deinit();
+        ///
+        /// // Clone using the wave's own allocator
+        /// const cloned = try wave.clone(null);
+        /// defer cloned.deinit();
+        ///
+        /// // Clone using a different allocator
+        /// const other_alloc_clone = try wave.clone(some_other_allocator);
+        /// defer other_alloc_clone.deinit();
+        /// ```
         pub fn clone(self: Self, allocator: ?std.mem.Allocator) std.mem.Allocator.Error!Self {
             const gpa = allocator orelse self.allocator;
             const clonedSamples = try gpa.dupe(T, self.samples);
