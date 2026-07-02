@@ -22,7 +22,12 @@
       ];
 
       perSystem =
-        { pkgs, lib, ... }:
+        {
+          config,
+          lib,
+          pkgs,
+          ...
+        }:
         let
           lightmix = pkgs.stdenv.mkDerivation {
             name = "lightmix";
@@ -90,6 +95,10 @@
               pkgs.alsa-lib
               pkgs.pulseaudio
               pkgs.pipewire
+            ];
+
+            inputsFrom = [
+              config.treefmt.build.devShell
             ];
 
             shellHook = ''
