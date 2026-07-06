@@ -354,11 +354,57 @@ pub fn inner(comptime T: type) type {
                 .channels = self.channels,
             };
         }
+
         /// Frees the memory allocated for the wave's sample data.
         ///
         /// This must be called when you're done with a Wave instance to avoid memory leaks.
         pub fn deinit(self: Self) void {
             self.allocator.free(self.samples);
+        }
+
+        /// Creates a deep copy of this wave's samples into a newly allocated `Wave(T)`.
+        ///
+        /// If `allocator` is `null`, the wave's own allocator (`self.allocator`) is reused.
+        /// Otherwise, the provided allocator is used for the new samples buffer instead.
+        /// The caller owns the returned Wave and is responsible for calling `deinit()` on it.
+        ///
+        /// ## Parameters
+        /// - `self`: The wave to clone
+        /// - `allocator`: Optional allocator to use for the clone; defaults to `self.allocator` when `null`
+        ///
+        /// ## Returns
+        /// A new Wave instance with a deep copy of `self.samples`, sharing the same
+        /// `sample_rate` and `channels`
+        ///
+        /// ## Errors
+        /// - Allocator error (errors.OutOfMemory)
+        ///
+        /// ## Example
+        /// ```zig
+        /// const wave: Wave(f64) = try Wave(f64).init(samples, allocator, .{
+        ///     .sample_rate = 44100,
+        ///     .channels = 1,
+        /// });
+        /// defer wave.deinit();
+        ///
+        /// // Clone using the wave's own allocator
+        /// const cloned = try wave.clone(null);
+        /// defer cloned.deinit();
+        ///
+        /// // Clone using a different allocator
+        /// const other_alloc_clone = try wave.clone(some_other_allocator);
+        /// defer other_alloc_clone.deinit();
+        /// ```
+        pub fn clone(self: Self, allocator: ?std.mem.Allocator) std.mem.Allocator.Error!Self {
+            const gpa = allocator orelse self.allocator;
+            const clonedSamples = try gpa.dupe(T, self.samples);
+
+            return Self{
+                .samples = clonedSamples,
+                .allocator = gpa,
+                .channels = self.channels,
+                .sample_rate = self.sample_rate,
+            };
         }
 
         /// Reads wave data from a file using the specified format.
@@ -387,6 +433,7 @@ pub fn inner(comptime T: type) type {
                 .channels = lowlevel_wave.channels,
             };
         }
+
         /// Writes wave data to a file writer using the specified format.
         ///
         /// ## Parameters
@@ -650,6 +697,68 @@ pub fn inner(comptime T: type) type {
 
             try testing.expectEqual(wave.sample_rate, 44100);
             try testing.expectEqual(wave.channels, 1);
+        }
+
+        test "clone creates deep copy of samples" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 1.0, 2.0, 3.0 };
+
+            const wave = try Self.init(samples, allocator, .{
+                .sample_rate = 44100,
+                .channels = 2,
+            });
+            defer wave.deinit();
+
+            const cloned = try wave.clone(null);
+            defer cloned.deinit();
+
+            // Cloned wave must keep the same sample_rate and channels
+            try testing.expectEqual(wave.sample_rate, cloned.sample_rate);
+            try testing.expectEqual(wave.channels, cloned.channels);
+            try testing.expectEqualSlices(T, wave.samples, cloned.samples);
+
+            // Samples must live in a different allocation, not just an aliased slice
+            try testing.expect(wave.samples.ptr != cloned.samples.ptr);
+        }
+
+        test "clone with explicit allocator" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 4.0, 5.0, 6.0, 7.0 };
+
+            const wave = try Self.init(samples, allocator, .{
+                .sample_rate = 48000,
+                .channels = 1,
+            });
+            defer wave.deinit();
+
+            var arena = std.heap.ArenaAllocator.init(testing.allocator);
+            defer arena.deinit();
+
+            // Passing a different allocator should make the clone use it,
+            // instead of falling back to wave.allocator
+            const cloned = try wave.clone(arena.allocator());
+
+            try testing.expectEqual(wave.sample_rate, cloned.sample_rate);
+            try testing.expectEqual(wave.channels, cloned.channels);
+            try testing.expectEqualSlices(T, wave.samples, cloned.samples);
+        }
+
+        test "clone with empty samples" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{};
+
+            const wave = try Self.init(samples, allocator, .{
+                .sample_rate = 44100,
+                .channels = 1,
+            });
+            defer wave.deinit();
+
+            const cloned = try wave.clone(null);
+            defer cloned.deinit();
+
+            try testing.expectEqual(cloned.samples.len, 0);
+            try testing.expectEqual(wave.sample_rate, cloned.sample_rate);
+            try testing.expectEqual(wave.channels, cloned.channels);
         }
 
         test "mix" {
