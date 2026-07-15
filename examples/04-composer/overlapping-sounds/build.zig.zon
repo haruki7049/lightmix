@@ -2,7 +2,7 @@
     .name = .overlapping_sounds,
     .version = "0.1.0",
     .fingerprint = 0x1c9cd58a6b23253,
-    .minimum_zig_version = "0.15.2",
+    .minimum_zig_version = "0.16.0",
 
     .dependencies = .{
         .lightmix = .{

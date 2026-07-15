@@ -2,7 +2,7 @@
     .name = .square_wave,
     .version = "0.1.0",
     .fingerprint = 0xd1743863eb9f5d29,
-    .minimum_zig_version = "0.15.2",
+    .minimum_zig_version = "0.16.0",
 
     .dependencies = .{
         .lightmix = .{
