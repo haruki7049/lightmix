@@ -3,7 +3,6 @@
 {
   linkFarm,
   fetchzip,
-  fetchgit,
 }:
 
 linkFarm "zig-packages" [
@@ -22,10 +21,10 @@ linkFarm "zig-packages" [
     };
   }
   {
-    name = "zaudio-0.11.0-dev-_M-91kHvPwAlW8MCRI4XiTbTeihqB8Zspgiuw-6Gqgdz";
+    name = "zaudio-0.11.0-dev-_M-91owyQQD3MVQa4F1xkPgwSFWQi4HhhNfDwKI0PBWX";
     path = fetchzip {
-      url = "https://github.com/zig-gamedev/zaudio/archive/bb93ad665b89e302d4515a36b44cb8e73eaf6766.tar.gz";
-      hash = "sha256-iMGK3w/SQ6IxD2vW1x0nwKshhdzNLAsbngx0Vo1Svgc=";
+      url = "https://github.com/zig-gamedev/zaudio/archive/b9997fc34640d9c80e25b7829b9ad53db8bcf7f2.tar.gz";
+      hash = "sha256-joo4Cs4Eo6M168d/j5VeMQ6BVNh38RRrtT9aStt4VX4=";
     };
   }
   {
