@@ -5,6 +5,7 @@ const Composer = lightmix.Composer;
 
 test "Compose multiple soundless Wave" {
     const allocator = std.testing.allocator;
+    const io = std.testing.io;
     var composer = Composer(f64).init(allocator, .{
         .sample_rate = 44100,
         .channels = 1,
@@ -34,11 +35,11 @@ test "Compose multiple soundless Wave" {
     var tmpDir = std.testing.tmpDir(.{});
     defer tmpDir.cleanup();
 
-    var file = try tmpDir.dir.createFile("result.wav", .{});
-    defer file.close();
+    var file = try tmpDir.dir.createFile(io, "result.wav", .{});
+    defer file.close(io);
     const buf = try allocator.alloc(u8, 10 * 1024 * 1024);
     defer allocator.free(buf);
-    var writer = file.writer(buf);
+    var writer = file.writer(io, buf);
 
     // Write Wave into the file
     try result.write(.wav, &writer.interface, .{
@@ -49,11 +50,11 @@ test "Compose multiple soundless Wave" {
     try writer.interface.flush();
 
     // Read the written wave file
-    const result_bytes = try tmpDir.dir.readFileAlloc(allocator, "result.wav", 10 * 1024 * 1024);
+    const result_bytes = try tmpDir.dir.readFileAlloc(io, "result.wav", allocator, .limited(100 * 1024 * 1024));
     defer allocator.free(result_bytes);
 
     // Read the actual file
-    const expected_bytes = try std.fs.cwd().readFileAlloc(allocator, "tests/assets/soundless.wav", 100 * 1024 * 1024);
+    const expected_bytes = try std.Io.Dir.cwd().readFileAlloc(io, "tests/assets/soundless.wav", allocator, .limited(100 * 1024 * 1024));
     defer allocator.free(expected_bytes);
 
     try std.testing.expectEqualSlices(u8, expected_bytes, result_bytes);
