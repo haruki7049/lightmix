@@ -2,7 +2,7 @@
     .name = .guitar,
     .version = "0.1.0",
     .fingerprint = 0x423ac30d2a62da7e,
-    .minimum_zig_version = "0.15.2",
+    .minimum_zig_version = "0.16.0",
 
     .dependencies = .{
         .lightmix = .{

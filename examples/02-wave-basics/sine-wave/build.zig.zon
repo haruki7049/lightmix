@@ -2,7 +2,7 @@
     .name = .sine_wave,
     .version = "0.1.0",
     .fingerprint = 0x2230d3f0bce50a14,
-    .minimum_zig_version = "0.15.2",
+    .minimum_zig_version = "0.16.0",
 
     .dependencies = .{
         .lightmix = .{
