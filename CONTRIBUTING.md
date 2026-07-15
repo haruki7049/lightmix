@@ -36,7 +36,7 @@ See [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md). We use [Contributor Covenant](ht
 
 ### Required Tools
 
-- **Zig 0.15.2** - This project tracks Zig's minor version
+- **Zig 0.16.0** - This project tracks Zig's minor version
 - **Git** for version control
 
 ### Optional but Recommended
@@ -60,10 +60,10 @@ nix develop
 
 ### Setup without Nix
 
-1. Install Zig 0.15.2 from [ziglang.org](https://ziglang.org/download/)
+1. Install Zig 0.16.0 from [ziglang.org](https://ziglang.org/download/)
 1. Verify installation:
    ```bash
-   zig version  # Should show 0.15.2
+   zig version  # Should show 0.16.0
    ```
 
 ### Building and Testing
