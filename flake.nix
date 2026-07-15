@@ -33,7 +33,7 @@
               pkgs.zig_0_16.hook
             ];
 
-            postPatch = ''
+            postConfigure = ''
               ln -s ${pkgs.callPackage ./.deps.nix { }} $ZIG_GLOBAL_CACHE_DIR/p
 
               # Remove NIX_CFLAGS_COMPILE because zig cannot understand it
