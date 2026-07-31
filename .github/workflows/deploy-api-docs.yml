@@ -22,7 +22,7 @@ jobs:
       - name: Setup Ziglang
         uses: mlugg/setup-zig@v2.0.5
         with:
-          version: 0.15.2
+          version: 0.16.0
       - name: Generate docs
         run: |
           zig build docs

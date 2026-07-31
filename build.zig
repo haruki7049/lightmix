@@ -34,7 +34,7 @@ pub fn build(b: *std.Build) !void {
     //
     // I must write below programs, because "miniaudio" linking needs macOS SDK on macOS.
     if (target.result.os.tag == .macos) {
-        const sdkroot_envvar: []const u8 = b.graph.env_map.get("SDKROOT") orelse inner: {
+        const sdkroot_envvar: []const u8 = b.graph.environ_map.get("SDKROOT") orelse inner: {
             // These processes need "xcrun" command
             const argv = &.{ "xcrun", "--show-sdk-path" };
             const result = b.run(argv); // The stdout of "xcrun --show-sdk-path"
@@ -43,6 +43,10 @@ pub fn build(b: *std.Build) !void {
         };
         const sdkroot: []const u8 = try std.mem.concat(b.allocator, u8, &.{ sdkroot_envvar, "/System/Library/Frameworks" });
         lib_mod.addFrameworkPath(.{ .cwd_relative = sdkroot });
+
+        // This part adds library paths to lib_mod variable.
+        const sdkroot_libpath: []const u8 = try std.mem.concat(b.allocator, u8, &.{ sdkroot_envvar, "/usr/lib" });
+        lib_mod.addLibraryPath(.{ .cwd_relative = sdkroot_libpath });
     }
 
     // Library installation

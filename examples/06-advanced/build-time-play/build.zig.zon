@@ -2,7 +2,7 @@
     .name = .build_time_play,
     .version = "0.1.0",
     .fingerprint = 0x4ab620c4c90e0f63,
-    .minimum_zig_version = "0.15.2",
+    .minimum_zig_version = "0.16.0",
 
     .dependencies = .{
         .lightmix = .{

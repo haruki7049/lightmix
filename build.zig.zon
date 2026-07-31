@@ -2,7 +2,7 @@
     .name = .lightmix,
     .version = "0.20.4",
     .fingerprint = 0xe48269dbca8904a,
-    .minimum_zig_version = "0.15.2",
+    .minimum_zig_version = "0.16.0",
 
     .dependencies = .{
         .zigggwavvv = .{
@@ -10,8 +10,8 @@
             .hash = "zigggwavvv-1.0.0-iR5xWiDEAAD6QVEQLTO2j1OfcisaJgUfwo0hLAJnb6hS",
         },
         .zaudio = .{
-            .url = "https://github.com/zig-gamedev/zaudio/archive/bb93ad665b89e302d4515a36b44cb8e73eaf6766.tar.gz",
-            .hash = "zaudio-0.11.0-dev-_M-91kHvPwAlW8MCRI4XiTbTeihqB8Zspgiuw-6Gqgdz",
+            .url = "https://github.com/zig-gamedev/zaudio/archive/b9997fc34640d9c80e25b7829b9ad53db8bcf7f2.tar.gz",
+            .hash = "zaudio-0.11.0-dev-_M-91owyQQD3MVQa4F1xkPgwSFWQi4HhhNfDwKI0PBWX",
         },
     },
 

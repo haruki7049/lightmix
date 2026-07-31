@@ -1,7 +1,6 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
-    systems.url = "github:nix-systems/default";
     flake-compat.url = "github:edolstra/flake-compat";
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
@@ -16,7 +15,12 @@
   outputs =
     inputs:
     inputs.flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = import inputs.systems;
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "aarch64-darwin"
+      ];
+
       imports = [
         inputs.treefmt-nix.flakeModule
       ];
@@ -29,17 +33,41 @@
           ...
         }:
         let
+          buildInputs =
+            (lib.optionals pkgs.stdenv.isLinux [
+              pkgs.alsa-lib
+              pkgs.pulseaudio
+              pkgs.pipewire
+            ])
+            ++ (lib.optionals pkgs.stdenv.isDarwin [
+              pkgs.apple-sdk_26
+            ]);
+
+          nativeBuildInputs = [
+            # Compiler
+            pkgs.zig_0_16
+            pkgs.pkg-config
+
+            # LSP
+            pkgs.nil
+            pkgs.zls
+
+            # Music Player
+            pkgs.sox # Use this command as: `play result.wav`
+
+            # zon2nix
+            pkgs.zon2nix
+          ];
+
           lightmix = pkgs.stdenv.mkDerivation {
             name = "lightmix";
             src = lib.cleanSource ./.;
             doCheck = true;
 
-            nativeBuildInputs = [
-              pkgs.zig_0_15.hook
-            ];
+            inherit nativeBuildInputs buildInputs;
 
-            postPatch = ''
-              ln -s ${pkgs.callPackage ./.deps.nix { }} $ZIG_GLOBAL_CACHE_DIR/p
+            postConfigure = ''
+              ln -s ${pkgs.callPackage ./.deps.nix { }} zig-pkg
 
               # Remove NIX_CFLAGS_COMPILE because zig cannot understand it
               unset NIX_CFLAGS_COMPILE
@@ -55,7 +83,7 @@
 
             # Zig
             programs.zig.enable = true;
-            settings.formatter.zig.command = lib.getExe pkgs.zig_0_15;
+            settings.formatter.zig.command = lib.getExe pkgs.zig_0_16;
 
             # GitHub Actions
             programs.actionlint.enable = true;
@@ -75,27 +103,7 @@
           };
 
           devShells.default = pkgs.mkShell {
-            nativeBuildInputs = [
-              # Compiler
-              pkgs.zig_0_15
-              pkgs.pkg-config
-
-              # LSP
-              pkgs.nil
-              pkgs.zls
-
-              # Music Player
-              pkgs.sox # Use this command as: `play result.wav`
-
-              # zon2nix
-              pkgs.zon2nix
-            ];
-
-            buildInputs = lib.optionals pkgs.stdenv.isLinux [
-              pkgs.alsa-lib
-              pkgs.pulseaudio
-              pkgs.pipewire
-            ];
+            inherit nativeBuildInputs buildInputs;
 
             inputsFrom = [
               config.treefmt.build.devShell
