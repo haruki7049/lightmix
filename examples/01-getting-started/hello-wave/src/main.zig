@@ -18,10 +18,12 @@ const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
 
-pub fn main() !void {
-    // Use page allocator for simplicity
+pub fn main(init: std.process.Init) !void {
+    // Use ArenaAllocator from std.process.Init
     // In production, consider using a more sophisticated allocator
-    const allocator = std.heap.page_allocator;
+    const allocator = init.arena.allocator();
+    // Io interface from std.process.Init
+    const io = init.io;
 
     // Generate a 440Hz sine wave (A4 note)
     const frequency: f64 = 440.0;
@@ -45,11 +47,11 @@ pub fn main() !void {
     defer wave.deinit();
 
     // Save the wave to a WAV file
-    const file = try std.fs.cwd().createFile("result.wav", .{});
-    defer file.close();
+    const file = try std.Io.Dir.cwd().createFile(io, "result.wav", .{});
+    defer file.close(io);
     const buf = try allocator.alloc(u8, 10 * 1024 * 1024);
     defer allocator.free(buf);
-    var writer = file.writer(buf);
+    var writer = file.writer(io, buf);
 
     // Write as 16-bit integer PCM (most common format)
     try wave.write(.wav, &writer.interface, .{
