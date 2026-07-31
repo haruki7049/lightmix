@@ -203,15 +203,9 @@ const Generator = struct {
                 \\const std = @import("std");
                 \\const user_module = @import("user_module");
                 \\
-                \\var gpa = std.heap.GeneralPurposeAllocator(.{{}}){{}};
-                \\const allocator = gpa.allocator();
-                \\
-                \\pub fn main() !void {{
-                \\    defer {{
-                \\        const leaked = gpa.deinit();
-                \\        if (leaked == .leak)
-                \\            @panic("Memory leak happened");
-                \\    }}
+                \\pub fn main(init: std.process.Init) !void {{
+                \\    const allocator: std.mem.Allocator = init.arena.allocator();
+                \\    const io: std.Io = init.io;
                 \\
                 \\    const wave = try user_module.{s}(allocator);
                 \\    defer wave.deinit();
@@ -222,11 +216,11 @@ const Generator = struct {
                 \\    const header_size = 44;
                 \\    const total_size = header_size + (wave.samples.len * wave.channels * bytes_per_sample);
                 \\
-                \\    const file = try std.fs.cwd().createFile("{s}", .{{}});
-                \\    defer file.close();
+                \\    const file = try std.Io.Dir.cwd().createFile(io, "{s}", .{{}});
+                \\    defer file.close(io);
                 \\    const buf = try allocator.alloc(u8, total_size);
                 \\    defer allocator.free(buf);
-                \\    var writer = file.writer(buf);
+                \\    var writer = file.writer(io, buf);
                 \\
                 \\    try wave.write(.wav, &writer.interface, .{{
                 \\        .format_code = .{s},
