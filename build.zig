@@ -176,14 +176,17 @@ const Generator = struct {
             mod: *std.Build.Module,
             options: CreateWaveOptions,
         ) anyerror!*CompileWave {
+            // Io interface from *std.Build
+            const io = b.graph.io;
+
             // Create .zig-cache/lightmix directory
-            b.cache_root.handle.access("lightmix", .{}) catch {
-                try b.cache_root.handle.makeDir("lightmix");
+            b.cache_root.handle.access(io, "lightmix", .{}) catch {
+                try b.cache_root.handle.createDir(io, "lightmix", .default_dir);
             };
 
             // Create a wave file in .zig-cache/lightmix
             const tmp_path: []const u8 = try std.fs.path.join(b.allocator, &[_][]const u8{
-                try b.build_root.handle.realpathAlloc(b.allocator, "."),
+                try b.build_root.handle.realPathFileAlloc(io, ".", b.allocator),
                 ".zig-cache",
                 "lightmix",
                 options.format.wav.name,
