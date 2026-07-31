@@ -612,6 +612,8 @@ pub fn inner(comptime T: type) type {
         /// Returns errors from the audio engine initialization or playback
         pub fn play(self: Self) anyerror!void {
             const allocator = self.allocator;
+            var threaded = std.Io.Threaded.init(allocator, .{});
+            const io = threaded.io();
 
             zaudio.init(allocator);
             defer zaudio.deinit();
@@ -636,7 +638,7 @@ pub fn inner(comptime T: type) type {
             try sound.start();
 
             while (!sound.isAtEnd()) {
-                std.Thread.sleep(10 * std.time.ns_per_ms);
+                try io.sleep(std.Io.Duration.fromNanoseconds(10 * std.time.ns_per_ms), .real);
             }
         }
 
