@@ -43,6 +43,10 @@ pub fn build(b: *std.Build) !void {
         };
         const sdkroot: []const u8 = try std.mem.concat(b.allocator, u8, &.{ sdkroot_envvar, "/System/Library/Frameworks" });
         lib_mod.addFrameworkPath(.{ .cwd_relative = sdkroot });
+
+        // This part adds library paths to lib_mod variable.
+        const sdkroot_libpath: []const u8 = try std.mem.concat(b.allocator, u8, &.{ sdkroot_envvar, "/usr/lib" });
+        lib_mod.addLibraryPath(.{ .cwd_relative = sdkroot_libpath });
     }
 
     // Library installation
