@@ -14,8 +14,9 @@ const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
 
-pub fn main() !void {
-    const allocator = std.heap.page_allocator;
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.arena.allocator();
+    const io = init.io;
 
     // Generate different types of noise
     const white_noise = try generateWhiteNoise(allocator);
@@ -28,9 +29,9 @@ pub fn main() !void {
     defer brown_noise.deinit();
 
     // Save each to a file
-    try saveWave(white_noise, "white_noise.wav", allocator);
-    try saveWave(pink_noise, "pink_noise.wav", allocator);
-    try saveWave(brown_noise, "brown_noise.wav", allocator);
+    try saveWave(io, white_noise, "white_noise.wav", allocator);
+    try saveWave(io, pink_noise, "pink_noise.wav", allocator);
+    try saveWave(io, brown_noise, "brown_noise.wav", allocator);
 
     std.debug.print("✓ Generated noise samples:\n", .{});
     std.debug.print("  white_noise.wav - Equal energy across frequencies\n", .{});
@@ -107,12 +108,12 @@ fn generateBrownNoise(allocator: std.mem.Allocator) !Wave(f64) {
     });
 }
 
-fn saveWave(wave: Wave(f64), filename: []const u8, allocator: std.mem.Allocator) !void {
-    const file = try std.fs.cwd().createFile(filename, .{});
-    defer file.close();
+fn saveWave(io: std.Io, wave: Wave(f64), filename: []const u8, allocator: std.mem.Allocator) !void {
+    const file = try std.Io.Dir.cwd().createFile(io, filename, .{});
+    defer file.close(io);
     const buf = try allocator.alloc(u8, 10 * 1024 * 1024);
     defer allocator.free(buf);
-    var writer = file.writer(buf);
+    var writer = file.writer(io, buf);
 
     // Write as 16-bit integer PCM (most common format)
     try wave.write(.wav, &writer.interface, .{
