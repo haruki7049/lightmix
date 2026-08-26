@@ -13,8 +13,9 @@ const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
 
-pub fn main() !void {
-    const allocator = std.heap.page_allocator;
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.arena.allocator();
+    const io = init.io;
 
     // Generate original 440Hz sine wave (A4)
     const original = try generateSineWave(440.0, allocator);
@@ -28,9 +29,9 @@ pub fn main() !void {
     const octave_down = try generateSineWave(220.0, allocator);
     defer octave_down.deinit();
 
-    try saveWave(original, "a4_original.wav", allocator);
-    try saveWave(octave_up, "a5_octave_up.wav", allocator);
-    try saveWave(octave_down, "a3_octave_down.wav", allocator);
+    try saveWave(io, original, "a4_original.wav", allocator);
+    try saveWave(io, octave_up, "a5_octave_up.wav", allocator);
+    try saveWave(io, octave_down, "a3_octave_down.wav", allocator);
 
     std.debug.print("✓ Generated frequency variations:\n", .{});
     std.debug.print("  a4_original.wav - 440 Hz (A4)\n", .{});
@@ -54,12 +55,12 @@ fn generateSineWave(frequency: f64, allocator: std.mem.Allocator) !Wave(f64) {
     });
 }
 
-fn saveWave(wave: Wave(f64), filename: []const u8, allocator: std.mem.Allocator) !void {
-    const file = try std.fs.cwd().createFile(filename, .{});
-    defer file.close();
+fn saveWave(io: std.Io, wave: Wave(f64), filename: []const u8, allocator: std.mem.Allocator) !void {
+    const file = try std.Io.Dir.cwd().createFile(io, filename, .{});
+    defer file.close(io);
     const buf = try allocator.alloc(u8, 10 * 1024 * 1024);
     defer allocator.free(buf);
-    var writer = file.writer(buf);
+    var writer = file.writer(io, buf);
 
     try wave.write(.wav, &writer.interface, .{
         .format_code = .pcm,
