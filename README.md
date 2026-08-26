@@ -144,8 +144,8 @@ You can write your `Wave` to a wave file, such as `result.wav`.
 const wave = generate_wave(); // Returns a Wave(f64)
 
 // Second, you must create a file, typed as `std.fs.File`.
-const file = try std.fs.cwd().createFile("result.wav", .{});
-defer file.close();
+const file = try std.Io.Dir.cwd().createFile(io, "result.wav", .{});
+defer file.close(io);
 
 // Wav file size calculation
 const bits = 16;
@@ -159,7 +159,7 @@ defer allocator.free(buf);
 
 // Create a std.fs.File.Writer variable from the file.
 // It has an `interface` variable typed `std.Io.Writer`.
-var writer = file.writer(buf);
+var writer = file.writer(io, buf);
 
 // Then, write down your wave!!
 try wave.write(.wav, &writer.interface, .{

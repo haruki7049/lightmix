@@ -14,17 +14,18 @@ const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
 
-pub fn main() !void {
-    const allocator = std.heap.page_allocator;
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.arena.allocator();
+    const io = init.io;
 
     const snare_wave = try generateSnare(allocator);
     defer snare_wave.deinit();
 
-    const file = try std.fs.cwd().createFile("result.wav", .{});
-    defer file.close();
+    const file = try std.Io.Dir.cwd().createFile(io, "result.wav", .{});
+    defer file.close(io);
     const buf = try allocator.alloc(u8, 10 * 1024 * 1024);
     defer allocator.free(buf);
-    var writer = file.writer(buf);
+    var writer = file.writer(io, buf);
 
     try snare_wave.write(.wav, &writer.interface, .{
         .format_code = .pcm,

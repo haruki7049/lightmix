@@ -2,8 +2,8 @@ const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
 
-pub fn main() !void {
-    const allocator = std.heap.page_allocator;
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.arena.allocator();
 
     // Generate a 440Hz sine wave (A4 note)
     const frequency: f128 = 440.0;

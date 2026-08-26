@@ -18,8 +18,9 @@ const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
 
-pub fn main() !void {
-    const allocator = std.heap.page_allocator;
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.arena.allocator();
+    const io = init.io;
 
     // Generate three notes of a C major chord
     const c4 = try generateSineWave(261.63, 0.3, allocator); // C4 - root
@@ -38,11 +39,11 @@ pub fn main() !void {
     defer chord.deinit();
 
     // Save the result
-    const file = try std.fs.cwd().createFile("result.wav", .{});
-    defer file.close();
+    const file = try std.Io.Dir.cwd().createFile(io, "result.wav", .{});
+    defer file.close(io);
     const buf = try allocator.alloc(u8, 10 * 1024 * 1024);
     defer allocator.free(buf);
-    var writer = file.writer(buf);
+    var writer = file.writer(io, buf);
 
     try chord.write(.wav, &writer.interface, .{
         .format_code = .pcm,

@@ -18,8 +18,9 @@ const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
 
-pub fn main() !void {
-    const allocator = std.heap.page_allocator;
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.arena.allocator();
+    const io = init.io;
 
     // Generate guitar notes at different frequencies
     const e2 = try generateGuitarNote(82.41, allocator); // Low E string
@@ -28,8 +29,8 @@ pub fn main() !void {
     const a2 = try generateGuitarNote(110.00, allocator); // A string
     defer a2.deinit();
 
-    try saveWave(e2, "guitar_e2.wav", allocator);
-    try saveWave(a2, "guitar_a2.wav", allocator);
+    try saveWave(io, e2, "guitar_e2.wav", allocator);
+    try saveWave(io, a2, "guitar_a2.wav", allocator);
 
     std.debug.print("✓ Generated guitar sounds:\n", .{});
     std.debug.print("  guitar_e2.wav - Low E string (82.41 Hz)\n", .{});
@@ -71,12 +72,12 @@ fn generateGuitarNote(frequency: f64, allocator: std.mem.Allocator) !Wave(f64) {
     });
 }
 
-fn saveWave(wave: Wave(f64), filename: []const u8, allocator: std.mem.Allocator) !void {
-    const file = try std.fs.cwd().createFile(filename, .{});
-    defer file.close();
+fn saveWave(io: std.Io, wave: Wave(f64), filename: []const u8, allocator: std.mem.Allocator) !void {
+    const file = try std.Io.Dir.cwd().createFile(io, filename, .{});
+    defer file.close(io);
     const buf = try allocator.alloc(u8, 10 * 1024 * 1024);
     defer allocator.free(buf);
-    var writer = file.writer(buf);
+    var writer = file.writer(io, buf);
 
     try wave.write(.wav, &writer.interface, .{
         .format_code = .pcm,

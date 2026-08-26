@@ -13,10 +13,9 @@ const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
 const Composer = lightmix.Composer;
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.arena.allocator();
+    const io = init.io;
 
     var composer = Composer(f64).init(allocator, .{
         .sample_rate = 44100,
@@ -47,11 +46,11 @@ pub fn main() !void {
     const result = try composer.finalize(.{});
     defer result.deinit();
 
-    const file = try std.fs.cwd().createFile("result.wav", .{});
-    defer file.close();
+    const file = try std.Io.Dir.cwd().createFile(io, "result.wav", .{});
+    defer file.close(io);
     const buf = try allocator.alloc(u8, 10 * 1024 * 1024);
     defer allocator.free(buf);
-    var writer = file.writer(buf);
+    var writer = file.writer(io, buf);
 
     try result.write(.wav, &writer.interface, .{
         .format_code = .pcm,

@@ -18,9 +18,9 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v7.0.1
       - name: Setup Ziglang
-        uses: mlugg/setup-zig@v2.0.5
+        uses: mlugg/setup-zig@v2.2.1
         with:
           version: 0.16.0
       - name: Generate docs

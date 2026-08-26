@@ -96,6 +96,9 @@ pub fn build(b: *std.Build) !void {
     const run_composer_integration_tests = b.addRunArtifact(composer_integration_test);
     test_step.dependOn(&run_composer_integration_tests.step);
 
+    // Examples
+    try example_verifications(b, target, optimize, lib_mod, test_step);
+
     // Docs
     const docs_step = b.step("docs", "Emit docs");
     const docs_install = b.addInstallDirectory(.{
@@ -104,6 +107,80 @@ pub fn build(b: *std.Build) !void {
         .install_subdir = "share/lightmix/docs",
     });
     docs_step.dependOn(&docs_install.step);
+}
+
+/// Examples' verifications
+fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, lightmix_mod: *std.Build.Module, test_step: *std.Build.Step) !void {
+    const example_files = &[_][]const u8{
+        "examples/01-getting-started/hello-wave/src/main.zig",
+        "examples/01-getting-started/using-filters/src/main.zig",
+        "examples/02-wave-basics/noise/src/main.zig",
+        "examples/02-wave-basics/sawtooth-wave/src/main.zig",
+        "examples/02-wave-basics/sine-wave/src/main.zig",
+        "examples/02-wave-basics/square-wave/src/main.zig",
+        "examples/02-wave-basics/triangle-wave/src/main.zig",
+        "examples/03-wave-operations/filtering/src/main.zig",
+        "examples/03-wave-operations/frequency-changes/src/main.zig",
+        "examples/03-wave-operations/mixing-waves/src/main.zig",
+        "examples/04-composer/overlapping-sounds/src/main.zig",
+        "examples/04-composer/simple-sequence/src/main.zig",
+        "examples/05-practical-examples/drum/src/main.zig",
+        "examples/05-practical-examples/guitar/src/main.zig",
+        "examples/06-advanced/runtime-play/src/main.zig",
+    };
+
+    for (example_files, 0..) |ex_path, i| {
+        const name = try std.fmt.allocPrint(b.allocator, "example_{d}", .{i});
+        const example_mod = b.createModule(.{
+            .root_source_file = b.path(ex_path),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "lightmix", .module = lightmix_mod },
+            },
+        });
+        const example_exe = b.addExecutable(.{
+            .name = name,
+            .root_module = example_mod,
+        });
+        test_step.dependOn(&example_exe.step);
+    }
+
+    const bt_gen_mod = b.createModule(.{
+        .root_source_file = b.path("examples/06-advanced/build-time-generation/src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "lightmix", .module = lightmix_mod },
+        },
+    });
+    const bt_gen_wave = try addWave(b, bt_gen_mod, .{
+        .format = .{ .wav = .{
+            .bits = 16,
+            .format_code = .pcm,
+            .name = "build-time-generation.wav",
+        } },
+    });
+    test_step.dependOn(bt_gen_wave.step);
+
+    const bt_play_mod = b.createModule(.{
+        .root_source_file = b.path("examples/06-advanced/build-time-play/src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "lightmix", .module = lightmix_mod },
+        },
+    });
+    const bt_play_wave = try addWave(b, bt_play_mod, .{
+        .format = .{ .wav = .{
+            .bits = 16,
+            .format_code = .pcm,
+            .name = "build-time-play.wav",
+        } },
+    });
+    test_step.dependOn(bt_play_wave.step);
+
+    // TODO: l.addPlay function cannot be tested via `zig build test` command. I (@haruki7049) cannot write it.
 }
 
 /// Creates a build step that generates a WAV file at compile time.
@@ -180,8 +257,9 @@ const Generator = struct {
             const io = b.graph.io;
 
             // Create .zig-cache/lightmix directory
-            b.cache_root.handle.access(io, "lightmix", .{}) catch {
-                try b.cache_root.handle.createDir(io, "lightmix", .default_dir);
+            b.cache_root.handle.createDir(io, "lightmix", .default_dir) catch |err| switch (err) {
+                error.PathAlreadyExists => {},
+                else => |e| return e,
             };
 
             // Create a wave file in .zig-cache/lightmix
@@ -377,15 +455,8 @@ pub fn addPlay(
         \\const std = @import("std");
         \\const user_module = @import("user_module");
         \\
-        \\var gpa = std.heap.GeneralPurposeAllocator(.{{}}){{}};
-        \\const allocator = gpa.allocator();
-        \\
-        \\pub fn main() !void {{
-        \\    defer {{
-        \\        const leaked = gpa.deinit();
-        \\        if (leaked == .leak)
-        \\            @panic("Memory leak happened");
-        \\    }}
+        \\pub fn main(init: std.process.Init) !void {{
+        \\    const allocator = init.arena.allocator();
         \\
         \\    const wave = try user_module.{s}(allocator);
         \\    defer wave.deinit();

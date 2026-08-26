@@ -11,8 +11,8 @@ jobs:
         os: [ubuntu-latest, macOS-15, windows-latest]
     runs-on: ${{matrix.os}}
     steps:
-      - uses: actions/checkout@v5.0.0
-      - uses: mlugg/setup-zig@v2.0.5
+      - uses: actions/checkout@v7.0.1
+      - uses: mlugg/setup-zig@v2.2.1
         with:
           version: 0.16.0
       - run: zig build test
