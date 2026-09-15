@@ -213,7 +213,10 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
     });
     test_step.dependOn(modular_composing_wave.step);
 
-    // TODO: l.addPlay function cannot be tested via `zig build test` command. I (@haruki7049) cannot write it.
+    const bt_play_run = try addPlay(b, bt_play_wave, .{});
+    if (bt_play_run.producer) |producer| {
+        test_step.dependOn(&producer.step);
+    }
 }
 
 /// Creates a build step that generates a WAV file at compile time.
