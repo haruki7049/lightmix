@@ -48,8 +48,6 @@ const std = @import("std");
 const lightmix = @import("lightmix");
 
 pub fn generate(allocator: std.mem.Allocator) !lightmix.Wave(f64) {
-    const allocator = std.heap.page_allocator;
-
     // Generate your audio data (example: 1 second of silence)
     const data: [44100]f64 = [_]f64{0.0} ** 44100;
 
@@ -108,7 +106,7 @@ pub fn build(b: *std.Build) !void {
 
 #### `addWave` Options
 
-- **`func_name`**: The name of the function in your module that generates the Wave. The function must have the signature `pub fn name() !lightmix.Wave(T)` where T is your chosen sample type (e.g., f64) (default: `"gen"`)
+- **`func_name`**: The name of the function in your module that generates the Wave. The function must have the signature `pub fn name(allocator: std.mem.Allocator) !lightmix.Wave(T)` where T is your chosen sample type (e.g., f64) (default: `"gen"`)
 - **`path`**: The installation directory relative to the install prefix (default: `.{ .custom = "share" }`)
 - **`wave.name`**: The output filename for the wave file (default: `"result.wav"`)
 - **`wave.bits`**: The bit depth for the wave file, which is typed u16
@@ -163,7 +161,6 @@ var writer = file.writer(io, buf);
 
 // Then, write down your wave!!
 try wave.write(.wav, &writer.interface, .{
-    .allocator = allocator,
     .bits = bits, // Bit depth for the output file
     .format_code = .pcm, // Format code (e.g., .pcm or .ieee_float)
 });
