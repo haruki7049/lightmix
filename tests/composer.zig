@@ -60,6 +60,22 @@ test "Compose multiple soundless Wave" {
     try std.testing.expectEqualSlices(u8, expected_bytes, result_bytes);
 }
 
+test "Composer finalize empty composition" {
+    const allocator = std.testing.allocator;
+    const composer = Composer(f64).init(allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+    });
+    defer composer.deinit();
+
+    const result = try composer.finalize(.{});
+    defer result.deinit();
+
+    try std.testing.expectEqual(result.samples.len, 0);
+    try std.testing.expectEqual(result.sample_rate, 44100);
+    try std.testing.expectEqual(result.channels, 1);
+}
+
 fn generate_soundless_data(length: usize, allocator: std.mem.Allocator) ![]const f64 {
     var list: std.array_list.Aligned(f64, null) = .empty;
 

@@ -899,6 +899,19 @@ pub fn inner(comptime T: type) type {
             try testing.expectApproxEqAbs(filled_wave.samples[44099], 0.0, 0.00001);
         }
 
+        test "fill_zero_to_end out of bounds returns error" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 1.0, 2.0, 3.0 };
+            const wave = try Self.init(samples, allocator, .{
+                .sample_rate = 44100,
+                .channels = 1,
+            });
+            defer wave.deinit();
+
+            try testing.expectError(error.InvalidTruncationRange, wave.fill_zero_to_end(5, 10));
+            try testing.expectError(error.InvalidTruncationRange, wave.fill_zero_to_end(2, 1));
+        }
+
         test "filter_with" {
             const allocator = testing.allocator;
             const samples: []const T = &[_]T{};
