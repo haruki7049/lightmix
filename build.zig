@@ -253,29 +253,6 @@ const Generator = struct {
             mod: *std.Build.Module,
             options: CreateWaveOptions,
         ) anyerror!*CompileWave {
-            // Io interface from *std.Build
-            const io = b.graph.io;
-
-            // Create .zig-cache/lightmix directory
-            b.cache_root.handle.createDir(io, "lightmix", .default_dir) catch |err| switch (err) {
-                error.PathAlreadyExists => {},
-                else => |e| return e,
-            };
-
-            // Create a wave file in .zig-cache/lightmix
-            const tmp_path: []const u8 = try std.fs.path.join(b.allocator, &[_][]const u8{
-                try b.build_root.handle.realPathFileAlloc(io, ".", b.allocator),
-                ".zig-cache",
-                "lightmix",
-                options.format.wav.name,
-            });
-            const tmp_path_in_zig: []const u8 = try std.mem.replaceOwned(
-                u8,
-                b.allocator,
-                tmp_path,
-                "\\",
-                "/",
-            );
             // Generate temporary Zig code that calls the user's function
             const gen_source = try std.fmt.allocPrint(b.allocator,
                 \\const std = @import("std");
@@ -285,17 +262,17 @@ const Generator = struct {
                 \\    const allocator: std.mem.Allocator = init.arena.allocator();
                 \\    const io: std.Io = init.io;
                 \\
+                \\    if (init.minimal.args.vector.len < 2) return error.MissingOutputFileArg;
+                \\    const output_path = std.mem.span(init.minimal.args.vector[1]);
+                \\
                 \\    const wave = try user_module.{s}(allocator);
                 \\    defer wave.deinit();
                 \\
                 \\    const bits = {d};
-                \\    const total_size = wave.size(.wav, .{{ .bits = bits }});
-                \\
-                \\    const file = try std.Io.Dir.cwd().createFile(io, "{s}", .{{}});
+                \\    const file = try std.Io.Dir.cwd().createFile(io, output_path, .{{}});
                 \\    defer file.close(io);
-                \\    const buf = try allocator.alloc(u8, total_size);
-                \\    defer allocator.free(buf);
-                \\    var writer = file.writer(io, buf);
+                \\    var buf: [64 * 1024]u8 = undefined;
+                \\    var writer = file.writer(io, &buf);
                 \\
                 \\    try wave.write(.wav, &writer.interface, .{{
                 \\        .format_code = .{s},
@@ -307,7 +284,6 @@ const Generator = struct {
             , .{
                 options.func_name,
                 options.format.wav.bits,
-                tmp_path_in_zig,
                 @tagName(options.format.wav.format_code),
             });
 
@@ -321,24 +297,23 @@ const Generator = struct {
                 .root_module = b.createModule(.{
                     .root_source_file = gen_file,
                     .target = b.graph.host,
-                    .optimize = .Debug,
+                    .optimize = options.optimize,
                     .imports = &.{
                         .{ .name = "user_module", .module = mod },
                     },
                 }),
             });
 
-            // Run the generator during build
+            // Run the generator during build and output wave file to Zig cache
             const run_gen = b.addRunArtifact(gen_exe);
+            const output_wave_file = run_gen.addOutputFileArg(options.format.wav.name);
 
-            const src_path: []const u8 = try std.fs.path.join(b.allocator, &[_][]const u8{ ".zig-cache", "lightmix", options.format.wav.name });
             // Install the generated wave file
             const install_wave = b.addInstallFileWithDir(
-                b.path(src_path),
+                output_wave_file,
                 options.path,
                 options.format.wav.name,
             );
-            install_wave.step.dependOn(&run_gen.step);
 
             const result = try b.allocator.create(CompileWave);
             result.* = CompileWave{
@@ -373,6 +348,10 @@ pub const CreateWaveOptions = struct {
     /// Destination path relative to the install prefix where the WAV file will be installed.
     /// Defaults to the "share" directory.
     path: std.Build.InstallDir = .{ .custom = "share" },
+
+    /// Optimization mode for the wave generator executable.
+    /// Defaults to `.ReleaseFast` for high performance wave synthesis.
+    optimize: std.builtin.OptimizeMode = .ReleaseFast,
 
     /// Output format and codec-specific options for the wave file to generate.
     format: FormatOptions,
