@@ -110,7 +110,13 @@ pub fn inner(comptime T: type) type {
             info: []const WaveInfo,
             allocator: std.mem.Allocator,
             options: InitOptions,
-        ) std.mem.Allocator.Error!Self {
+        ) (Wave(T).MixErrors || std.mem.Allocator.Error)!Self {
+            for (info) |waveinfo| {
+                if (waveinfo.wave.sample_rate != options.sample_rate or waveinfo.wave.channels != options.channels) {
+                    return error.MismatchedWaveProperties;
+                }
+            }
+
             var list: std.array_list.Aligned(WaveInfo, null) = .empty;
             try list.appendSlice(allocator, info);
 
@@ -145,7 +151,11 @@ pub fn inner(comptime T: type) type {
         /// try composer.append(.{ .wave = wave1, .start_point = 0 });
         /// try composer.append(.{ .wave = wave2, .start_point = 44100 });
         /// ```
-        pub fn append(self: *Self, waveinfo: WaveInfo) std.mem.Allocator.Error!void {
+        pub fn append(self: *Self, waveinfo: WaveInfo) (Wave(T).MixErrors || std.mem.Allocator.Error)!void {
+            if (waveinfo.wave.sample_rate != self.sample_rate or waveinfo.wave.channels != self.channels) {
+                return error.MismatchedWaveProperties;
+            }
+
             var d: std.array_list.Aligned(WaveInfo, null) = .empty;
             try d.appendSlice(self.allocator, self.info);
             try d.append(self.allocator, waveinfo);
@@ -171,7 +181,13 @@ pub fn inner(comptime T: type) type {
         /// ## Memory Management
         /// The old internal array is freed, and a new one is allocated with the
         /// appended wave. The composer pointer is updated to reference the new data.
-        pub fn appendSlice(self: *Self, append_list: []const WaveInfo) std.mem.Allocator.Error!void {
+        pub fn appendSlice(self: *Self, append_list: []const WaveInfo) (Wave(T).MixErrors || std.mem.Allocator.Error)!void {
+            for (append_list) |waveinfo| {
+                if (waveinfo.wave.sample_rate != self.sample_rate or waveinfo.wave.channels != self.channels) {
+                    return error.MismatchedWaveProperties;
+                }
+            }
+
             var d: std.array_list.Aligned(WaveInfo, null) = .empty;
             try d.appendSlice(self.allocator, self.info);
             try d.appendSlice(self.allocator, append_list);
