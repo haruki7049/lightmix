@@ -289,10 +289,7 @@ const Generator = struct {
                 \\    defer wave.deinit();
                 \\
                 \\    const bits = {d};
-                \\    const bytes_per_sample = (bits + 7) / 8;
-                \\
-                \\    const header_size = 44;
-                \\    const total_size = header_size + (wave.samples.len * wave.channels * bytes_per_sample);
+                \\    const total_size = wave.size(.wav, .{{ .bits = bits }});
                 \\
                 \\    const file = try std.Io.Dir.cwd().createFile(io, "{s}", .{{}});
                 \\    defer file.close(io);

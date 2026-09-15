@@ -147,9 +147,7 @@ defer file.close(io);
 
 // Wav file size calculation
 const bits = 16;
-const bytes_per_sample = (bits + 7) / 8;
-const header_size = 44;
-const total_size = header_size + (wave.samples.len * wave.channels * bytes_per_sample);
+const total_size = wave.size(.wav, .{ .bits = bits });
 
 // Create a buffer for file writer
 const buf = try allocator.alloc(u8, total_size);

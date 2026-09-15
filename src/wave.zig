@@ -118,6 +118,44 @@ pub fn inner(comptime T: type) type {
                 format_code: zigggwavvv.FormatCode,
             };
 
+            /// Calculates the binary file size (in bytes) when writing wave data using the specified format.
+            ///
+            /// ## Parameters
+            /// - `self`: The file format to use (e.g. `.wav`)
+            /// - `wave`: The wave instance to measure
+            /// - `options`: Format-specific size options (see `sizeOptions`)
+            ///
+            /// ## Returns
+            /// The total binary file size in bytes
+            pub fn size(self: LowLevelInterfaces, wave: Self, options: sizeOptions(self)) usize {
+                return switch (self) {
+                    .wav => {
+                        const bytes_per_sample = (@as(usize, options.bits) + 7) / 8;
+                        const header_size: usize = 44;
+                        return header_size + (wave.samples.len * bytes_per_sample);
+                    },
+                };
+            }
+
+            /// Returns the format-specific options type for `size`.
+            ///
+            /// ## Parameters
+            /// - `interface`: The file format whose options type to return
+            ///
+            /// ## Returns
+            /// The options struct type corresponding to the given format
+            pub fn sizeOptions(interface: LowLevelInterfaces) type {
+                return switch (interface) {
+                    .wav => sizeWavOptions,
+                };
+            }
+
+            /// Options for calculating binary file size of WAV wave data.
+            pub const sizeWavOptions = struct {
+                /// Bits per sample (e.g. 16 or 24)
+                bits: u16,
+            };
+
             /// Raw wave data returned by low-level format decoders.
             pub const LowLevelWave = struct {
                 samples: []const T,
@@ -456,6 +494,23 @@ pub fn inner(comptime T: type) type {
         /// Returns errors from the underlying format encoder or I/O failures
         pub fn write(self: Self, file_extension: LowLevelInterfaces, writer: anytype, options: LowLevelInterfaces.writeOptions(file_extension)) anyerror!void {
             try file_extension.write(self, writer, options);
+        }
+
+        /// Calculates the binary file size (in bytes) when saving wave data in the specified format.
+        ///
+        /// ## Parameters
+        /// - `self`: The wave to measure
+        /// - `file_extension`: The file format to use (e.g. `.wav`)
+        /// - `options`: Format-specific size options (e.g. bit depth)
+        ///
+        /// ## Returns
+        /// The total binary file size in bytes
+        pub fn size(
+            self: Self,
+            file_extension: LowLevelInterfaces,
+            options: LowLevelInterfaces.sizeOptions(file_extension),
+        ) usize {
+            return file_extension.size(self, options);
         }
 
         /// Applies a filter function with custom arguments to the wave.
@@ -1051,6 +1106,23 @@ pub fn inner(comptime T: type) type {
 
             try testing.expectEqualSlices(T, result.initial.samples, &.{ 1.0, 2.0, 3.0 });
             try testing.expectEqualSlices(T, result.terminal.samples, &.{ 4.0, 5.0 });
+        }
+
+        test "size method calculates correct WAV binary size" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 0.1, 0.2, 0.3, 0.4 };
+            const wave = try Self.init(samples, allocator, .{
+                .sample_rate = 44100,
+                .channels = 1,
+            });
+            defer wave.deinit();
+
+            // 16-bit: 44 header bytes + 4 samples * 2 bytes = 52 bytes
+            try testing.expectEqual(wave.size(.wav, .{ .bits = 16 }), 52);
+            // 24-bit: 44 header bytes + 4 samples * 3 bytes = 56 bytes
+            try testing.expectEqual(wave.size(.wav, .{ .bits = 24 }), 56);
+            // 32-bit: 44 header bytes + 4 samples * 4 bytes = 60 bytes
+            try testing.expectEqual(wave.size(.wav, .{ .bits = 32 }), 60);
         }
     };
 }
