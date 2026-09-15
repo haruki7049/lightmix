@@ -180,6 +180,39 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
     });
     test_step.dependOn(bt_play_wave.step);
 
+    const mc_temperaments_mod = b.createModule(.{
+        .root_source_file = b.path("examples/06-advanced/modular-composing/packages/temperaments/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const mc_synths_mod = b.createModule(.{
+        .root_source_file = b.path("examples/06-advanced/modular-composing/packages/synths/src/synths.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "lightmix", .module = lightmix_mod },
+            .{ .name = "temperaments", .module = mc_temperaments_mod },
+        },
+    });
+    const modular_composing_mod = b.createModule(.{
+        .root_source_file = b.path("examples/06-advanced/modular-composing/src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "lightmix", .module = lightmix_mod },
+            .{ .name = "synths", .module = mc_synths_mod },
+            .{ .name = "temperaments", .module = mc_temperaments_mod },
+        },
+    });
+    const modular_composing_wave = try addWave(b, modular_composing_mod, .{
+        .format = .{ .wav = .{
+            .bits = 16,
+            .format_code = .pcm,
+            .name = "modular-composing.wav",
+        } },
+    });
+    test_step.dependOn(modular_composing_wave.step);
+
     // TODO: l.addPlay function cannot be tested via `zig build test` command. I (@haruki7049) cannot write it.
 }
 
