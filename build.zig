@@ -262,8 +262,10 @@ const Generator = struct {
                 \\    const allocator: std.mem.Allocator = init.arena.allocator();
                 \\    const io: std.Io = init.io;
                 \\
-                \\    if (init.minimal.args.vector.len < 2) return error.MissingOutputFileArg;
-                \\    const output_path = std.mem.span(init.minimal.args.vector[1]);
+                \\    var args_it = try std.process.Args.Iterator.initAllocator(init.minimal.args, allocator);
+                \\    defer args_it.deinit();
+                \\    _ = args_it.skip();
+                \\    const output_path = args_it.next() orelse return error.MissingOutputFileArg;
                 \\
                 \\    const wave = try user_module.{s}(allocator);
                 \\    defer wave.deinit();
