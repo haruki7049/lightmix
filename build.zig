@@ -235,7 +235,7 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
 /// ```
 ///
 /// The user module must export a function matching the signature specified in
-/// `options.func_name` (default: "gen") that returns `!lightmix.Wave(T)`, and receives an argument `std.mem.Allocator`.
+/// `options.func_name` (default: "gen") that returns `!lightmix.Wave(T)`, and receives an argument `std.process.Init`.
 pub fn addWave(
     b: *std.Build,
     mod: *std.Build.Module,
@@ -267,7 +267,7 @@ const Generator = struct {
                 \\    _ = args_it.skip();
                 \\    const output_path = args_it.next() orelse return error.MissingOutputFileArg;
                 \\
-                \\    const wave = try user_module.{s}(allocator);
+                \\    const wave = try user_module.{s}(init);
                 \\    defer wave.deinit();
                 \\
                 \\    const bits = {d};
@@ -434,9 +434,7 @@ pub fn addPlay(
         \\const user_module = @import("user_module");
         \\
         \\pub fn main(init: std.process.Init) !void {{
-        \\    const allocator = init.arena.allocator();
-        \\
-        \\    const wave = try user_module.{s}(allocator);
+        \\    const wave = try user_module.{s}(init);
         \\    defer wave.deinit();
         \\    try wave.play();
         \\}}
