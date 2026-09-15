@@ -34,12 +34,12 @@
         }:
         let
           buildInputs =
-            (lib.optionals pkgs.stdenv.isLinux [
+            (lib.optionals pkgs.stdenv.hostPlatform.isLinux [
               pkgs.alsa-lib
               pkgs.pulseaudio
               pkgs.pipewire
             ])
-            ++ (lib.optionals pkgs.stdenv.isDarwin [
+            ++ (lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
               pkgs.apple-sdk_26
             ]);
 
