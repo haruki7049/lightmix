@@ -356,6 +356,12 @@ pub fn inner(comptime T: type) type {
             MismatchedWaveProperties,
         };
 
+        /// Errors that can occur when filling zeros to end.
+        pub const FillZeroErrors = error{
+            /// The start index exceeds the sample length or the end index
+            InvalidTruncationRange,
+        };
+
         /// Truncates the wave at a start point and fills with zeros to the end point.
         ///
         /// This is useful for creating silence or padding at the end of a wave.
@@ -369,28 +375,21 @@ pub fn inner(comptime T: type) type {
         /// A new Wave with samples from 0 to `start`, then zeros from `start` to `end`
         ///
         /// ## Errors
+        /// - `InvalidTruncationRange`: If `start > self.samples.len` or `start > end`
         /// - Allocator error (errors.OutOfMemory)
-        pub fn fill_zero_to_end(self: Self, start: usize, end: usize) std.mem.Allocator.Error!Self {
-            // Initialization
-            var result: std.array_list.Aligned(T, null) = .empty;
-            try result.appendSlice(self.allocator, self.samples);
-
-            const delete_count: usize = result.items.len - start;
-
-            for (0..delete_count) |_| {
-                _ = result.pop();
+        pub fn fill_zero_to_end(self: Self, start: usize, end: usize) (FillZeroErrors || std.mem.Allocator.Error)!Self {
+            if (start > self.samples.len or start > end) {
+                return error.InvalidTruncationRange;
             }
 
-            std.debug.assert(start == result.items.len);
+            const result_samples = try self.allocator.alloc(T, end);
+            errdefer self.allocator.free(result_samples);
 
-            for (delete_count..end) |_| {
-                try result.append(self.allocator, 0.0);
-            }
-
-            std.debug.assert(result.items.len == end);
+            @memcpy(result_samples[0..start], self.samples[0..start]);
+            @memset(result_samples[start..end], 0.0);
 
             return Self{
-                .samples = try result.toOwnedSlice(self.allocator),
+                .samples = result_samples,
                 .allocator = self.allocator,
 
                 .sample_rate = self.sample_rate,
