@@ -2,7 +2,8 @@ const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
 
-pub fn gen(allocator: std.mem.Allocator) !Wave(f64) {
+pub fn gen(init: std.process.Init) !Wave(f64) {
+    const allocator = init.arena.allocator();
     // Generate a chord using const-compatible patterns
     const c5 = try generateSineWave(523.25, allocator); // C5
     defer c5.deinit();
