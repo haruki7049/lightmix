@@ -253,20 +253,15 @@ pub fn inner(comptime T: type) type {
                     .channels = self.channels,
                 };
 
-            var samples: std.array_list.Aligned(T, null) = .empty;
+            const result_samples = try self.allocator.alloc(T, self.samples.len);
+            errdefer self.allocator.free(result_samples);
 
             for (0..self.samples.len) |i| {
-                const left: T = self.samples[i];
-                const right: T = other.samples[i];
-                const result: T = options.mixer(left, right);
-
-                try samples.append(self.allocator, result);
+                result_samples[i] = options.mixer(self.samples[i], other.samples[i]);
             }
 
-            const result: []const T = try samples.toOwnedSlice(self.allocator);
-
             return Self{
-                .samples = result,
+                .samples = result_samples,
                 .allocator = self.allocator,
 
                 .sample_rate = self.sample_rate,
