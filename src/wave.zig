@@ -196,11 +196,15 @@ pub fn inner(comptime T: type) type {
         /// A new Wave containing the mixed result
         ///
         /// ## Errors
-        /// - Allocator error (errors.OutOfMemory)
-        pub fn mix(self: Self, other: Self, options: mixOptions) std.mem.Allocator.Error!Self {
-            std.debug.assert(self.samples.len == other.samples.len);
-            std.debug.assert(self.sample_rate == other.sample_rate);
-            std.debug.assert(self.channels == other.channels);
+        /// - `MismatchedWaveProperties`: If the waves have different lengths, sample rates, or channel counts
+        /// - `OutOfMemory`: Allocator error when memory allocation fails
+        pub fn mix(self: Self, other: Self, options: mixOptions) (MixErrors || std.mem.Allocator.Error)!Self {
+            if (self.samples.len != other.samples.len or
+                self.sample_rate != other.sample_rate or
+                self.channels != other.channels)
+            {
+                return error.MismatchedWaveProperties;
+            }
 
             if (self.samples.len == 0)
                 return Self{
@@ -311,6 +315,12 @@ pub fn inner(comptime T: type) type {
             SeparatingZeroLengthWave,
             /// The separation point exceeds the wave's sample length
             TooBigSeparatePoint,
+        };
+
+        /// Errors that can occur when mixing waves.
+        pub const MixErrors = error{
+            /// The waves being mixed have mismatched sample lengths, sample rates, or channel counts
+            MismatchedWaveProperties,
         };
 
         /// Truncates the wave at a start point and fills with zeros to the end point.
@@ -987,6 +997,28 @@ pub fn inner(comptime T: type) type {
             try testing.expectEqual(result.samples[0], 1.5);
             try testing.expectEqual(result.samples[1], 3.0);
             try testing.expectEqual(result.samples[2], 4.5);
+        }
+
+        test "mix with mismatched properties returns error" {
+            const allocator = testing.allocator;
+            const samples1: []const T = &[_]T{ 1.0, 2.0 };
+            const samples2: []const T = &[_]T{ 1.0, 2.0, 3.0 };
+
+            const wave1 = try Self.init(samples1, allocator, .{ .sample_rate = 44100, .channels = 2 });
+            defer wave1.deinit();
+            const wave2 = try Self.init(samples2, allocator, .{ .sample_rate = 44100, .channels = 2 });
+            defer wave2.deinit();
+            const wave3 = try Self.init(samples1, allocator, .{ .sample_rate = 48000, .channels = 2 });
+            defer wave3.deinit();
+            const wave4 = try Self.init(samples1, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave4.deinit();
+
+            // Mismatched length
+            try testing.expectError(error.MismatchedWaveProperties, wave1.mix(wave2, .{}));
+            // Mismatched sample rate
+            try testing.expectError(error.MismatchedWaveProperties, wave1.mix(wave3, .{}));
+            // Mismatched channels
+            try testing.expectError(error.MismatchedWaveProperties, wave1.mix(wave4, .{}));
         }
 
         test "read with different sample rates" {
