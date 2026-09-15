@@ -210,59 +210,43 @@ pub fn inner(comptime T: type) type {
         /// - `MismatchedWaveProperties`: If component waves have different sample rates or channel counts
         /// - `OutOfMemory`: Allocator error when memory allocation fails
         pub fn finalize(self: Self, options: Wave(T).mixOptions) (Wave(T).MixErrors || std.mem.Allocator.Error)!Wave(T) {
+            if (self.info.len == 0) {
+                return Wave(T).init(&.{}, self.allocator, .{
+                    .sample_rate = self.sample_rate,
+                    .channels = self.channels,
+                });
+            }
+
             var end_point: usize = 0;
 
-            // Calculate the length for emitted wave
+            // Calculate the length for emitted wave and validate component properties
             for (self.info) |waveinfo| {
+                if (waveinfo.wave.sample_rate != self.sample_rate or waveinfo.wave.channels != self.channels) {
+                    return error.MismatchedWaveProperties;
+                }
                 const ep = waveinfo.start_point + waveinfo.wave.samples.len;
 
                 if (end_point < ep)
                     end_point = ep;
             }
 
-            var padded_waveinfo_list: std.array_list.Aligned(WaveInfo, null) = .empty;
-            defer padded_waveinfo_list.deinit(self.allocator);
+            const result_samples = try self.allocator.alloc(T, end_point);
+            errdefer self.allocator.free(result_samples);
+            @memset(result_samples, 0.0);
 
-            // Filter each WaveInfo to append padding both of start and last
             for (self.info) |waveinfo| {
-                const padded_at_start: []const T = try padding_for_start(waveinfo.wave.samples, waveinfo.start_point, self.allocator);
-                defer self.allocator.free(padded_at_start);
-
-                const padded_at_start_and_last: []const T = try padding_for_last(padded_at_start, end_point, self.allocator);
-                defer self.allocator.free(padded_at_start_and_last);
-
-                const wave = try Wave(T).init(padded_at_start_and_last, self.allocator, .{
-                    .sample_rate = self.sample_rate,
-                    .channels = self.channels,
-                });
-
-                const wi: WaveInfo = WaveInfo{
-                    .wave = wave,
-                    .start_point = waveinfo.start_point,
-                };
-
-                try padded_waveinfo_list.append(self.allocator, wi);
+                for (waveinfo.wave.samples, 0..) |src_sample, i| {
+                    const idx = waveinfo.start_point + i;
+                    result_samples[idx] = options.mixer(result_samples[idx], src_sample);
+                }
             }
 
-            const padded_waveinfo_slice: []const WaveInfo = try padded_waveinfo_list.toOwnedSlice(self.allocator);
-            defer self.allocator.free(padded_waveinfo_slice);
-
-            const empty_samples: []const T = try generate_soundless_samples(end_point, self.allocator);
-            defer self.allocator.free(empty_samples);
-
-            var result = try Wave(T).init(empty_samples, self.allocator, .{
+            return Wave(T){
+                .samples = result_samples,
+                .allocator = self.allocator,
                 .sample_rate = self.sample_rate,
                 .channels = self.channels,
-            });
-
-            for (padded_waveinfo_slice) |waveinfo| {
-                const wave = try result.mix(waveinfo.wave, options);
-                result.deinit();
-                waveinfo.wave.deinit();
-                result = wave;
-            }
-
-            return result;
+            };
         }
 
         fn padding_for_start(samples: []const T, start_point: usize, allocator: std.mem.Allocator) std.mem.Allocator.Error![]const T {
