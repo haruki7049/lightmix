@@ -95,6 +95,12 @@ Follow the conventional commits format:
 - `refactor:` Code refactoring without changing external functionality.
 - `perf:` Audio processing algorithm performance optimizations.
 
+### Branching & Pull Request Workflow
+
+- **Dedicated Branches**: Always create and work on a dedicated branch (e.g., `feat/wave-size` or `fix/composer-leak`). Do not commit directly to `main`.
+- **PR Creation**: Create PRs using `gh pr create`. Reference issues in the body using standard keywords (e.g., `Closes #140`).
+- **PR Merge Prohibition**: **NEVER MERGE Pull Requests.** PRs must remain open for maintainer review. Merging is strictly reserved for human maintainers unless the user explicitly commands the agent to merge a specific PR.
+
 ### Version Tagging
 
 - Use Semantic Versioning **without** a `v` prefix (e.g., `1.0.0`, not `v1.0.0`).
@@ -106,3 +112,4 @@ ______________________________________________________________________
 1. **Verify Before Declaring Success**: Never claim a feature or fix is complete without running `zig build test` and `zig fmt --check .`.
 1. **No Symptom Swallowing**: Fix root causes of failing tests; never comment out assertions or swallow error returns.
 1. **Preserve English Comment Rule**: Ensure any new code comments or documentation additions strictly adhere to the English language requirement.
+1. **Strict PR Merge Prohibition**: Always leave created Pull Requests open. Never attempt to merge a Pull Request unless explicitly instructed by the user.
