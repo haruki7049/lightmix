@@ -206,7 +206,10 @@ pub fn inner(comptime T: type) type {
         /// Memory usage is proportional to: `number_of_waves × total_length × sample_size`
         /// Each wave is temporarily padded to the full composition length before mixing.
         /// Consider using this for up to ~100 overlapping waves on typical systems.
-        pub fn finalize(self: Self, options: Wave(T).mixOptions) std.mem.Allocator.Error!Wave(T) {
+        /// ## Errors
+        /// - `MismatchedWaveProperties`: If component waves have different sample rates or channel counts
+        /// - `OutOfMemory`: Allocator error when memory allocation fails
+        pub fn finalize(self: Self, options: Wave(T).mixOptions) (Wave(T).MixErrors || std.mem.Allocator.Error)!Wave(T) {
             var end_point: usize = 0;
 
             // Calculate the length for emitted wave
