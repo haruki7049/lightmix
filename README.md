@@ -13,6 +13,26 @@ I created this project because I felt a disconnect between existing audio synthe
 
 **lightmix** is my attempt to bridge these two worlds. It allows me to "build" sound with the same precision, automation, and simplicity that I expect from any other software project.
 
+## Design Philosophy & Scope
+
+`lightmix` is designed around a clear set of architectural principles:
+
+- **Audio as a Deterministic Build Artifact**:
+  The primary mission of `lightmix` is deterministic, reproducible audio synthesis during `zig build` or in CI pipelines (e.g., automated generation of sound effects, procedural ambient tracks, or game audio assets). Output is bit-identical and requires no sound server or audio hardware.
+- **Minimalist Core (Unix Philosophy)**:
+  `lightmix` focuses exclusively on foundational audio primitives:
+  - Waveform buffer management and basic transformations (`Wave(T)`).
+  - Timeline-based audio mixing and track arrangement (`Composer(T)`).
+  - Accurate WAV encoding/decoding and `build.zig` integration (`addWave`).
+  
+  High-level DSP effects (such as reverb, flanger, or chorus) and specialized synthesizer sound presets are considered **out of scope** (Non-Goals) for the core library. They belong in separate domain libraries or user application code.
+- **Playback as a Verification Helper**:
+  Real-time audio playback (`play()`, `addPlay`) is provided strictly as a developer convenience to preview generated sounds during development. It is an auxiliary feature and must never block or compromise headless CI runs or core audio generation.
+- **Flat Generic Typing**:
+  Audio samples are generic over `comptime T: type` (`f64`, `f80`, `f128`, with `f32` planned once underlying codec support is ready). No single floating-point precision is prioritized; users choose the balance between precision and memory overhead.
+- **In-Memory Buffer Model**:
+  `lightmix` adopts an explicit in-memory model where entire waveforms are held in memory buffers. For game sound effects and typical multi-minute tracks, this provides maximum simplicity, safety, and performance without the complexity of streaming pipelines.
+
 ## How to use
 
 In `build.zig`, import lightmix from `build.zig.zon` using `b.dependency()`:
