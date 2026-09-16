@@ -501,6 +501,16 @@ pub fn addPlay(
     const write_files = b.addWriteFiles();
     const play_source_file = write_files.add("play_wave.zig", play_source);
 
+    const host_user_mod = b.createModule(.{
+        .root_source_file = wave.root_module.root_source_file,
+        .target = b.graph.host,
+        .optimize = options.optimize,
+    });
+    var import_it = wave.root_module.import_table.iterator();
+    while (import_it.next()) |entry| {
+        host_user_mod.addImport(entry.key_ptr.*, entry.value_ptr.*);
+    }
+
     // Create executable that plays the wave
     const play_exe = b.addExecutable(.{
         .name = options.exe_name,
@@ -509,7 +519,7 @@ pub fn addPlay(
             .target = b.graph.host,
             .optimize = options.optimize,
             .imports = &.{
-                .{ .name = "user_module", .module = wave.root_module },
+                .{ .name = "user_module", .module = host_user_mod },
             },
         }),
     });
