@@ -45,7 +45,7 @@ I created this project because I felt a disconnect between existing audio synthe
   Overdriven signals, clipping, and crash noise are treated as valid sound sources in themselves. `lightmix` never auto-normalizes, sanitizes, or aborts builds with errors on out-of-bounds sample values during synthesis and mixing; raw values are preserved as-is, leaving sample quantization behavior entirely to underlying format codecs (such as `zigggwavvv`).
 
 - **Pure Synthesis with Multi-Format Ingestion**:
-  While pure mathematical and algorithmic synthesis is the library's core motivation, importing external audio sources (`Wave(T).read`) across multiple formats (WAV, FLAC, Ogg Vorbis) is an essential capability for sampling, mashups, and real-world game sound design.
+  While pure mathematical and algorithmic synthesis is the library's core motivation, importing external audio sources (`Wave(T).read`) is an essential capability for sampling, mashups, and real-world game sound design. Currently, standard uncompressed WAV is implemented, with pure Zig decoding for compressed formats (FLAC and Ogg Vorbis) planned on the roadmap (#138, #301).
 
 - **Unified Format Export & Cross-Format Metadata**:
   `lightmix` aims to abstract audio export across multiple formats under a unified interface (`wave.write(...)`), paired with format-agnostic metadata support (such as loop points for game engines).
