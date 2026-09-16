@@ -1,3 +1,20 @@
+//! # Build-Time Audio Generation
+//!
+//! This example demonstrates compile-time audio generation using lightmix build integration.
+//! Instead of generating WAV files at runtime via executable, audio is produced during `zig build`
+//! by exporting a `gen` function called by `l.addWave`.
+//!
+//! ## What you'll learn:
+//! - Exporting a `gen` function for build-time evaluation
+//! - Using `l.addWave` in `build.zig` to automate audio asset generation
+//! - Generating WAV files during build without runtime execution
+//!
+//! ## Run this example:
+//! ```
+//! zig build
+//! ```
+//! The generated WAV file will be saved in `zig-out/share/result.wav`.
+
 const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
