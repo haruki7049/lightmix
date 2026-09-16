@@ -108,11 +108,10 @@ pub fn build(b: *std.Build) !void {
 
 #### `addWave` Options
 
-- **`func_name`**: The name of the function in your module that generates the Wave. The function must have the signature `pub fn name(allocator: std.mem.Allocator) !lightmix.Wave(T)` where T is your chosen sample type (e.g., f64) (default: `"gen"`)
-- **`path`**: The installation directory relative to the install prefix (default: `.{ .custom = "share" }`)
-- **`wave.name`**: The output filename for the wave file (default: `"result.wav"`)
-- **`wave.bits`**: The bit depth for the wave file, which is typed u16
-- **`wave.format_code`**: Audio encoding format (e.g., .pcm, .ieee_float)
+- **`func_name`**: The name of the function in your module that generates the Wave. The function must have the signature `pub fn name(init: std.process.Init) !lightmix.Wave(T)` where T is your chosen sample type (e.g., f64) (default: `"gen"`).
+- **`path`**: The installation directory relative to the install prefix (default: `.{ .custom = "share" }`).
+- **`optimize`**: Optimization mode for the standalone wave generator executable (default: `.ReleaseFast`). Using `addWave` compiles a high-performance native generator binary (`.ReleaseFast`), enabling extremely fast audio synthesis during `zig build` without compiler `comptime` interpreter slowdowns.
+- **`format`**: Tagged union specifying output format options (e.g., `.wav = .{ .name = "result.wav", .bits = 16, .format_code = .pcm }`).
 
 You can find a complete example in [./examples/06-advanced/build-time-generation](./examples/06-advanced/build-time-generation).
 
