@@ -288,7 +288,7 @@ pub fn inner(comptime T: type) type {
                 if (waveinfo.start_point % self.channels != 0) {
                     return error.UnalignedChannelOffset;
                 }
-                const ep = waveinfo.start_point + waveinfo.wave.samples.len;
+                const ep = std.math.add(usize, waveinfo.start_point, waveinfo.wave.samples.len) catch return error.Overflow;
 
                 if (end_point < ep)
                     end_point = ep;
@@ -313,7 +313,10 @@ pub fn inner(comptime T: type) type {
             };
         }
 
-        /// Options for block-based streaming rendering.
+        /// Mixer function type for blending two overlapping samples.
+        pub const MixerFn = *const fn (T, T) T;
+
+        /// Options for stream rendering using `render_stream`.
         pub const StreamOptions = struct {
             /// Mixer function to blend overlapping samples.
             mixer: *const fn (T, T) T = Wave(T).saturating_mixing_expression,
@@ -338,7 +341,7 @@ pub fn inner(comptime T: type) type {
                     if (waveinfo.start_point % composer.channels != 0) {
                         return error.UnalignedChannelOffset;
                     }
-                    const ep = waveinfo.start_point + waveinfo.wave.samples.len;
+                    const ep = std.math.add(usize, waveinfo.start_point, waveinfo.wave.samples.len) catch return error.Overflow;
                     if (total_samples < ep) {
                         total_samples = ep;
                     }
@@ -779,6 +782,21 @@ pub fn inner(comptime T: type) type {
             try composer.append(.{ .wave = wave, .start_point = 0 });
 
             try testing.expectError(error.UnalignedChannelOffset, composer.render_stream(.{ .block_size = 3 }));
+        }
+
+        test "finalize and render_stream return Overflow on sample end_point overflow" {
+            const allocator = testing.allocator;
+            var composer = Self.init(allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer composer.deinit();
+
+            const samples = [_]T{ 0.1, 0.2 };
+            const wave = try Wave(T).init(&samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave.deinit();
+
+            try composer.append(.{ .wave = wave, .start_point = std.math.maxInt(usize) - 1 });
+
+            try testing.expectError(error.Overflow, composer.finalize(.{}));
+            try testing.expectError(error.Overflow, composer.render_stream(.{}));
         }
 
         test "append_converted upmixes mono wave to stereo composer with panning" {
