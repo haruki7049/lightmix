@@ -41,11 +41,12 @@ pub fn build(b: *std.Build) !void {
 
             break :inner result;
         };
-        const sdkroot: []const u8 = try std.mem.concat(b.allocator, u8, &.{ sdkroot_envvar, "/System/Library/Frameworks" });
+        const trimmed_sdkroot = std.mem.trim(u8, sdkroot_envvar, " \t\r\n");
+        const sdkroot: []const u8 = try std.mem.concat(b.allocator, u8, &.{ trimmed_sdkroot, "/System/Library/Frameworks" });
         lib_mod.addFrameworkPath(.{ .cwd_relative = sdkroot });
 
         // This part adds library paths to lib_mod variable.
-        const sdkroot_libpath: []const u8 = try std.mem.concat(b.allocator, u8, &.{ sdkroot_envvar, "/usr/lib" });
+        const sdkroot_libpath: []const u8 = try std.mem.concat(b.allocator, u8, &.{ trimmed_sdkroot, "/usr/lib" });
         lib_mod.addLibraryPath(.{ .cwd_relative = sdkroot_libpath });
     }
 

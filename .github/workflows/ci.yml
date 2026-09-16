@@ -8,7 +8,7 @@ jobs:
   run-zig-build-test:
     strategy:
       matrix:
-        os: [ubuntu-latest, macOS-15, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v7.0.1
