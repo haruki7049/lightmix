@@ -15,6 +15,10 @@ ______________________________________________________________________
   - **Auxiliary Playback**: `play()` and `addPlay` are developer preview helpers only. They must never introduce hard audio server dependencies or interfere with headless CI execution.
   - **Flat Generic Typing**: Generic over `comptime T: type` (`f64`, `f80`, `f128`, and future `f32`). Do not hardcode or favor any single floating-point precision.
   - **In-Memory Buffer Model**: Full sample buffers are held in memory (`Wave(T)`) for deterministic safety and simplicity, avoiding premature streaming complexity.
+  - **Stateless Randomness**: Do not embed PRNGs or hidden state; caller-provided noise buffers ensure deterministic control.
+  - **Clipping Tolerant**: Treat clipping as valid acoustic expression; never auto-normalize or throw errors on clipping during mixing.
+  - **Multi-Format Ingestion**: Support reading external audio (`Wave(T).read`) across WAV and future compressed formats (FLAC, Ogg Vorbis) alongside pure synthesis.
+  - **Format Abstraction & Metadata**: Abstract output formats under a unified interface (`wave.write(...)`) and support cross-format metadata (e.g., loop points).
 - **Target Language Version**: Zig `0.16.0`.
 
 ______________________________________________________________________

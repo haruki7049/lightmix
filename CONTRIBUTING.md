@@ -35,6 +35,14 @@ Before contributing new features, please understand `lightmix`'s core architectu
    `lightmix` treats floating-point sample types (`f64`, `f80`, `f128`, and future `f32`) flatly via `comptime T: type`. Do not hardcode or prioritize a specific sample type in core structures.
 5. **In-Memory Buffer Model**:
    Waveforms are held in memory buffers (`Wave(T)`). Simplicity, safety, and deterministic calculation take priority over premature streaming pipelines.
+6. **Stateless Randomness**:
+   `lightmix` does not embed internal pseudo-random number generators (PRNG). Callers pass generated noise buffers directly (e.g., using `std.Random.DefaultPrng`), guaranteeing full caller control over random seeds and determinism.
+7. **Clipping as Sound Expression**:
+   Overdriven signals and clipping are treated as valid acoustic timbre (distortion/fuzz). Core operations never auto-normalize or throw errors on clipping; raw values are preserved and clamped only during final format quantization.
+8. **Multi-Format Ingestion**:
+   In addition to pure algorithmic synthesis, importing external audio sources (`Wave(T).read`) across WAV and future compressed formats (FLAC, Ogg Vorbis) is an essential supported workflow.
+9. **Unified Export & Cross-Format Metadata**:
+   Audio export should be abstracted uniformly across formats (`wave.write(...)`), accompanied by format-agnostic metadata support (such as game audio loop points).
 
 ## Getting Started
 

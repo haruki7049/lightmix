@@ -32,6 +32,14 @@ I created this project because I felt a disconnect between existing audio synthe
   Audio samples are generic over `comptime T: type` (`f64`, `f80`, `f128`, with `f32` planned once underlying codec support is ready). No single floating-point precision is prioritized; users choose the balance between precision and memory overhead.
 - **In-Memory Buffer Model**:
   `lightmix` adopts an explicit in-memory model where entire waveforms are held in memory buffers. For game sound effects and typical multi-minute tracks, this provides maximum simplicity, safety, and performance without the complexity of streaming pipelines.
+- **Stateless Randomness & External PRNG**:
+  `lightmix` does not embed pseudo-random number generators or hidden global state. When synthesizing noise-based signals (e.g., explosions or wind), callers supply sample data directly (e.g., using `std.Random.DefaultPrng`), ensuring total control over random seeds and determinism.
+- **Clipping Permitted as Acoustic Expression**:
+  Overdriven signals and clipping are treated as valid sound-design choices (distortion, overdrive, square-wave saturation). Mixing and arithmetic do not auto-normalize or fail builds with errors on clipping; raw sample values are preserved until quantization during format export.
+- **Pure Synthesis with Multi-Format Ingestion**:
+  While pure mathematical and algorithmic synthesis is the library's core motivation, importing external audio sources (`Wave(T).read`) across multiple formats (WAV, FLAC, Ogg Vorbis) is an essential capability for sampling, mashups, and real-world game sound design.
+- **Unified Format Export & Cross-Format Metadata**:
+  `lightmix` aims to abstract audio export across multiple formats under a unified interface (`wave.write(...)`), paired with format-agnostic metadata support (such as loop points for game engines).
 
 ## How to use
 
