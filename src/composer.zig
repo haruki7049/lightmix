@@ -673,6 +673,69 @@ pub fn inner(comptime T: type) type {
             }
         }
 
+        test "render_stream with block_size larger than composition length" {
+            const allocator = testing.allocator;
+            var composer = Self.init(allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer composer.deinit();
+
+            const samples = [_]T{ 0.1, 0.2, 0.3 };
+            const wave = try Wave(T).init(&samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave.deinit();
+            try composer.append(.{ .wave = wave, .start_point = 0 });
+
+            var iterator = try composer.render_stream(.{ .block_size = 10 });
+            defer iterator.deinit();
+
+            const block1 = iterator.next();
+            try testing.expect(block1 != null);
+            try testing.expectEqual(block1.?.len, 3);
+            for (samples, block1.?) |expected, actual| {
+                try testing.expectApproxEqAbs(expected, actual, 0.00001);
+            }
+
+            try testing.expectEqual(iterator.next(), null);
+        }
+
+        test "render_stream with unaligned block_size" {
+            const allocator = testing.allocator;
+            var composer = Self.init(allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer composer.deinit();
+
+            const samples = [_]T{ 0.1, 0.2, 0.3, 0.4, 0.5 };
+            const wave = try Wave(T).init(&samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave.deinit();
+            try composer.append(.{ .wave = wave, .start_point = 0 });
+
+            var iterator = try composer.render_stream(.{ .block_size = 2 });
+            defer iterator.deinit();
+
+            const b1 = iterator.next();
+            try testing.expect(b1 != null);
+            try testing.expectEqual(b1.?.len, 2);
+
+            const b2 = iterator.next();
+            try testing.expect(b2 != null);
+            try testing.expectEqual(b2.?.len, 2);
+
+            const b3 = iterator.next();
+            try testing.expect(b3 != null);
+            try testing.expectEqual(b3.?.len, 1);
+            try testing.expectApproxEqAbs(b3.?[0], 0.5, 0.00001);
+
+            try testing.expectEqual(iterator.next(), null);
+        }
+
+        test "render_stream on empty composer" {
+            const allocator = testing.allocator;
+            var composer = Self.init(allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer composer.deinit();
+
+            var iterator = try composer.render_stream(.{ .block_size = 4 });
+            defer iterator.deinit();
+
+            try testing.expectEqual(iterator.next(), null);
+        }
+
         test "append_converted upmixes mono wave to stereo composer with panning" {
             const allocator = testing.allocator;
             var composer = Self.init(allocator, .{
