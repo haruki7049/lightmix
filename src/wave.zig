@@ -571,6 +571,25 @@ pub fn inner(comptime T: type) type {
             };
         }
 
+        /// Converts wave sample data to mono (1 channel).
+        ///
+        /// ## Returns
+        /// A new Wave instance converted to mono (1 channel).
+        pub fn to_mono(self: Self) std.mem.Allocator.Error!Self {
+            return self.to_channels(1, .{});
+        }
+
+        /// Converts wave sample data to stereo (2 channels) with specified pan position.
+        ///
+        /// ## Parameters
+        /// - `pan`: Pan position for mono-to-stereo conversion [-1.0 (hard left), 1.0 (hard right)]
+        ///
+        /// ## Returns
+        /// A new Wave instance converted to stereo (2 channels).
+        pub fn to_stereo(self: Self, pan: f32) std.mem.Allocator.Error!Self {
+            return self.to_channels(2, .{ .pan = pan });
+        }
+
         /// Reads wave data from a file using the specified format.
         ///
         /// ## Parameters
@@ -1381,6 +1400,38 @@ pub fn inner(comptime T: type) type {
             try testing.expectEqual(mono.samples.len, 2);
             try testing.expectApproxEqAbs(mono.samples[0], 0.8, 0.00001);
             try testing.expectApproxEqAbs(mono.samples[1], 0.3, 0.00001);
+        }
+
+        test "to_mono helper method" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 1.0, 0.6, 0.4, 0.2 };
+            const wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 2 });
+            defer wave.deinit();
+
+            const mono = try wave.to_mono();
+            defer mono.deinit();
+
+            try testing.expectEqual(mono.channels, 1);
+            try testing.expectEqual(mono.samples.len, 2);
+            try testing.expectApproxEqAbs(mono.samples[0], 0.8, 0.00001);
+            try testing.expectApproxEqAbs(mono.samples[1], 0.3, 0.00001);
+        }
+
+        test "to_stereo helper method" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 1.0, 0.5 };
+            const wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave.deinit();
+
+            const stereo = try wave.to_stereo(0.0);
+            defer stereo.deinit();
+
+            try testing.expectEqual(stereo.channels, 2);
+            try testing.expectEqual(stereo.samples.len, 4);
+            try testing.expectApproxEqAbs(stereo.samples[0], 1.0, 0.00001);
+            try testing.expectApproxEqAbs(stereo.samples[1], 1.0, 0.00001);
+            try testing.expectApproxEqAbs(stereo.samples[2], 0.5, 0.00001);
+            try testing.expectApproxEqAbs(stereo.samples[3], 0.5, 0.00001);
         }
 
         test "read with different sample rates" {
