@@ -1,3 +1,18 @@
+//! # Runtime Audio Playback
+//!
+//! This example demonstrates real-time audio playback using lightmix.
+//! A sine wave is synthesized and played directly through system speakers at runtime via `wave.play()`.
+//!
+//! ## What you'll learn:
+//! - Using `wave.play()` for real-time audio playback
+//! - Working with higher precision sample types like `f128`
+//! - Direct audio output integration with system sound drivers
+//!
+//! ## Run this example:
+//! ```
+//! zig build run
+//! ```
+
 const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
