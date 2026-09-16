@@ -342,15 +342,13 @@ pub fn inner(comptime T: type) type {
 
             const initial_len = options.separate_point;
             const terminal_len = self.samples.len - options.separate_point;
-            var initial: []T = try options.allocator.alloc(T, initial_len);
-            var terminal: []T = try options.allocator.alloc(T, terminal_len);
+            const initial: []T = try options.allocator.alloc(T, initial_len);
+            errdefer options.allocator.free(initial);
+            const terminal: []T = try options.allocator.alloc(T, terminal_len);
+            errdefer options.allocator.free(terminal);
 
-            for (0..initial.len) |i| {
-                initial[i] = self.samples[i];
-            }
-            for (0..terminal.len) |i| {
-                terminal[i] = self.samples[initial_len + i];
-            }
+            @memcpy(initial, self.samples[0..initial_len]);
+            @memcpy(terminal, self.samples[initial_len..]);
 
             const result = SeparateResult{
                 .initial = Self{
