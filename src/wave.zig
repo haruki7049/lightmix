@@ -407,6 +407,8 @@ pub fn inner(comptime T: type) type {
             MismatchedWaveProperties,
             /// The wave start point is not aligned to channel boundaries
             UnalignedChannelOffset,
+            /// Calculation overflowed usize
+            Overflow,
         };
 
         /// Errors that can occur when filling zeros to end.
