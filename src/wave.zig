@@ -329,6 +329,7 @@ pub fn inner(comptime T: type) type {
         /// ## Errors
         /// - `SeparatingZeroLengthWave`: If the wave has no samples
         /// - `TooBigSeparatePoint`: If the separation point exceeds the wave length
+        /// - `UnalignedChannelOffset`: If the separation point is not aligned to channel boundaries
         /// - `OutOfMemory`: Allocator error when memory allocation fails
         pub fn separate(
             self: Self,
@@ -339,6 +340,9 @@ pub fn inner(comptime T: type) type {
 
             if (self.samples.len < options.separate_point)
                 return error.TooBigSeparatePoint;
+
+            if (options.separate_point % self.channels != 0)
+                return error.UnalignedChannelOffset;
 
             const initial_len = options.separate_point;
             const terminal_len = self.samples.len - options.separate_point;
@@ -392,6 +396,8 @@ pub fn inner(comptime T: type) type {
             SeparatingZeroLengthWave,
             /// The separation point exceeds the wave's sample length
             TooBigSeparatePoint,
+            /// The separation point is not aligned to channel boundaries
+            UnalignedChannelOffset,
         };
 
         /// Errors that can occur when mixing waves.
@@ -1023,6 +1029,12 @@ pub fn inner(comptime T: type) type {
             defer sep_len.terminal.deinit();
             try testing.expectEqual(sep_len.initial.samples.len, 3);
             try testing.expectEqual(sep_len.terminal.samples.len, 0);
+
+            // Unaligned channel separate point
+            const stereo_samples: []const T = &[_]T{ 0.1, 0.2, 0.3, 0.4 };
+            const stereo_wave = try Self.init(stereo_samples, allocator, .{ .sample_rate = 44100, .channels = 2 });
+            defer stereo_wave.deinit();
+            try testing.expectError(error.UnalignedChannelOffset, stereo_wave.separate(.{ .allocator = allocator, .separate_point = 1 }));
         }
 
         test "write with ieee float format and chunk options" {
