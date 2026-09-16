@@ -19,6 +19,9 @@ ______________________________________________________________________
   - **Clipping & Crash Noise Tolerant**: Treat clipping and crash noise as valid sound sources; never auto-normalize, sanitize, or fail builds on out-of-bounds samples, deferring quantization behavior entirely to underlying format codecs.
   - **Multi-Format Ingestion**: Support reading external audio (`Wave(T).read`) across WAV and future compressed formats (FLAC, Ogg Vorbis) alongside pure synthesis.
   - **Format Abstraction & Metadata**: Abstract output formats under a unified interface (`wave.write(...)`) and support cross-format metadata (e.g., loop points).
+  - **Strict Property Matching**: Explicit over implicit; never perform hidden resampling or channel coercion on property mismatches.
+  - **Pure Zig**: Keep the codebase free of C toolchains and C library dependencies to guarantee seamless cross-compilation.
+  - **Unmanaged Memory Roadmap**: Architectural direction targets modern Zig 0.16 `Unmanaged` patterns (allocator-per-operation), planned for a dedicated breaking cycle.
 - **Target Language Version**: Zig `0.16.0`.
 
 ______________________________________________________________________
@@ -141,3 +144,4 @@ ______________________________________________________________________
 1. **Always Register to GitHub Project**: When creating Issues or Pull Requests with `gh`, always add them to `https://github.com/users/haruki7049/projects/11` (`lightmix GitHub Project`).
 1. **Adhere to Minimalist Scope**: Never add complex DSP effects (reverb, delay, flanger, etc.) or synthesizer instrument presets to the core library. Keep additions focused on fundamental waveform manipulation, mixing, and build-time generation.
 1. **Preserve Headless Execution**: Ensure all build steps, examples, and tests run cleanly in headless environments without physical audio devices or sound daemons. Playback utilities (`play()`) must remain strictly auxiliary preview helpers.
+1. **Preserve Pure Zig**: Avoid introducing C source files, C library dependencies, or external non-Zig toolchain dependencies into core synthesis, manipulation, or codec logic.

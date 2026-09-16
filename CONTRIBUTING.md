@@ -43,6 +43,12 @@ Before contributing new features, please understand `lightmix`'s core architectu
    In addition to pure algorithmic synthesis, importing external audio sources (`Wave(T).read`) across WAV and future compressed formats (FLAC, Ogg Vorbis) is an essential supported workflow.
 9. **Unified Export & Cross-Format Metadata**:
    Audio export should be abstracted uniformly across formats (`wave.write(...)`), accompanied by format-agnostic metadata support (such as game audio loop points).
+10. **Strict Property Matching**:
+    No hidden resampling or channel coercion. Property mismatches must produce explicit errors (`error.MismatchedWaveProperties`), requiring caller-directed conversion.
+11. **Pure Zig (Zero C Dependencies)**:
+    All core capabilities and future format codecs must be implemented in Pure Zig to guarantee instant cross-compilation without C toolchains or host SDK issues.
+12. **Future Unmanaged Memory Evolution**:
+    A planned transition toward modern Zig 0.16 `Unmanaged` patterns (allocator-per-operation) is on the architectural roadmap, deferring implementation to a scheduled breaking-change cycle.
 
 ## Getting Started
 

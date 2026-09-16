@@ -40,6 +40,12 @@ I created this project because I felt a disconnect between existing audio synthe
   While pure mathematical and algorithmic synthesis is the library's core motivation, importing external audio sources (`Wave(T).read`) across multiple formats (WAV, FLAC, Ogg Vorbis) is an essential capability for sampling, mashups, and real-world game sound design.
 - **Unified Format Export & Cross-Format Metadata**:
   `lightmix` aims to abstract audio export across multiple formats under a unified interface (`wave.write(...)`), paired with format-agnostic metadata support (such as loop points for game engines).
+- **Strict Property Matching (Explicit over Implicit)**:
+  `lightmix` strictly enforces matching sample rates and channel counts during mixing. Mismatches result in explicit errors (`error.MismatchedWaveProperties`) rather than hidden resampling or implicit channel coercion.
+- **Pure Zig & Zero C Dependencies**:
+  The library adheres to a Pure Zig policy, avoiding C compiler toolchain or C library dependencies to ensure seamless cross-compilation across any target platform.
+- **Roadmap toward Unmanaged Memory**:
+  While current structs hold allocator instances for simplicity, `lightmix` embraces a planned future evolution toward modern Zig 0.16 `Unmanaged` patterns (explicit allocators per operation) when breaking changes can be bundled.
 
 ## How to use
 
