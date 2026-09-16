@@ -604,6 +604,37 @@ pub fn inner(comptime T: type) type {
             try testing.expectError(error.MismatchedWaveProperties, Self.init_with(diff_info, allocator, .{ .sample_rate = 44100, .channels = 1 }));
         }
 
+        test "append returns MismatchedWaveProperties for mismatched sample rates" {
+            const allocator = testing.allocator;
+            var composer = Self.init(allocator, .{
+                .sample_rate = 44100,
+                .channels = 1,
+            });
+            defer composer.deinit();
+
+            const samples = [_]T{ 0.1, 0.2, 0.3 };
+            const wave_48k = try Wave(T).init(&samples, allocator, .{
+                .sample_rate = 48000,
+                .channels = 1,
+            });
+            defer wave_48k.deinit();
+
+            // Mismatched sample rate on append
+            try testing.expectError(error.MismatchedWaveProperties, composer.append(.{ .wave = wave_48k, .start_point = 0 }));
+
+            // Mismatched sample rate on append_converted
+            try testing.expectError(error.MismatchedWaveProperties, composer.append_converted(.{ .wave = wave_48k, .start_point = 0 }, .{}));
+
+            const wave_stereo_44k = try Wave(T).init(&samples, allocator, .{
+                .sample_rate = 44100,
+                .channels = 2,
+            });
+            defer wave_stereo_44k.deinit();
+
+            // Mismatched channels on direct append without append_converted
+            try testing.expectError(error.MismatchedWaveProperties, composer.append(.{ .wave = wave_stereo_44k, .start_point = 0 }));
+        }
+
         test "finalize with staggered overlapping waves" {
             const allocator = testing.allocator;
             var composer = Self.init(allocator, .{
