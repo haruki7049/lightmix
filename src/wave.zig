@@ -1300,6 +1300,122 @@ pub fn inner(comptime T: type) type {
             // 32-bit: 44 header bytes + 4 samples * 4 bytes = 60 bytes
             try testing.expectEqual(wave.size(.wav, .{ .bits = 32 }), 60);
         }
+
+        test "fill_zero_to_end error when start is greater than end" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 0.1, 0.2, 0.3, 0.4 };
+            const wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave.deinit();
+
+            try testing.expectError(error.InvalidTruncationRange, wave.fill_zero_to_end(3, 1));
+        }
+
+        test "filter chaining applies multiple filters sequentially" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 1.0, 2.0, 3.0 };
+            var wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave.deinit();
+
+            const gain_filter = struct {
+                fn apply(comptime SampleType: type, orig: Self) !Self {
+                    var new_samples = try orig.allocator.alloc(SampleType, orig.samples.len);
+                    for (orig.samples, 0..) |v, i| {
+                        new_samples[i] = v * 2.0;
+                    }
+                    return Self{
+                        .samples = new_samples,
+                        .allocator = orig.allocator,
+                        .sample_rate = orig.sample_rate,
+                        .channels = orig.channels,
+                    };
+                }
+            }.apply;
+
+            const offset_filter = struct {
+                fn apply(comptime SampleType: type, orig: Self) !Self {
+                    var new_samples = try orig.allocator.alloc(SampleType, orig.samples.len);
+                    for (orig.samples, 0..) |v, i| {
+                        new_samples[i] = v + 0.5;
+                    }
+                    return Self{
+                        .samples = new_samples,
+                        .allocator = orig.allocator,
+                        .sample_rate = orig.sample_rate,
+                        .channels = orig.channels,
+                    };
+                }
+            }.apply;
+
+            try wave.filter(gain_filter);
+            try wave.filter(offset_filter);
+
+            try testing.expectEqual(wave.samples.len, 3);
+            try testing.expectApproxEqAbs(wave.samples[0], 2.5, 0.00001);
+            try testing.expectApproxEqAbs(wave.samples[1], 4.5, 0.00001);
+            try testing.expectApproxEqAbs(wave.samples[2], 6.5, 0.00001);
+        }
+
+        test "filter on zero-length wave" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{};
+            var wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave.deinit();
+
+            const identity_filter = struct {
+                fn apply(comptime SampleType: type, orig: Self) !Self {
+                    const new_samples = try orig.allocator.alloc(SampleType, orig.samples.len);
+                    @memcpy(new_samples, orig.samples);
+                    return Self{
+                        .samples = new_samples,
+                        .allocator = orig.allocator,
+                        .sample_rate = orig.sample_rate,
+                        .channels = orig.channels,
+                    };
+                }
+            }.apply;
+
+            try wave.filter(identity_filter);
+            try testing.expectEqual(wave.samples.len, 0);
+        }
+
+        test "write and read 24-bit pcm wav roundtrip" {
+            const allocator = testing.allocator;
+            const io = testing.io;
+            const samples: []const T = &[_]T{ 0.1, -0.2, 0.5, -0.8 };
+            const wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave.deinit();
+
+            var tmpDir = testing.tmpDir(.{});
+            defer tmpDir.cleanup();
+
+            {
+                var file = try tmpDir.dir.createFile(io, "pcm24.wav", .{});
+                defer file.close(io);
+                const buf = try allocator.alloc(u8, 64 * 1024);
+                defer allocator.free(buf);
+                var writer = file.writer(io, buf);
+
+                try wave.write(.wav, &writer.interface, .{
+                    .bits = 24,
+                    .format_code = .pcm,
+                });
+                try writer.interface.flush();
+            }
+
+            const file_bytes = try tmpDir.dir.readFileAlloc(io, "pcm24.wav", allocator, .limited(64 * 1024));
+            defer allocator.free(file_bytes);
+            var reader = std.Io.Reader.fixed(file_bytes);
+
+            const read_wave = try Self.read(.wav, allocator, &reader);
+            defer read_wave.deinit();
+
+            try testing.expectEqual(read_wave.sample_rate, 44100);
+            try testing.expectEqual(read_wave.channels, 1);
+            try testing.expectEqual(read_wave.samples.len, samples.len);
+            for (samples, read_wave.samples) |expected, actual| {
+                try testing.expectApproxEqAbs(expected, actual, 0.001);
+            }
+        }
     };
 }
 

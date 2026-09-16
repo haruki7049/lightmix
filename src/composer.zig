@@ -634,6 +634,48 @@ pub fn inner(comptime T: type) type {
                 try testing.expectApproxEqAbs(expected, actual, 0.00001);
             }
         }
+
+        test "finalize with staggered 2-channel interleaved stereo waveforms" {
+            const allocator = testing.allocator;
+            var composer = Self.init(allocator, .{
+                .sample_rate = 44100,
+                .channels = 2,
+            });
+            defer composer.deinit();
+
+            // wave1: 2 stereo frames -> [L=0.2, R=0.4, L=0.6, R=0.8]
+            const samples1 = [_]T{ 0.2, 0.4, 0.6, 0.8 };
+            const wave1 = try Wave(T).init(&samples1, allocator, .{ .sample_rate = 44100, .channels = 2 });
+            defer wave1.deinit();
+
+            // wave2: 2 stereo frames -> [L=0.1, R=0.3, L=0.5, R=0.7]
+            const samples2 = [_]T{ 0.1, 0.3, 0.5, 0.7 };
+            const wave2 = try Wave(T).init(&samples2, allocator, .{ .sample_rate = 44100, .channels = 2 });
+            defer wave2.deinit();
+
+            // wave1 starts at sample index 0
+            // wave2 starts at sample index 2 (offset by 1 stereo frame)
+            try composer.append(.{ .wave = wave1, .start_point = 0 });
+            try composer.append(.{ .wave = wave2, .start_point = 2 });
+
+            const result = try composer.finalize(.{});
+            defer result.deinit();
+
+            try testing.expectEqual(result.channels, 2);
+            try testing.expectEqual(result.samples.len, 6);
+
+            // Frame 0 (non-overlap): wave1
+            try testing.expectApproxEqAbs(result.samples[0], 0.2, 0.00001);
+            try testing.expectApproxEqAbs(result.samples[1], 0.4, 0.00001);
+
+            // Frame 1 (overlap): wave1 + wave2
+            try testing.expectApproxEqAbs(result.samples[2], 0.7, 0.00001);
+            try testing.expectApproxEqAbs(result.samples[3], 1.1, 0.00001);
+
+            // Frame 2 (non-overlap): wave2
+            try testing.expectApproxEqAbs(result.samples[4], 0.5, 0.00001);
+            try testing.expectApproxEqAbs(result.samples[5], 0.7, 0.00001);
+        }
     };
 }
 
