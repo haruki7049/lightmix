@@ -320,6 +320,16 @@ const Generator = struct {
         const exe_name = try std.fmt.allocPrint(b.allocator, "wave_generator_{s}", .{func_name});
         const gen_file = write_files.add("wave_gen.zig", gen_source);
 
+        const host_user_mod = b.createModule(.{
+            .root_source_file = mod.root_source_file,
+            .target = b.graph.host,
+            .optimize = optimize,
+        });
+        var import_it = mod.import_table.iterator();
+        while (import_it.next()) |entry| {
+            host_user_mod.addImport(entry.key_ptr.*, entry.value_ptr.*);
+        }
+
         const gen_exe = b.addExecutable(.{
             .name = exe_name,
             .root_module = b.createModule(.{
@@ -327,7 +337,7 @@ const Generator = struct {
                 .target = b.graph.host,
                 .optimize = optimize,
                 .imports = &.{
-                    .{ .name = "user_module", .module = mod },
+                    .{ .name = "user_module", .module = host_user_mod },
                 },
             }),
         });
