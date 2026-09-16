@@ -13,20 +13,18 @@ const Wave = @import("./root.zig").Wave;
 /// ## Usage
 /// ```zig
 /// const Composer = lightmix.Composer;
-/// const composer = Composer(f64).init(allocator, .{
+/// var composer = Composer(f64).init(allocator, .{
 ///     .sample_rate = 44100,
 ///     .channels = 1,
 /// });
 /// defer composer.deinit();
 ///
 /// // Append waves at specific time points
-/// const composed = composer
-///     .append(.{ .wave = wave1, .start_point = 0 })
-///     .append(.{ .wave = wave2, .start_point = 22050 });
-/// defer composed.deinit();
+/// try composer.append(.{ .wave = wave1, .start_point = 0 });
+/// try composer.append(.{ .wave = wave2, .start_point = 22050 });
 ///
 /// // Finalize to create the mixed result
-/// const result = composed.finalize(.{});
+/// const result = try composer.finalize(.{});
 /// defer result.deinit();
 /// ```
 pub fn inner(comptime T: type) type {
