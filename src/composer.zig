@@ -345,6 +345,9 @@ pub fn inner(comptime T: type) type {
                 }
 
                 const bs = if (options.block_size == 0) 4096 else options.block_size;
+                if (bs % composer.channels != 0) {
+                    return error.UnalignedChannelOffset;
+                }
                 const buf = try composer.allocator.alloc(T, bs);
                 errdefer composer.allocator.free(buf);
 
@@ -763,6 +766,19 @@ pub fn inner(comptime T: type) type {
             defer iterator.deinit();
 
             try testing.expectEqual(iterator.next(), null);
+        }
+
+        test "render_stream with unaligned block_size returns UnalignedChannelOffset" {
+            const allocator = testing.allocator;
+            var composer = Self.init(allocator, .{ .sample_rate = 44100, .channels = 2 });
+            defer composer.deinit();
+
+            const samples = [_]T{ 0.1, 0.2, 0.3, 0.4 };
+            const wave = try Wave(T).init(&samples, allocator, .{ .sample_rate = 44100, .channels = 2 });
+            defer wave.deinit();
+            try composer.append(.{ .wave = wave, .start_point = 0 });
+
+            try testing.expectError(error.UnalignedChannelOffset, composer.render_stream(.{ .block_size = 3 }));
         }
 
         test "append_converted upmixes mono wave to stereo composer with panning" {
