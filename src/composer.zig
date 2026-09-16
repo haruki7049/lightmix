@@ -264,9 +264,10 @@ pub fn inner(comptime T: type) type {
         /// A new Wave containing the final mixed composition
         ///
         /// ## Performance Notes
-        /// Memory usage is proportional to: `number_of_waves × total_length × sample_size`
-        /// Each wave is temporarily padded to the full composition length before mixing.
-        /// Consider using this for up to ~100 overlapping waves on typical systems.
+        /// Memory usage is proportional to the total composition length (`total_length * sample_size`).
+        /// The destination buffer is allocated once, and component waves are mixed directly into
+        /// position without temporary intermediate buffers.
+        ///
         /// ## Errors
         /// - `MismatchedWaveProperties`: If component waves have different sample rates or channel counts
         /// - `OutOfMemory`: Allocator error when memory allocation fails
