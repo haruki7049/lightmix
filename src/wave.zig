@@ -891,6 +891,106 @@ pub fn inner(comptime T: type) type {
             try testing.expectApproxEqAbs(normalized.samples[2], 0.2, 0.00001);
         }
 
+        test "normalize with all zero wave" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 0.0, 0.0, 0.0 };
+            const wave = try Self.init(samples, allocator, .{
+                .sample_rate = 44100,
+                .channels = 1,
+            });
+            defer wave.deinit();
+
+            const normalized = try wave.normalize(1.0);
+            defer normalized.deinit();
+
+            try testing.expectEqual(normalized.samples[0], 0.0);
+            try testing.expectEqual(normalized.samples[1], 0.0);
+            try testing.expectEqual(normalized.samples[2], 0.0);
+        }
+
+        test "mix with custom multiplication mixer" {
+            const allocator = testing.allocator;
+            const mult_mixer = struct {
+                fn mult(left: T, right: T) T {
+                    return left * right;
+                }
+            }.mult;
+
+            const samples1: []const T = &[_]T{ 0.5, 0.8, -0.4 };
+            const samples2: []const T = &[_]T{ 0.2, -0.5, 0.5 };
+            const wave1 = try Self.init(samples1, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave1.deinit();
+            const wave2 = try Self.init(samples2, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave2.deinit();
+
+            const mixed = try wave1.mix(wave2, .{ .mixer = mult_mixer });
+            defer mixed.deinit();
+
+            try testing.expectApproxEqAbs(mixed.samples[0], 0.1, 0.00001);
+            try testing.expectApproxEqAbs(mixed.samples[1], -0.4, 0.00001);
+            try testing.expectApproxEqAbs(mixed.samples[2], -0.2, 0.00001);
+        }
+
+        test "separate error paths and boundaries" {
+            const allocator = testing.allocator;
+
+            // Separating zero length wave
+            const empty_wave = try Self.init(&.{}, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer empty_wave.deinit();
+            try testing.expectError(error.SeparatingZeroLengthWave, empty_wave.separate(.{ .allocator = allocator, .separate_point = 0 }));
+
+            // Too big separate point
+            const samples: []const T = &[_]T{ 0.1, 0.2, 0.3 };
+            const wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave.deinit();
+            try testing.expectError(error.TooBigSeparatePoint, wave.separate(.{ .allocator = allocator, .separate_point = 5 }));
+
+            // Boundary separate point 0
+            const sep0 = try wave.separate(.{ .allocator = allocator, .separate_point = 0 });
+            defer sep0.initial.deinit();
+            defer sep0.terminal.deinit();
+            try testing.expectEqual(sep0.initial.samples.len, 0);
+            try testing.expectEqual(sep0.terminal.samples.len, 3);
+
+            // Boundary separate point len
+            const sep_len = try wave.separate(.{ .allocator = allocator, .separate_point = 3 });
+            defer sep_len.initial.deinit();
+            defer sep_len.terminal.deinit();
+            try testing.expectEqual(sep_len.initial.samples.len, 3);
+            try testing.expectEqual(sep_len.terminal.samples.len, 0);
+        }
+
+        test "write with ieee float format and chunk options" {
+            const allocator = testing.allocator;
+            const io = testing.io;
+            const samples: []const T = &[_]T{ 0.1, -0.2, 0.3, -0.4 };
+            const wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave.deinit();
+
+            var tmpDir = testing.tmpDir(.{});
+            defer tmpDir.cleanup();
+
+            var file = try tmpDir.dir.createFile(io, "float.wav", .{});
+            defer file.close(io);
+            const buf = try allocator.alloc(u8, 64 * 1024);
+            defer allocator.free(buf);
+            var writer = file.writer(io, buf);
+
+            try wave.write(.wav, &writer.interface, .{
+                .bits = 32,
+                .format_code = .ieee_float,
+                .use_fact = true,
+                .use_peak = true,
+                .peak_timestamp = 12345,
+            });
+            try writer.interface.flush();
+
+            const file_bytes = try tmpDir.dir.readFileAlloc(io, "float.wav", allocator, .limited(64 * 1024));
+            defer allocator.free(file_bytes);
+
+            try testing.expect(file_bytes.len > 44);
+        }
+
         test "mix" {
             const allocator = testing.allocator;
             const generator = struct {
