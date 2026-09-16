@@ -220,6 +220,19 @@ pub fn inner(comptime T: type) type {
             return result;
         }
 
+        /// Saturating mixing function that adds two samples and clamps the result to [-1.0, 1.0].
+        ///
+        /// ## Parameters
+        /// - `left`: Sample value from the first wave
+        /// - `right`: Sample value from the second wave
+        ///
+        /// ## Returns
+        /// The clamped sum of the sample values in [-1.0, 1.0]
+        pub fn saturating_mixing_expression(left: T, right: T) T {
+            const sum: T = left + right;
+            return std.math.clamp(sum, -1.0, 1.0);
+        }
+
         /// Mixes this wave with another wave, combining their samples.
         ///
         /// Both waves must have the same length, sample rate, and channel count.
@@ -269,11 +282,42 @@ pub fn inner(comptime T: type) type {
             };
         }
 
-        /// Separates the wave into two parts at a specified point.
+        /// Normalizes wave samples so the peak absolute amplitude equals `target_peak`.
         ///
-        /// This function splits the wave's samples into two new Wave instances:
-        /// one containing samples from the start to the separation point,
-        /// and another containing samples from the separation point to the end.
+        /// ## Parameters
+        /// - `self`: The wave to normalize
+        /// - `target_peak`: The desired peak amplitude (typically 1.0)
+        ///
+        /// ## Returns
+        /// A new Wave with normalized samples
+        pub fn normalize(self: Self, target_peak: T) std.mem.Allocator.Error!Self {
+            var max_amp: T = 0.0;
+            for (self.samples) |sample| {
+                const abs_s = @abs(sample);
+                if (abs_s > max_amp) max_amp = abs_s;
+            }
+
+            const new_samples = try self.allocator.alloc(T, self.samples.len);
+            errdefer self.allocator.free(new_samples);
+
+            if (max_amp == 0.0) {
+                @memset(new_samples, 0.0);
+            } else {
+                const scale = target_peak / max_amp;
+                for (self.samples, 0..) |sample, i| {
+                    new_samples[i] = sample * scale;
+                }
+            }
+
+            return Self{
+                .samples = new_samples,
+                .allocator = self.allocator,
+                .sample_rate = self.sample_rate,
+                .channels = self.channels,
+            };
+        }
+
+        /// Separates a wave into two waves at the specified sample index.
         ///
         /// ## Parameters
         /// - `self`: The wave to separate
@@ -820,6 +864,29 @@ pub fn inner(comptime T: type) type {
             try testing.expectEqual(cloned.samples.len, 0);
             try testing.expectEqual(wave.sample_rate, cloned.sample_rate);
             try testing.expectEqual(wave.channels, cloned.channels);
+        }
+
+        test "saturating_mixing_expression clamps values" {
+            try testing.expectEqual(Self.saturating_mixing_expression(0.8, 0.5), 1.0);
+            try testing.expectEqual(Self.saturating_mixing_expression(-0.8, -0.5), -1.0);
+            try testing.expectApproxEqAbs(Self.saturating_mixing_expression(0.2, 0.3), 0.5, 0.00001);
+        }
+
+        test "normalize wave samples" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 0.2, -0.5, 0.1 };
+            const wave = try Self.init(samples, allocator, .{
+                .sample_rate = 44100,
+                .channels = 1,
+            });
+            defer wave.deinit();
+
+            const normalized = try wave.normalize(1.0);
+            defer normalized.deinit();
+
+            try testing.expectApproxEqAbs(normalized.samples[0], 0.4, 0.00001);
+            try testing.expectApproxEqAbs(normalized.samples[1], -1.0, 0.00001);
+            try testing.expectApproxEqAbs(normalized.samples[2], 0.2, 0.00001);
         }
 
         test "mix" {
