@@ -155,6 +155,7 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
         },
     });
     const bt_gen_wave = try addWave(b, bt_gen_mod, .{
+        .optimize = optimize,
         .format = .{ .wav = .{
             .bits = 16,
             .format_code = .pcm,
@@ -172,6 +173,7 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
         },
     });
     const bt_play_wave = try addWave(b, bt_play_mod, .{
+        .optimize = optimize,
         .format = .{ .wav = .{
             .bits = 16,
             .format_code = .pcm,
