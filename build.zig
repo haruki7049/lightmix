@@ -247,68 +247,112 @@ pub fn addWave(
 }
 
 const Generator = struct {
+    const ExeCacheEntry = struct {
+        mod: *std.Build.Module,
+        func_name: []const u8,
+        optimize: std.builtin.OptimizeMode,
+        exe: *std.Build.Step.Compile,
+    };
+
+    var cache_list: std.ArrayListUnmanaged(ExeCacheEntry) = .empty;
+
+    fn getOrCreateExe(
+        b: *std.Build,
+        mod: *std.Build.Module,
+        func_name: []const u8,
+        optimize: std.builtin.OptimizeMode,
+    ) !*std.Build.Step.Compile {
+        for (cache_list.items) |entry| {
+            if (entry.mod == mod and std.mem.eql(u8, entry.func_name, func_name) and entry.optimize == optimize) {
+                return entry.exe;
+            }
+        }
+
+        // Generate temporary Zig code that parses command-line arguments dynamically
+        const gen_source = try std.fmt.allocPrint(b.allocator,
+            \\const std = @import("std");
+            \\const user_module = @import("user_module");
+            \\
+            \\pub fn main(init: std.process.Init) !void {{
+            \\    const allocator: std.mem.Allocator = init.arena.allocator();
+            \\    const io: std.Io = init.io;
+            \\
+            \\    var args_it = try std.process.Args.Iterator.initAllocator(init.minimal.args, allocator);
+            \\    defer args_it.deinit();
+            \\    _ = args_it.skip();
+            \\    const output_path = args_it.next() orelse return error.MissingOutputFileArg;
+            \\    const bits_str = args_it.next() orelse return error.MissingBitsArg;
+            \\    const format_str = args_it.next() orelse return error.MissingFormatCodeArg;
+            \\
+            \\    const bits = try std.fmt.parseInt(u16, bits_str, 10);
+            \\
+            \\    const wave = try user_module.{s}(init);
+            \\    defer wave.deinit();
+            \\
+            \\    const file = try std.Io.Dir.cwd().createFile(io, output_path, .{{}});
+            \\    defer file.close(io);
+            \\    var buf: [64 * 1024]u8 = undefined;
+            \\    var writer = file.writer(io, &buf);
+            \\
+            \\    if (std.mem.eql(u8, format_str, "pcm")) {{
+            \\        try wave.write(.wav, &writer.interface, .{{
+            \\            .format_code = .pcm,
+            \\            .bits = bits,
+            \\        }});
+            \\    }} else if (std.mem.eql(u8, format_str, "ieee_float")) {{
+            \\        try wave.write(.wav, &writer.interface, .{{
+            \\            .format_code = .ieee_float,
+            \\            .bits = bits,
+            \\        }});
+            \\    }} else {{
+            \\        return error.InvalidFormatCode;
+            \\    }}
+            \\
+            \\    try writer.interface.flush();
+            \\}}
+        , .{
+            func_name,
+        });
+
+        const write_files = b.addWriteFiles();
+        const exe_name = try std.fmt.allocPrint(b.allocator, "wave_generator_{s}", .{func_name});
+        const gen_file = write_files.add("wave_gen.zig", gen_source);
+
+        const gen_exe = b.addExecutable(.{
+            .name = exe_name,
+            .root_module = b.createModule(.{
+                .root_source_file = gen_file,
+                .target = b.graph.host,
+                .optimize = optimize,
+                .imports = &.{
+                    .{ .name = "user_module", .module = mod },
+                },
+            }),
+        });
+
+        try cache_list.append(b.allocator, .{
+            .mod = mod,
+            .func_name = func_name,
+            .optimize = optimize,
+            .exe = gen_exe,
+        });
+
+        return gen_exe;
+    }
+
     const Wav = struct {
         fn gen(
             b: *std.Build,
             mod: *std.Build.Module,
             options: CreateWaveOptions,
         ) anyerror!*CompileWave {
-            // Generate temporary Zig code that calls the user's function
-            const gen_source = try std.fmt.allocPrint(b.allocator,
-                \\const std = @import("std");
-                \\const user_module = @import("user_module");
-                \\
-                \\pub fn main(init: std.process.Init) !void {{
-                \\    const allocator: std.mem.Allocator = init.arena.allocator();
-                \\    const io: std.Io = init.io;
-                \\
-                \\    var args_it = try std.process.Args.Iterator.initAllocator(init.minimal.args, allocator);
-                \\    defer args_it.deinit();
-                \\    _ = args_it.skip();
-                \\    const output_path = args_it.next() orelse return error.MissingOutputFileArg;
-                \\
-                \\    const wave = try user_module.{s}(init);
-                \\    defer wave.deinit();
-                \\
-                \\    const bits = {d};
-                \\    const file = try std.Io.Dir.cwd().createFile(io, output_path, .{{}});
-                \\    defer file.close(io);
-                \\    var buf: [64 * 1024]u8 = undefined;
-                \\    var writer = file.writer(io, &buf);
-                \\
-                \\    try wave.write(.wav, &writer.interface, .{{
-                \\        .format_code = .{s},
-                \\        .bits = bits,
-                \\    }});
-                \\
-                \\    try writer.interface.flush();
-                \\}}
-            , .{
-                options.func_name,
-                options.format.wav.bits,
-                @tagName(options.format.wav.format_code),
-            });
+            const gen_exe = try getOrCreateExe(b, mod, options.func_name, options.optimize);
 
-            // Create a write files step to generate the temporary source
-            const write_files = b.addWriteFiles();
-            const gen_file = write_files.add("wave_gen.zig", gen_source);
-
-            // Create executable that generates the wave
-            const gen_exe = b.addExecutable(.{
-                .name = "wave_generator",
-                .root_module = b.createModule(.{
-                    .root_source_file = gen_file,
-                    .target = b.graph.host,
-                    .optimize = options.optimize,
-                    .imports = &.{
-                        .{ .name = "user_module", .module = mod },
-                    },
-                }),
-            });
-
-            // Run the generator during build and output wave file to Zig cache
+            // Run the generator during build with output path, bits, and format code arguments
             const run_gen = b.addRunArtifact(gen_exe);
             const output_wave_file = run_gen.addOutputFileArg(options.format.wav.name);
+            run_gen.addArg(b.fmt("{d}", .{options.format.wav.bits}));
+            run_gen.addArg(@tagName(options.format.wav.format_code));
 
             // Install the generated wave file
             const install_wave = b.addInstallFileWithDir(
