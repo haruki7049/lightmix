@@ -129,7 +129,7 @@ You can find a complete example in [./examples/06-advanced/build-time-generation
 
 `Wave` is a generic type function that accepts a sample type parameter. It contains PCM audio source with samples of the specified floating-point type.
 
-Both waves must have identical `sample_rate`, `channels`, and sample length, or the program will panic.
+When mixing waves, both waves must have identical `sample_rate`, `channels`, and sample length, or `error.MismatchedWaveProperties` will be returned.
 
 Supported sample types: `f64`, `f80`, `f128`.
 
