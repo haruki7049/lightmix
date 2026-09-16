@@ -130,6 +130,21 @@ Whenever creating an Issue or Pull Request using the `gh` CLI, agents **MUST** r
   gh project item-add 11 --owner haruki7049 --url <ISSUE_OR_PR_URL>
   ```
 
+### Labels (Tags) Assignment
+
+Whenever creating an Issue or Pull Request using the `gh` CLI, agents **MUST** assign relevant labels (tags) to categorize the item (e.g. `feat`, `fix`, `docs`, `refactor`, `build.zig`, `Wave(T)`, `composer`, etc.):
+
+- **Via `--label` flag when creating**:
+  ```bash
+  gh issue create --label "docs,Wave(T)" ...
+  gh pr create --label "refactor,composer" ...
+  ```
+- **Via `gh issue/pr edit` after creation**:
+  ```bash
+  gh issue edit <ISSUE_NUMBER> --add-label "docs,Wave(T)"
+  gh pr edit <PR_NUMBER> --add-label "refactor,composer"
+  ```
+
 ### Version Tagging
 
 - Use Semantic Versioning **without** a `v` prefix (e.g., `1.0.0`, not `v1.0.0`).
@@ -147,3 +162,4 @@ ______________________________________________________________________
 1. **Adhere to Minimalist Scope**: Never add complex DSP effects (reverb, delay, flanger, etc.) or synthesizer instrument presets to the core library. Keep additions focused on fundamental waveform manipulation, mixing, and build-time generation.
 1. **Preserve Headless Execution**: Ensure all build steps, examples, and tests run cleanly in headless environments without physical audio devices or sound daemons. Playback utilities (`play()`) must remain strictly auxiliary preview helpers.
 1. **Preserve Pure Zig**: Avoid introducing C source files, C library dependencies, or external non-Zig toolchain dependencies into core synthesis, manipulation, or codec logic.
+1. **Always Assign Labels**: When creating Issues or Pull Requests with `gh`, always assign relevant labels (e.g., `fix`, `feat`, `docs`, `refactor`, `Wave(T)`, `build.zig`) to categorize the work.
