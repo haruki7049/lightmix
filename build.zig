@@ -250,6 +250,7 @@ pub fn addWave(
 
 const Generator = struct {
     const ExeCacheEntry = struct {
+        b: *std.Build,
         mod: *std.Build.Module,
         func_name: []const u8,
         optimize: std.builtin.OptimizeMode,
@@ -265,7 +266,7 @@ const Generator = struct {
         optimize: std.builtin.OptimizeMode,
     ) !*std.Build.Step.Compile {
         for (cache_list.items) |entry| {
-            if (entry.mod == mod and std.mem.eql(u8, entry.func_name, func_name) and entry.optimize == optimize) {
+            if (entry.b == b and entry.mod == mod and std.mem.eql(u8, entry.func_name, func_name) and entry.optimize == optimize) {
                 return entry.exe;
             }
         }
@@ -343,6 +344,7 @@ const Generator = struct {
         });
 
         try cache_list.append(b.allocator, .{
+            .b = b,
             .mod = mod,
             .func_name = func_name,
             .optimize = optimize,
