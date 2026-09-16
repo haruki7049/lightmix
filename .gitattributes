@@ -1,0 +1,19 @@
+# Enforce LF line endings for all text files across all operating systems
+* text=auto eol=lf
+
+# Explicitly ensure Zig source and package metadata use LF
+*.zig text eol=lf
+*.zon text eol=lf
+
+# Documentation and configuration
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.nix text eol=lf
+
+# Audio and binary assets
+*.wav binary
+*.so binary
+*.webp binary
+*.png binary
+*.jpg binary

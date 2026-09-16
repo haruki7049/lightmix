@@ -15,4 +15,6 @@ jobs:
       - uses: mlugg/setup-zig@v2.2.1
         with:
           version: 0.16.0
+      - run: zig fmt --check .
+      - run: zig build docs
       - run: zig build test
