@@ -101,6 +101,20 @@ Follow the conventional commits format:
 - **PR Creation**: Create PRs using `gh pr create`. Reference issues in the body using standard keywords (e.g., `Closes #140`).
 - **PR Merge Prohibition**: **NEVER MERGE Pull Requests.** PRs must remain open for maintainer review. Merging is strictly reserved for human maintainers unless the user explicitly commands the agent to merge a specific PR.
 
+### GitHub Projects Registration
+
+Whenever creating an Issue or Pull Request using the `gh` CLI, agents **MUST** register the created item to the project at `https://github.com/users/haruki7049/projects/11` (`lightmix GitHub Project`).
+
+- **Via `--project` flag when creating**:
+  ```bash
+  gh issue create --project "lightmix GitHub Project" ...
+  gh pr create --project "lightmix GitHub Project" ...
+  ```
+- **Via `gh project item-add` after creation**:
+  ```bash
+  gh project item-add 11 --owner haruki7049 --url <ISSUE_OR_PR_URL>
+  ```
+
 ### Version Tagging
 
 - Use Semantic Versioning **without** a `v` prefix (e.g., `1.0.0`, not `v1.0.0`).
@@ -114,3 +128,4 @@ ______________________________________________________________________
 1. **Preserve English Comment Rule**: Ensure any new code comments or documentation additions strictly adhere to the English language requirement.
 1. **Strict PR Merge Prohibition**: Always leave created Pull Requests open. Never attempt to merge a Pull Request unless explicitly instructed by the user.
 1. **No Unsolicited Actions on Other Branches/PRs**: Never modify, rebase, or resolve conflicts on PRs or branches without explicit user instructions.
+1. **Always Register to GitHub Project**: When creating Issues or Pull Requests with `gh`, always add them to `https://github.com/users/haruki7049/projects/11` (`lightmix GitHub Project`).
