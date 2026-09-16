@@ -44,14 +44,13 @@ pub fn inner(comptime T: type) type {
             start_point: usize,
 
             fn to_wave(self: WaveInfo, allocator: std.mem.Allocator) std.mem.Allocator.Error!Wave(T) {
-                var padding_samples: []T = try allocator.alloc(T, self.start_point);
-
-                for (0..padding_samples.len) |i| {
-                    padding_samples[i] = 0.0;
-                }
+                const padding_samples: []T = try allocator.alloc(T, self.start_point);
+                defer allocator.free(padding_samples);
+                @memset(padding_samples, 0.0);
 
                 const slices: []const []const T = &[_][]const T{ padding_samples, self.wave.samples };
-                const samples = std.mem.concat(allocator, T, slices);
+                const samples = try std.mem.concat(allocator, T, slices);
+                defer allocator.free(samples);
 
                 const result: Wave(T) = try Wave(T).init(samples, allocator, .{
                     .sample_rate = self.wave.sample_rate,
@@ -741,6 +740,24 @@ pub fn inner(comptime T: type) type {
             // Frame 2 (non-overlap): wave2
             try testing.expectApproxEqAbs(result.samples[4], 0.5, 0.00001);
             try testing.expectApproxEqAbs(result.samples[5], 0.7, 0.00001);
+        }
+
+        test "WaveInfo.to_wave converts wave with padding without memory leaks" {
+            const allocator = testing.allocator;
+            const original_samples = [_]T{ 1.0, 2.0 };
+            const wave = try Wave(T).init(&original_samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave.deinit();
+
+            const info = WaveInfo{ .wave = wave, .start_point = 3 };
+            const padded_wave = try info.to_wave(allocator);
+            defer padded_wave.deinit();
+
+            try testing.expectEqual(padded_wave.samples.len, 5);
+            try testing.expectEqual(padded_wave.samples[0], 0.0);
+            try testing.expectEqual(padded_wave.samples[1], 0.0);
+            try testing.expectEqual(padded_wave.samples[2], 0.0);
+            try testing.expectEqual(padded_wave.samples[3], 1.0);
+            try testing.expectEqual(padded_wave.samples[4], 2.0);
         }
     };
 }
