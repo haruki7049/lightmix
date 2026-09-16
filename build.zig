@@ -209,6 +209,30 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
     run_test_peak.addFileArg(bt_peak_wave.output_file);
     test_step.dependOn(&run_test_peak.step);
 
+    // Integration test for ieee_float format code in addWave (#230)
+    const bt_float_wave = try addWave(b, bt_gen_mod, .{
+        .optimize = optimize,
+        .format = .{ .wav = .{
+            .bits = 32,
+            .format_code = .ieee_float,
+            .name = "test-ieee-float.wav",
+        } },
+    });
+    const test_float_exe = b.addExecutable(.{
+        .name = "test_build_ieee_float",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tests/build_ieee_float.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "lightmix", .module = lightmix_mod },
+            },
+        }),
+    });
+    const run_test_float = b.addRunArtifact(test_float_exe);
+    run_test_float.addFileArg(bt_float_wave.output_file);
+    test_step.dependOn(&run_test_float.step);
+
     // TODO: l.addPlay function cannot be tested via `zig build test` command. I (@haruki7049) cannot write it.
 }
 
