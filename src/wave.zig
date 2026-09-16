@@ -20,6 +20,9 @@ const testing = std.testing;
 /// defer wave.deinit();
 /// ```
 pub fn inner(comptime T: type) type {
+    comptime {
+        if (T == f32) @compileError("f32 sample type is currently not supported by underlying WAV decoder. Use f64, f80, or f128.");
+    }
     return struct {
         const Self = @This();
 
