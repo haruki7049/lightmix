@@ -8,7 +8,22 @@ ______________________________________________________________________
 
 `lightmix` is an audio synthesis and processing library written in Zig.
 
-- **Core Philosophy**: Treat audio generation as a build artifact. Running `zig build` or `zig build run` produces WAV audio files directly during the build process, eliminating the need for real-time audio recording or external sound server dependencies.
+- **Core Philosophy**: Treat audio generation as a deterministic build artifact. Running `zig build` or `zig build run` produces WAV audio files directly during the build process, eliminating the need for real-time audio recording or external sound server dependencies.
+- **Architectural Principles & Scope**:
+  - **Minimalist Core (Unix Philosophy)**: Focus strictly on low-level primitives: `Wave(T)` (waveform buffer & manipulation), `Composer(T)` (timeline arrangement & mixing), accurate WAV I/O, and `addWave` build-system integration.
+  - **Non-Goals**: High-level DSP effect suites (reverb, delay, chorus, flanger) and synthesizer instrument presets belong in separate higher-level libraries or application code.
+  - **Auxiliary Playback**: `play()` and `addPlay` are developer preview helpers only. They must never introduce hard audio server dependencies or interfere with headless CI execution.
+  - **Flat Generic Typing**: Generic over `comptime T: type` (`f64`, `f80`, `f128`, and future `f32`). Do not hardcode or favor any single floating-point precision.
+  - **In-Memory Buffer Model**: Full sample buffers are held in memory (`Wave(T)`) for deterministic safety and simplicity, avoiding premature streaming complexity.
+  - **Stateless Randomness**: Do not embed PRNGs or hidden state; caller-provided noise buffers ensure deterministic control.
+  - **Clipping & Crash Noise Tolerant**: Treat clipping and crash noise as valid sound sources; never auto-normalize, sanitize, or fail builds on out-of-bounds samples, deferring quantization behavior entirely to underlying format codecs.
+  - **Multi-Format Ingestion**: Support reading external audio (`Wave(T).read`) across WAV and future compressed formats (FLAC, Ogg Vorbis) alongside pure synthesis.
+  - **Format Abstraction & Metadata**: Abstract output formats under a unified interface (`wave.write(...)`) and support cross-format metadata (e.g., loop points).
+  - **Strict Property Matching**: Explicit over implicit; never perform hidden resampling or channel coercion on property mismatches.
+  - **Pure Zig**: Keep the codebase free of C toolchains and C library dependencies to guarantee seamless cross-compilation.
+  - **Unmanaged Memory Roadmap**: Architectural direction targets modern Zig 0.16 `Unmanaged` patterns (allocator-per-operation), planned for a dedicated breaking cycle.
+  - **External Parallelism**: Data structures remain synchronous; parallel asset generation is delegated entirely to the build system (`zig build -j`).
+  - **Aggressive Pruning & Zig 1.0 Milestone**: Deprecated features are pruned promptly to track modern Zig patterns. The `1.0.0` release milestone is anchored to Zig's official `1.0.0` release (#89).
 - **Target Language Version**: Zig `0.16.0`.
 
 ______________________________________________________________________
@@ -129,3 +144,6 @@ ______________________________________________________________________
 1. **Strict PR Merge Prohibition**: Always leave created Pull Requests open. Never attempt to merge a Pull Request unless explicitly instructed by the user.
 1. **No Unsolicited Actions on Other Branches/PRs**: Never modify, rebase, or resolve conflicts on PRs or branches without explicit user instructions.
 1. **Always Register to GitHub Project**: When creating Issues or Pull Requests with `gh`, always add them to `https://github.com/users/haruki7049/projects/11` (`lightmix GitHub Project`).
+1. **Adhere to Minimalist Scope**: Never add complex DSP effects (reverb, delay, flanger, etc.) or synthesizer instrument presets to the core library. Keep additions focused on fundamental waveform manipulation, mixing, and build-time generation.
+1. **Preserve Headless Execution**: Ensure all build steps, examples, and tests run cleanly in headless environments without physical audio devices or sound daemons. Playback utilities (`play()`) must remain strictly auxiliary preview helpers.
+1. **Preserve Pure Zig**: Avoid introducing C source files, C library dependencies, or external non-Zig toolchain dependencies into core synthesis, manipulation, or codec logic.

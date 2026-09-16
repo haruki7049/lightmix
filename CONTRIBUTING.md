@@ -5,6 +5,7 @@ Thank you for your interest in contributing to lightmix! This document provides 
 ## Table of Contents
 
 - [Code of Conduct](#code-of-conduct)
+- [Project Philosophy & Scope](#project-philosophy--scope)
 - [Getting Started](#getting-started)
 - [Development Environment](#development-environment)
 - [How to Contribute](#how-to-contribute)
@@ -18,6 +19,40 @@ Thank you for your interest in contributing to lightmix! This document provides 
 ## Code of Conduct
 
 See [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md). We use [Contributor Covenant](https://www.contributor-covenant.org/version/2/0/code_of_conduct.html).
+
+## Project Philosophy & Scope
+
+Before contributing new features, please understand `lightmix`'s core architectural principles and scope boundaries:
+
+1. **Audio as a Deterministic Build Artifact**:
+   The primary mission is generating audio deterministically at build time (`zig build`), suitable for CI pipelines, automated game asset compilation, and headless environments. Output must be bit-identical and reproducible.
+1. **Minimalist Core (Unix Philosophy)**:
+   - **In Scope**: Foundational primitives for waveform data structures (`Wave(T)`), timeline mixing (`Composer(T)`), WAV encoding/decoding, and build integration (`addWave`).
+   - **Out of Scope (Non-Goals)**: Heavy DSP effect suites (reverb, chorus, flanger, etc.) and specialized synthesizer instrument presets. These belong in higher-level libraries or application code.
+1. **Playback is Auxiliary**:
+   Real-time audio playback (`play()`, `addPlay`) is strictly a local developer preview helper. Changes to the core synthesis and build pipeline must never introduce runtime audio server dependencies or break headless CI execution.
+1. **Flat Generic Typing**:
+   `lightmix` treats floating-point sample types (`f64`, `f80`, `f128`, and future `f32`) flatly via `comptime T: type`. Do not hardcode or prioritize a specific sample type in core structures.
+1. **In-Memory Buffer Model**:
+   Waveforms are held in memory buffers (`Wave(T)`). Simplicity, safety, and deterministic calculation take priority over premature streaming pipelines.
+1. **Stateless Randomness**:
+   `lightmix` does not embed internal pseudo-random number generators (PRNG). Callers pass generated noise buffers directly (e.g., using `std.Random.DefaultPrng`), guaranteeing full caller control over random seeds and determinism.
+1. **Crash Noise & Clipping as Sound Sources**:
+   Overdriven signals, clipping, and crash noise are treated as valid sound sources in themselves. Core operations never sanitize, auto-normalize, or fail on out-of-bounds sample values; raw sample data is preserved as-is, deferring quantization behavior entirely to underlying format codecs (such as `zigggwavvv`).
+1. **Multi-Format Ingestion**:
+   In addition to pure algorithmic synthesis, importing external audio sources (`Wave(T).read`) across WAV and future compressed formats (FLAC, Ogg Vorbis) is an essential supported workflow.
+1. **Unified Export & Cross-Format Metadata**:
+   Audio export should be abstracted uniformly across formats (`wave.write(...)`), accompanied by format-agnostic metadata support (such as game audio loop points).
+1. **Strict Property Matching**:
+   No hidden resampling or channel coercion. Property mismatches must produce explicit errors (`error.MismatchedWaveProperties`), requiring caller-directed conversion.
+1. **Pure Zig (Zero C Dependencies)**:
+   All core capabilities and future format codecs must be implemented in Pure Zig to guarantee instant cross-compilation without C toolchains or host SDK issues.
+1. **Future Unmanaged Memory Evolution**:
+   A planned transition toward modern Zig 0.16 `Unmanaged` patterns (allocator-per-operation) is on the architectural roadmap, deferring implementation to a scheduled breaking-change cycle.
+1. **Parallelism via Build System**:
+   Keep core data structures synchronous. Parallel generation across multiple audio assets is managed by `zig build -j` rather than internal threading complexity.
+1. **Aggressive Deprecation & Zig 1.0 Milestone**:
+   Deprecated features are pruned quickly to stay aligned with modern Zig idioms. Releasing `lightmix 1.0.0` is anchored to Zig's official `1.0.0` milestone.
 
 ## Getting Started
 
@@ -329,6 +364,12 @@ pub fn main() !void {
 ```
 
 ## Audio-Specific Guidelines
+
+### Deterministic & Headless Synthesis
+
+- **Deterministic Output**: Ensure all synthesis routines produce bit-identical output across supported operating systems and CPU architectures.
+- **Headless Compatibility**: Standard build and test steps must never assume physical audio hardware or active sound daemons (ALSA, PulseAudio, PipeWire, CoreAudio).
+- **Playback as Helper**: The `play()` and `addPlay` utilities are preview helpers; never introduce playback dependencies into core synthesis or file generation logic.
 
 ### Sample Rates
 
