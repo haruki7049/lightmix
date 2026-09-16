@@ -653,17 +653,18 @@ pub fn inner(comptime T: type) type {
 
         /// Applies a filter function with custom arguments to the wave.
         ///
-        /// The original wave is automatically freed after the filter is applied.
-        /// This enables chaining multiple filters together efficiently.
+        /// On success, the original wave is automatically freed (`self.deinit()`) and replaced with the result.
+        /// If `filter_fn` returns an error, `self.deinit()` is NOT called and the original wave remains intact and owned by the caller.
         ///
         /// ## Parameters
-        /// - `self`: The wave to filter (will be freed after filtering)
+        /// - `self`: Pointer to the wave to filter (freed on success, preserved intact on error)
         /// - `args_type`: The type of the arguments to pass to the filter function
         /// - `filter_fn`: The filter function to apply
         /// - `args`: Arguments to pass to the filter function
         ///
         /// ## Errors
-        /// Returns any error produced by `filter_fn` or allocation failures
+        /// Returns any error produced by `filter_fn` or allocation failures. If an error occurs,
+        /// the original wave remains unchanged and must still be cleaned up by the caller.
         ///
         /// ## Example Usage
         /// ```zig
