@@ -49,6 +49,10 @@ Before contributing new features, please understand `lightmix`'s core architectu
     All core capabilities and future format codecs must be implemented in Pure Zig to guarantee instant cross-compilation without C toolchains or host SDK issues.
 12. **Future Unmanaged Memory Evolution**:
     A planned transition toward modern Zig 0.16 `Unmanaged` patterns (allocator-per-operation) is on the architectural roadmap, deferring implementation to a scheduled breaking-change cycle.
+13. **Parallelism via Build System**:
+    Keep core data structures synchronous. Parallel generation across multiple audio assets is managed by `zig build -j` rather than internal threading complexity.
+14. **Aggressive Deprecation & Zig 1.0 Milestone**:
+    Deprecated features are pruned quickly to stay aligned with modern Zig idioms. Releasing `lightmix 1.0.0` is anchored to Zig's official `1.0.0` milestone.
 
 ## Getting Started
 

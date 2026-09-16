@@ -46,6 +46,10 @@ I created this project because I felt a disconnect between existing audio synthe
   The library adheres to a Pure Zig policy, avoiding C compiler toolchain or C library dependencies to ensure seamless cross-compilation across any target platform.
 - **Roadmap toward Unmanaged Memory**:
   While current structs hold allocator instances for simplicity, `lightmix` embraces a planned future evolution toward modern Zig 0.16 `Unmanaged` patterns (explicit allocators per operation) when breaking changes can be bundled.
+- **External Parallelism via Build System**:
+  `Wave(T)` and `Composer(T)` are kept purely synchronous and single-threaded. Multi-asset parallelization is delegated entirely to the build system via `zig build -j` to avoid internal threading complexity.
+- **Pragmatic Generation Strategy**:
+  Compiling native generator binaries in `.ReleaseFast` via `addWave` is a pragmatic choice for maximum generation speed. `lightmix` remains flexible and pragmatic about adopting alternative compilation or evaluation techniques if faster or more reliable methods emerge.
 
 ## How to use
 
@@ -246,11 +250,11 @@ const result: lightmix.Wave(f64) = try composer.finalize(.{}); // Let's finalize
 defer result.deinit(); // Don't forget to free the Wave data.
 ```
 
-## Zig version
+## Zig Version & 1.0.0 Milestone
 
-0.16.0
-
-This project will follows Ziglang's minor version.
+- **Language Target**: Zig `0.16.0` (tracks Zig's minor version).
+- **Aggressive Deprecation Policy**: Given that Zig has not yet reached its major 1.0 release, deprecated language and library features are pruned quickly to stay aligned with modern Zig idioms.
+- **1.0.0 Release Milestone**: `lightmix 1.0.0` will be released when Zig itself reaches version `1.0.0` (see [#89](https://github.com/haruki7049/lightmix/issues/89)).
 
 ## API Documentations
 
