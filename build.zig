@@ -287,8 +287,14 @@ const Generator = struct {
             \\    const output_path = args_it.next() orelse return error.MissingOutputFileArg;
             \\    const bits_str = args_it.next() orelse return error.MissingBitsArg;
             \\    const format_str = args_it.next() orelse return error.MissingFormatCodeArg;
+            \\    const use_fact_str = args_it.next() orelse return error.MissingUseFactArg;
+            \\    const use_peak_str = args_it.next() orelse return error.MissingUsePeakArg;
+            \\    const peak_timestamp_str = args_it.next() orelse return error.MissingPeakTimestampArg;
             \\
             \\    const bits = try std.fmt.parseInt(u16, bits_str, 10);
+            \\    const use_fact = std.mem.eql(u8, use_fact_str, "true");
+            \\    const use_peak = std.mem.eql(u8, use_peak_str, "true");
+            \\    const peak_timestamp = try std.fmt.parseInt(u32, peak_timestamp_str, 10);
             \\
             \\    const wave = try user_module.{s}(init);
             \\    defer wave.deinit();
@@ -302,11 +308,17 @@ const Generator = struct {
             \\        try wave.write(.wav, &writer.interface, .{{
             \\            .format_code = .pcm,
             \\            .bits = bits,
+            \\            .use_fact = use_fact,
+            \\            .use_peak = use_peak,
+            \\            .peak_timestamp = peak_timestamp,
             \\        }});
             \\    }} else if (std.mem.eql(u8, format_str, "ieee_float")) {{
             \\        try wave.write(.wav, &writer.interface, .{{
             \\            .format_code = .ieee_float,
             \\            .bits = bits,
+            \\            .use_fact = use_fact,
+            \\            .use_peak = use_peak,
+            \\            .peak_timestamp = peak_timestamp,
             \\        }});
             \\    }} else {{
             \\        return error.InvalidFormatCode;
@@ -368,6 +380,9 @@ const Generator = struct {
             const output_wave_file = run_gen.addOutputFileArg(options.format.wav.name);
             run_gen.addArg(b.fmt("{d}", .{options.format.wav.bits}));
             run_gen.addArg(@tagName(options.format.wav.format_code));
+            run_gen.addArg(if (options.format.wav.use_fact) "true" else "false");
+            run_gen.addArg(if (options.format.wav.use_peak) "true" else "false");
+            run_gen.addArg(b.fmt("{d}", .{options.format.wav.peak_timestamp}));
 
             // Install the generated wave file
             const install_wave = b.addInstallFileWithDir(
@@ -436,6 +451,15 @@ pub const WavOptions = struct {
 
     /// Audio encoding format such as .pcm (PCM integer) or .ieee_float (floating-point).
     format_code: z_wav.FormatCode,
+
+    /// Whether to include a 'fact' chunk in the WAV header (default: false).
+    use_fact: bool = false,
+
+    /// Whether to include a 'PEAK' chunk in the WAV header (default: false).
+    use_peak: bool = false,
+
+    /// Optional timestamp for the 'PEAK' chunk in seconds since Unix epoch (default: 0).
+    peak_timestamp: u32 = 0,
 };
 
 /// A helper function to install Wave file from a pointer of a value typed CompileWave.
