@@ -69,12 +69,12 @@ See how to combine techniques to create realistic instrument sounds.
 
 Ready for more? These examples show advanced lightmix features.
 
-- **build-time-generation** - Generate audio files at compile-time
-- **build-time-play**
-- **runtime-play**
-- **modular-composing** - Organize complex audio projects with modules
+- **build-time-generation** - Generate audio files at compile-time during `zig build`
+- **build-time-play** - Generate and play audio files directly at build-time with `zig build play`
+- **runtime-play** - Play synthesized audio waveforms in real-time through standard audio output
+- **modular-composing** - Organize complex audio projects with modular packages and custom synths
 
-**What you'll learn:** Build system integration, code organization, reusable components
+**What you'll learn:** Build system integration, build-time audio generation and playback, real-time audio playback, code organization with modular packages
 
 ## 🚀 How to Run Examples
 
