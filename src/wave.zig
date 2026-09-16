@@ -970,6 +970,18 @@ pub fn inner(comptime T: type) type {
             try testing.expectEqual(Self.saturating_mixing_expression(0.8, 0.5), 1.0);
             try testing.expectEqual(Self.saturating_mixing_expression(-0.8, -0.5), -1.0);
             try testing.expectApproxEqAbs(Self.saturating_mixing_expression(0.2, 0.3), 0.5, 0.00001);
+
+            // Extreme positive inputs
+            try testing.expectEqual(Self.saturating_mixing_expression(2.0, 0.5), 1.0);
+            try testing.expectEqual(Self.saturating_mixing_expression(1.5, 3.0), 1.0);
+
+            // Extreme negative inputs
+            try testing.expectEqual(Self.saturating_mixing_expression(-3.0, 0.5), -1.0);
+            try testing.expectEqual(Self.saturating_mixing_expression(-2.0, -2.5), -1.0);
+
+            // Opposing extreme inputs
+            try testing.expectApproxEqAbs(Self.saturating_mixing_expression(5.0, -4.5), 0.5, 0.00001);
+            try testing.expectApproxEqAbs(Self.saturating_mixing_expression(-10.0, 9.2), -0.8, 0.00001);
         }
 
         test "normalize wave samples" {
