@@ -183,6 +183,32 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
     });
     test_step.dependOn(bt_play_wave.step);
 
+    // Integration test for use_peak and peak_timestamp chunk options in addWave (#222)
+    const bt_peak_wave = try addWave(b, bt_gen_mod, .{
+        .optimize = optimize,
+        .format = .{ .wav = .{
+            .bits = 16,
+            .format_code = .pcm,
+            .use_peak = true,
+            .peak_timestamp = 1700000000,
+            .name = "test-use-peak.wav",
+        } },
+    });
+    const test_peak_exe = b.addExecutable(.{
+        .name = "test_build_peak",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tests/build_peak.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "lightmix", .module = lightmix_mod },
+            },
+        }),
+    });
+    const run_test_peak = b.addRunArtifact(test_peak_exe);
+    run_test_peak.addFileArg(bt_peak_wave.output_file);
+    test_step.dependOn(&run_test_peak.step);
+
     // TODO: l.addPlay function cannot be tested via `zig build test` command. I (@haruki7049) cannot write it.
 }
 
@@ -397,6 +423,7 @@ const Generator = struct {
                 .root_module = mod,
                 .name = options.format.wav.name,
                 .create_wave_options = options,
+                .output_file = output_wave_file,
             };
             return result;
         }
@@ -409,6 +436,7 @@ pub const CompileWave = struct {
     root_module: *std.Build.Module,
     name: []const u8,
     create_wave_options: CreateWaveOptions,
+    output_file: std.Build.LazyPath,
 };
 
 /// Options for configuring compile-time wave generation.
