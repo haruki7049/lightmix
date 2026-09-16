@@ -6,7 +6,8 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
+  issues: write
 
 jobs:
   validate-pr-title:
@@ -16,4 +17,4 @@ jobs:
         uses: ytanikin/pr-conventional-commits@1.4.0
         with:
           task_types: '[ "build", "chore", "ci", "docs", "feat", "fix", "perf", "refactor", "revert", "style", "test" ]'
-          add_scope_label: "false"
+          add_scope_label: "true"
