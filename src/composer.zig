@@ -193,45 +193,6 @@ pub fn inner(comptime T: type) type {
             self.* = result;
         }
 
-        /// Options for converting channel count and panning when appending waves.
-        pub const ConvertOptions = struct {
-            /// Pan position when upmixing mono to stereo (-1.0 (hard left) to 1.0 (hard right)).
-            pan: f32 = 0.0,
-        };
-
-        /// Appends a wave to the composition, automatically upmixing or downmixing channel count
-        /// if `waveinfo.wave.channels != self.channels`.
-        ///
-        /// Returns the newly allocated converted `Wave(T)` instance. The caller owns the returned Wave
-        /// and is responsible for calling `deinit()` on it after finalizing the composition.
-        ///
-        /// ## Parameters
-        /// - `self`: Pointer to the composer to modify
-        /// - `waveinfo`: Information about the wave and start point
-        /// - `options`: Channel conversion options (e.g. pan positioning)
-        ///
-        /// ## Returns
-        /// The converted `Wave(T)` instance matching `self.channels`.
-        pub fn append_converted(
-            self: *Self,
-            waveinfo: WaveInfo,
-            options: ConvertOptions,
-        ) (Wave(T).MixErrors || std.mem.Allocator.Error)!Wave(T) {
-            if (waveinfo.wave.sample_rate != self.sample_rate) {
-                return error.MismatchedWaveProperties;
-            }
-
-            const converted_wave = try waveinfo.wave.to_channels(self.channels, .{ .pan = options.pan });
-            errdefer converted_wave.deinit();
-
-            try self.append(.{
-                .wave = converted_wave,
-                .start_point = waveinfo.start_point,
-            });
-
-            return converted_wave;
-        }
-
         /// Finalizes the composition by mixing all waves together.
         ///
         /// This creates a single Wave by:
@@ -545,16 +506,13 @@ pub fn inner(comptime T: type) type {
             // Mismatched sample rate on append
             try testing.expectError(error.MismatchedWaveProperties, composer.append(.{ .wave = wave_48k, .start_point = 0 }));
 
-            // Mismatched sample rate on append_converted
-            try testing.expectError(error.MismatchedWaveProperties, composer.append_converted(.{ .wave = wave_48k, .start_point = 0 }, .{}));
-
             const wave_stereo_44k = try Wave(T).init(&samples, allocator, .{
                 .sample_rate = 44100,
                 .channels = 2,
             });
             defer wave_stereo_44k.deinit();
 
-            // Mismatched channels on direct append without append_converted
+            // Mismatched channels on direct append
             try testing.expectError(error.MismatchedWaveProperties, composer.append(.{ .wave = wave_stereo_44k, .start_point = 0 }));
         }
 
@@ -717,8 +675,7 @@ pub fn inner(comptime T: type) type {
             try testing.expectError(error.Overflow, composer.finalize(.{}));
             try testing.expectError(error.Overflow, composer.render_stream(.{}));
         }
-
-        test "append_converted upmixes mono wave to stereo composer with panning" {
+        test "explicit to_channels with panning before composer append" {
             const allocator = testing.allocator;
             var composer = Self.init(allocator, .{
                 .sample_rate = 44100,
@@ -730,8 +687,10 @@ pub fn inner(comptime T: type) type {
             const mono_wave = try Wave(T).init(&mono_samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
             defer mono_wave.deinit();
 
-            const converted = try composer.append_converted(.{ .wave = mono_wave, .start_point = 0 }, .{ .pan = -0.5 });
-            defer converted.deinit();
+            const stereo_wave = try mono_wave.to_channels(composer.channels, .{ .pan = -0.5 });
+            defer stereo_wave.deinit();
+
+            try composer.append(.{ .wave = stereo_wave, .start_point = 0 });
 
             const result = try composer.finalize(.{});
             defer result.deinit();
@@ -745,7 +704,7 @@ pub fn inner(comptime T: type) type {
             try testing.expectApproxEqAbs(result.samples[3], 0.2, 0.00001);
         }
 
-        test "append_converted downmixes stereo wave to mono composer" {
+        test "explicit to_mono before composer append" {
             const allocator = testing.allocator;
             var composer = Self.init(allocator, .{
                 .sample_rate = 44100,
@@ -757,8 +716,10 @@ pub fn inner(comptime T: type) type {
             const stereo_wave = try Wave(T).init(&stereo_samples, allocator, .{ .sample_rate = 44100, .channels = 2 });
             defer stereo_wave.deinit();
 
-            const converted = try composer.append_converted(.{ .wave = stereo_wave, .start_point = 0 }, .{});
-            defer converted.deinit();
+            const mono_wave = try stereo_wave.to_mono();
+            defer mono_wave.deinit();
+
+            try composer.append(.{ .wave = mono_wave, .start_point = 0 });
 
             const result = try composer.finalize(.{});
             defer result.deinit();
