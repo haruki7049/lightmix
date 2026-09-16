@@ -277,6 +277,109 @@ pub fn inner(comptime T: type) type {
             };
         }
 
+        /// Options for block-based streaming rendering.
+        pub const StreamOptions = struct {
+            /// Mixer function to blend overlapping samples.
+            mixer: *const fn (T, T) T = Wave(T).saturating_mixing_expression,
+            /// Block size in samples (default: 4096 samples).
+            block_size: usize = 4096,
+        };
+
+        /// Iterator that renders the composition in fixed-size blocks to minimize peak memory consumption.
+        pub const BlockIterator = struct {
+            composer: Self,
+            options: StreamOptions,
+            current_offset: usize,
+            total_samples: usize,
+            block_buffer: []T,
+
+            pub fn init(composer: Self, options: StreamOptions) (Wave(T).MixErrors || std.mem.Allocator.Error)!BlockIterator {
+                var total_samples: usize = 0;
+                for (composer.info) |waveinfo| {
+                    if (waveinfo.wave.sample_rate != composer.sample_rate or waveinfo.wave.channels != composer.channels) {
+                        return error.MismatchedWaveProperties;
+                    }
+                    if (waveinfo.start_point % composer.channels != 0) {
+                        return error.UnalignedChannelOffset;
+                    }
+                    const ep = waveinfo.start_point + waveinfo.wave.samples.len;
+                    if (total_samples < ep) {
+                        total_samples = ep;
+                    }
+                }
+
+                const bs = if (options.block_size == 0) 4096 else options.block_size;
+                const buf = try composer.allocator.alloc(T, bs);
+                errdefer composer.allocator.free(buf);
+
+                return BlockIterator{
+                    .composer = composer,
+                    .options = .{ .mixer = options.mixer, .block_size = bs },
+                    .current_offset = 0,
+                    .total_samples = total_samples,
+                    .block_buffer = buf,
+                };
+            }
+
+            pub fn deinit(self: BlockIterator) void {
+                self.composer.allocator.free(self.block_buffer);
+            }
+
+            /// Renders and returns the next block of samples.
+            ///
+            /// Returns `null` when rendering reaches the end of the composition.
+            pub fn next(self: *BlockIterator) ?[]const T {
+                if (self.current_offset >= self.total_samples) {
+                    return null;
+                }
+
+                const remaining = self.total_samples - self.current_offset;
+                const chunk_len = @min(remaining, self.options.block_size);
+                const chunk_samples = self.block_buffer[0..chunk_len];
+                @memset(chunk_samples, 0.0);
+
+                const block_start = self.current_offset;
+                const block_end = block_start + chunk_len;
+
+                for (self.composer.info) |waveinfo| {
+                    const wave_start = waveinfo.start_point;
+                    const wave_end = wave_start + waveinfo.wave.samples.len;
+
+                    if (wave_end <= block_start or wave_start >= block_end) {
+                        continue;
+                    }
+
+                    const overlap_start = @max(wave_start, block_start);
+                    const overlap_end = @min(wave_end, block_end);
+
+                    const wave_offset = overlap_start - wave_start;
+                    const block_offset = overlap_start - block_start;
+                    const count = overlap_end - overlap_start;
+
+                    for (0..count) |i| {
+                        const src_sample = waveinfo.wave.samples[wave_offset + i];
+                        const dst_idx = block_offset + i;
+                        chunk_samples[dst_idx] = self.options.mixer(chunk_samples[dst_idx], src_sample);
+                    }
+                }
+
+                self.current_offset += chunk_len;
+                return chunk_samples;
+            }
+        };
+
+        /// Creates a block-based rendering iterator for memory-efficient streaming.
+        ///
+        /// ## Parameters
+        /// - `self`: The composer instance
+        /// - `options`: Streaming options (mixer function, block_size)
+        ///
+        /// ## Returns
+        /// A `BlockIterator` for chunked rendering
+        pub fn render_stream(self: Self, options: StreamOptions) (Wave(T).MixErrors || std.mem.Allocator.Error)!BlockIterator {
+            return BlockIterator.init(self, options);
+        }
+
         fn padding_for_start(samples: []const T, start_point: usize, allocator: std.mem.Allocator) std.mem.Allocator.Error![]const T {
             const padding_length: usize = start_point;
             var padding: std.array_list.Aligned(T, null) = .empty;
@@ -492,6 +595,44 @@ pub fn inner(comptime T: type) type {
             try testing.expectApproxEqAbs(result.samples[1], 0.8, 0.00001);
             try testing.expectApproxEqAbs(result.samples[2], 0.8, 0.00001);
             try testing.expectApproxEqAbs(result.samples[3], 0.3, 0.00001);
+        }
+
+        test "render_stream produces identical output to finalize in blocks" {
+            const allocator = testing.allocator;
+            var composer = Self.init(allocator, .{
+                .sample_rate = 44100,
+                .channels = 1,
+            });
+            defer composer.deinit();
+
+            const samples1 = [_]T{ 0.1, 0.2, 0.3, 0.4, 0.5 };
+            const wave1 = try Wave(T).init(&samples1, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave1.deinit();
+
+            const samples2 = [_]T{ 0.5, 0.4, 0.3 };
+            const wave2 = try Wave(T).init(&samples2, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave2.deinit();
+
+            try composer.append(.{ .wave = wave1, .start_point = 0 });
+            try composer.append(.{ .wave = wave2, .start_point = 2 });
+
+            const finalized = try composer.finalize(.{});
+            defer finalized.deinit();
+
+            var iterator = try composer.render_stream(.{ .block_size = 2 });
+            defer iterator.deinit();
+
+            var streamed_samples: std.array_list.Aligned(T, null) = .empty;
+            defer streamed_samples.deinit(allocator);
+
+            while (iterator.next()) |block| {
+                try streamed_samples.appendSlice(allocator, block);
+            }
+
+            try testing.expectEqual(finalized.samples.len, streamed_samples.items.len);
+            for (finalized.samples, streamed_samples.items) |expected, actual| {
+                try testing.expectApproxEqAbs(expected, actual, 0.00001);
+            }
         }
     };
 }
