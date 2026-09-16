@@ -29,3 +29,29 @@ test "read sine.wav" {
     };
     try std.testing.expectEqualSlices(f64, expected_samples, sine.samples[0..16]);
 }
+
+test "read truncated wav stream returns error" {
+    const allocator = std.testing.allocator;
+
+    // Completely empty stream
+    {
+        var reader = std.Io.Reader.fixed("");
+        try std.testing.expectError(error.InvalidFormat, Wave(f64).read(.wav, allocator, &reader));
+    }
+
+    // Truncated header (only 4 bytes)
+    {
+        var reader = std.Io.Reader.fixed("RIFF");
+        try std.testing.expectError(error.InvalidFormat, Wave(f64).read(.wav, allocator, &reader));
+    }
+
+    // Truncated valid WAV file
+    {
+        const full_sine = @embedFile("./assets/sine.wav");
+        var reader = std.Io.Reader.fixed(full_sine[0 .. full_sine.len / 2]);
+        _ = Wave(f64).read(.wav, allocator, &reader) catch {
+            return;
+        };
+        return error.ExpectedError;
+    }
+}
