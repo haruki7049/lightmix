@@ -34,20 +34,24 @@ pub fn build(b: *std.Build) !void {
     //
     // I must write below programs, because "miniaudio" linking needs macOS SDK on macOS.
     if (target.result.os.tag == .macos) {
-        const sdkroot_envvar: []const u8 = b.graph.environ_map.get("SDKROOT") orelse inner: {
-            // These processes need "xcrun" command
-            const argv = &.{ "xcrun", "--show-sdk-path" };
-            const result = b.run(argv); // The stdout of "xcrun --show-sdk-path"
-
-            break :inner result;
+        const maybe_sdkroot: ?[]const u8 = b.graph.environ_map.get("SDKROOT") orelse inner: {
+            // Only run xcrun if the host operating system is macOS
+            if (b.graph.host.result.os.tag == .macos) {
+                const argv = &.{ "xcrun", "--show-sdk-path" };
+                const result = b.run(argv); // The stdout of "xcrun --show-sdk-path"
+                break :inner result;
+            }
+            break :inner null;
         };
-        const trimmed_sdkroot = std.mem.trim(u8, sdkroot_envvar, " \t\r\n");
-        const sdkroot: []const u8 = try std.mem.concat(b.allocator, u8, &.{ trimmed_sdkroot, "/System/Library/Frameworks" });
-        lib_mod.addFrameworkPath(.{ .cwd_relative = sdkroot });
+        if (maybe_sdkroot) |sdkroot_envvar| {
+            const trimmed_sdkroot = std.mem.trim(u8, sdkroot_envvar, " \t\r\n");
+            const sdkroot: []const u8 = try std.mem.concat(b.allocator, u8, &.{ trimmed_sdkroot, "/System/Library/Frameworks" });
+            lib_mod.addFrameworkPath(.{ .cwd_relative = sdkroot });
 
-        // This part adds library paths to lib_mod variable.
-        const sdkroot_libpath: []const u8 = try std.mem.concat(b.allocator, u8, &.{ trimmed_sdkroot, "/usr/lib" });
-        lib_mod.addLibraryPath(.{ .cwd_relative = sdkroot_libpath });
+            // This part adds library paths to lib_mod variable.
+            const sdkroot_libpath: []const u8 = try std.mem.concat(b.allocator, u8, &.{ trimmed_sdkroot, "/usr/lib" });
+            lib_mod.addLibraryPath(.{ .cwd_relative = sdkroot_libpath });
+        }
     }
 
     // Library installation
