@@ -58,8 +58,6 @@ Follow this recommended order:
 ├── 🎹 04-composer            - Sequence & layer sounds
 ├── 🎸 05-practical-examples  - Real synthesis techniques
 └── 🚀 06-advanced            - Advanced features
-
-📚 Legacy examples (Wave/, Composer/, etc.) preserved for reference
 ```
 
 ## 🛠️ Handy API Features
