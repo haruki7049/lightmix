@@ -260,14 +260,16 @@ pub fn inner(comptime T: type) type {
                 return error.MismatchedWaveProperties;
             }
 
-            if (self.samples.len == 0)
+            if (self.samples.len == 0) {
+                const empty_samples = try self.allocator.alloc(T, 0);
                 return Self{
-                    .samples = &[_]T{},
+                    .samples = empty_samples,
                     .allocator = self.allocator,
 
                     .sample_rate = self.sample_rate,
                     .channels = self.channels,
                 };
+            }
 
             const result_samples = try self.allocator.alloc(T, self.samples.len);
             errdefer self.allocator.free(result_samples);
@@ -1415,6 +1417,21 @@ pub fn inner(comptime T: type) type {
             try testing.expectError(error.MismatchedWaveProperties, wave1.mix(wave3, .{}));
             // Mismatched channels
             try testing.expectError(error.MismatchedWaveProperties, wave1.mix(wave4, .{}));
+        }
+
+        test "mix empty waves allocates empty slice and deinits cleanly" {
+            const allocator = testing.allocator;
+            const wave1 = try Self.init(&[_]T{}, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave1.deinit();
+            const wave2 = try Self.init(&[_]T{}, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave2.deinit();
+
+            const result = try wave1.mix(wave2, .{});
+            defer result.deinit();
+
+            try testing.expectEqual(result.samples.len, 0);
+            try testing.expectEqual(result.sample_rate, 44100);
+            try testing.expectEqual(result.channels, 1);
         }
 
         test "to_channels upmixing mono to stereo with panning" {
