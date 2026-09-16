@@ -40,23 +40,6 @@ pub fn inner(comptime T: type) type {
         pub const WaveInfo = struct {
             wave: Wave(T),
             start_point: usize,
-
-            fn to_wave(self: WaveInfo, allocator: std.mem.Allocator) std.mem.Allocator.Error!Wave(T) {
-                const padding_samples: []T = try allocator.alloc(T, self.start_point);
-                defer allocator.free(padding_samples);
-                @memset(padding_samples, 0.0);
-
-                const slices: []const []const T = &[_][]const T{ padding_samples, self.wave.samples };
-                const samples = try std.mem.concat(allocator, T, slices);
-                defer allocator.free(samples);
-
-                const result: Wave(T) = try Wave(T).init(samples, allocator, .{
-                    .sample_rate = self.wave.sample_rate,
-                    .channels = self.wave.channels,
-                });
-
-                return result;
-            }
         };
 
         /// Options for initializing a Composer instance.
@@ -420,71 +403,6 @@ pub fn inner(comptime T: type) type {
         /// A `BlockIterator` for chunked rendering
         pub fn render_stream(self: Self, options: StreamOptions) (Wave(T).MixErrors || std.mem.Allocator.Error)!BlockIterator {
             return BlockIterator.init(self, options);
-        }
-
-        fn padding_for_start(samples: []const T, start_point: usize, allocator: std.mem.Allocator) std.mem.Allocator.Error![]const T {
-            const padding_length: usize = start_point;
-            var padding: std.array_list.Aligned(T, null) = .empty;
-            defer padding.deinit(allocator);
-
-            // Append padding
-            for (0..padding_length) |_|
-                try padding.append(allocator, 0.0);
-
-            // Append samples slice
-            try padding.appendSlice(allocator, samples);
-
-            const result: []const T = try padding.toOwnedSlice(allocator);
-
-            return result;
-        }
-
-        fn padding_for_last(samples: []const T, end_point: usize, allocator: std.mem.Allocator) std.mem.Allocator.Error![]const T {
-            std.debug.assert(samples.len <= end_point);
-
-            const padding_length: usize = end_point - samples.len;
-            var padding: std.array_list.Aligned(T, null) = .empty;
-            defer padding.deinit(allocator);
-
-            // Append samples slice
-            try padding.appendSlice(allocator, samples);
-
-            // Append padding
-            for (0..padding_length) |_|
-                try padding.append(allocator, 0.0);
-
-            const result: []const T = try padding.toOwnedSlice(allocator);
-
-            return result;
-        }
-
-        fn generate_soundless_samples(length: usize, allocator: std.mem.Allocator) std.mem.Allocator.Error![]const T {
-            var list: std.array_list.Aligned(T, null) = .empty;
-            defer list.deinit(allocator);
-
-            // Append empty wave
-            for (0..length) |_|
-                try list.append(allocator, 0.0);
-
-            const result: []const T = try list.toOwnedSlice(allocator);
-
-            return result;
-        }
-
-        test "padding_for_start" {
-            const allocator = testing.allocator;
-            const samples: []const T = &[_]T{ 1.0, 1.0 };
-            const start_point: usize = 10;
-
-            const result: []const T = try padding_for_start(samples, start_point, allocator);
-            defer allocator.free(result);
-
-            try testing.expectEqual(samples.len + start_point, result.len);
-
-            const expected: []const T = &[_]T{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0 };
-            for (0..result.len) |i| {
-                try testing.expectApproxEqAbs(expected[i], result[i], 0.001);
-            }
         }
 
         test "init & deinit" {
@@ -891,24 +809,6 @@ pub fn inner(comptime T: type) type {
             // Frame 2 (non-overlap): wave2
             try testing.expectApproxEqAbs(result.samples[4], 0.5, 0.00001);
             try testing.expectApproxEqAbs(result.samples[5], 0.7, 0.00001);
-        }
-
-        test "WaveInfo.to_wave converts wave with padding without memory leaks" {
-            const allocator = testing.allocator;
-            const original_samples = [_]T{ 1.0, 2.0 };
-            const wave = try Wave(T).init(&original_samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
-            defer wave.deinit();
-
-            const info = WaveInfo{ .wave = wave, .start_point = 3 };
-            const padded_wave = try info.to_wave(allocator);
-            defer padded_wave.deinit();
-
-            try testing.expectEqual(padded_wave.samples.len, 5);
-            try testing.expectEqual(padded_wave.samples[0], 0.0);
-            try testing.expectEqual(padded_wave.samples[1], 0.0);
-            try testing.expectEqual(padded_wave.samples[2], 0.0);
-            try testing.expectEqual(padded_wave.samples[3], 1.0);
-            try testing.expectEqual(padded_wave.samples[4], 2.0);
         }
     };
 }
