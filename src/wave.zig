@@ -530,39 +530,25 @@ pub fn inner(comptime T: type) type {
             const new_samples = try self.allocator.alloc(T, new_len);
             errdefer self.allocator.free(new_samples);
 
-            if (self.channels == 1 and target_channels == 2) {
+            if (self.channels == 1) {
                 const pan_clamped = std.math.clamp(options.pan, -1.0, 1.0);
                 const left_gain: T = @floatCast(@min(1.0, 1.0 - pan_clamped));
                 const right_gain: T = @floatCast(@min(1.0, 1.0 + pan_clamped));
 
-                for (0..total_frames) |i| {
-                    const m = self.samples[i];
-                    new_samples[i * 2] = m * left_gain;
-                    new_samples[i * 2 + 1] = m * right_gain;
-                }
-            } else if (self.channels == 2 and target_channels == 1) {
-                for (0..total_frames) |i| {
-                    const l = self.samples[i * 2];
-                    const r = self.samples[i * 2 + 1];
-                    new_samples[i] = (l + r) / 2.0;
-                }
-            } else if (self.channels == 1) {
-                for (0..total_frames) |i| {
-                    const m = self.samples[i];
-                    for (0..target_channels) |ch| {
-                        new_samples[i * target_channels + ch] = m;
+                for (self.samples, 0..) |m, i| {
+                    if (target_channels == 2) {
+                        new_samples[i * 2] = m * left_gain;
+                        new_samples[i * 2 + 1] = m * right_gain;
+                    } else {
+                        @memset(new_samples[i * target_channels .. (i + 1) * target_channels], m);
                     }
                 }
             } else {
+                const src_ch: T = @floatFromInt(self.channels);
                 for (0..total_frames) |i| {
                     var sum: T = 0.0;
-                    for (0..self.channels) |ch| {
-                        sum += self.samples[i * self.channels + ch];
-                    }
-                    const avg = sum / @as(T, @floatFromInt(self.channels));
-                    for (0..target_channels) |ch| {
-                        new_samples[i * target_channels + ch] = avg;
-                    }
+                    for (self.samples[i * self.channels .. (i + 1) * self.channels]) |s| sum += s;
+                    @memset(new_samples[i * target_channels .. (i + 1) * target_channels], sum / src_ch);
                 }
             }
 
