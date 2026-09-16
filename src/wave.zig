@@ -1405,6 +1405,42 @@ pub fn inner(comptime T: type) type {
             try testing.expectApproxEqAbs(mono.samples[1], 0.3, 0.00001);
         }
 
+        test "to_channels upmixing mono to 4 channels" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 0.8, 0.4 };
+            const wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave.deinit();
+
+            const quad = try wave.to_channels(4, .{});
+            defer quad.deinit();
+
+            try testing.expectEqual(quad.channels, 4);
+            try testing.expectEqual(quad.samples.len, 8);
+            for (quad.samples[0..4]) |s| {
+                try testing.expectApproxEqAbs(s, 0.8, 0.00001);
+            }
+            for (quad.samples[4..8]) |s| {
+                try testing.expectApproxEqAbs(s, 0.4, 0.00001);
+            }
+        }
+
+        test "to_channels downmixing 4 channels to 2 channels" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 1.0, 0.8, 0.6, 0.4, 0.4, 0.4, 0.0, 0.0 };
+            const wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 4 });
+            defer wave.deinit();
+
+            const stereo = try wave.to_channels(2, .{});
+            defer stereo.deinit();
+
+            try testing.expectEqual(stereo.channels, 2);
+            try testing.expectEqual(stereo.samples.len, 4);
+            try testing.expectApproxEqAbs(stereo.samples[0], 0.7, 0.00001);
+            try testing.expectApproxEqAbs(stereo.samples[1], 0.7, 0.00001);
+            try testing.expectApproxEqAbs(stereo.samples[2], 0.2, 0.00001);
+            try testing.expectApproxEqAbs(stereo.samples[3], 0.2, 0.00001);
+        }
+
         test "to_mono helper method" {
             const allocator = testing.allocator;
             const samples: []const T = &[_]T{ 1.0, 0.6, 0.4, 0.2 };
