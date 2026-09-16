@@ -19,35 +19,49 @@ I created this project because I felt a disconnect between existing audio synthe
 
 - **Audio as a Deterministic Build Artifact**:
   The primary mission of `lightmix` is deterministic, reproducible audio synthesis during `zig build` or in CI pipelines (e.g., automated generation of sound effects, procedural ambient tracks, or game audio assets). Output is bit-identical and requires no sound server or audio hardware.
+
 - **Minimalist Core (Unix Philosophy)**:
   `lightmix` focuses exclusively on foundational audio primitives:
+
   - Waveform buffer management and basic transformations (`Wave(T)`).
   - Timeline-based audio mixing and track arrangement (`Composer(T)`).
   - Accurate WAV encoding/decoding and `build.zig` integration (`addWave`).
-  
+
   High-level DSP effects (such as reverb, flanger, or chorus) and specialized synthesizer sound presets are considered **out of scope** (Non-Goals) for the core library. They belong in separate domain libraries or user application code.
+
 - **Playback as a Verification Helper**:
   Real-time audio playback (`play()`, `addPlay`) is provided strictly as a developer convenience to preview generated sounds during development. It is an auxiliary feature and must never block or compromise headless CI runs or core audio generation.
+
 - **Flat Generic Typing**:
   Audio samples are generic over `comptime T: type` (`f64`, `f80`, `f128`, with `f32` planned once underlying codec support is ready). No single floating-point precision is prioritized; users choose the balance between precision and memory overhead.
+
 - **In-Memory Buffer Model**:
   `lightmix` adopts an explicit in-memory model where entire waveforms are held in memory buffers. For game sound effects and typical multi-minute tracks, this provides maximum simplicity, safety, and performance without the complexity of streaming pipelines.
+
 - **Stateless Randomness & External PRNG**:
   `lightmix` does not embed pseudo-random number generators or hidden global state. When synthesizing noise-based signals (e.g., explosions or wind), callers supply sample data directly (e.g., using `std.Random.DefaultPrng`), ensuring total control over random seeds and determinism.
+
 - **Crash Noise & Clipping as Valid Sound Sources**:
   Overdriven signals, clipping, and crash noise are treated as valid sound sources in themselves. `lightmix` never auto-normalizes, sanitizes, or aborts builds with errors on out-of-bounds sample values during synthesis and mixing; raw values are preserved as-is, leaving sample quantization behavior entirely to underlying format codecs (such as `zigggwavvv`).
+
 - **Pure Synthesis with Multi-Format Ingestion**:
   While pure mathematical and algorithmic synthesis is the library's core motivation, importing external audio sources (`Wave(T).read`) across multiple formats (WAV, FLAC, Ogg Vorbis) is an essential capability for sampling, mashups, and real-world game sound design.
+
 - **Unified Format Export & Cross-Format Metadata**:
   `lightmix` aims to abstract audio export across multiple formats under a unified interface (`wave.write(...)`), paired with format-agnostic metadata support (such as loop points for game engines).
+
 - **Strict Property Matching (Explicit over Implicit)**:
   `lightmix` strictly enforces matching sample rates and channel counts during mixing. Mismatches result in explicit errors (`error.MismatchedWaveProperties`) rather than hidden resampling or implicit channel coercion.
+
 - **Pure Zig & Zero C Dependencies**:
   The library adheres to a Pure Zig policy, avoiding C compiler toolchain or C library dependencies to ensure seamless cross-compilation across any target platform.
+
 - **Roadmap toward Unmanaged Memory**:
   While current structs hold allocator instances for simplicity, `lightmix` embraces a planned future evolution toward modern Zig 0.16 `Unmanaged` patterns (explicit allocators per operation) when breaking changes can be bundled.
+
 - **External Parallelism via Build System**:
   `Wave(T)` and `Composer(T)` are kept purely synchronous and single-threaded. Multi-asset parallelization is delegated entirely to the build system via `zig build -j` to avoid internal threading complexity.
+
 - **Pragmatic Generation Strategy**:
   Compiling native generator binaries in `.ReleaseFast` via `addWave` is a pragmatic choice for maximum generation speed. `lightmix` remains flexible and pragmatic about adopting alternative compilation or evaluation techniques if faster or more reliable methods emerge.
 
