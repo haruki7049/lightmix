@@ -113,3 +113,4 @@ ______________________________________________________________________
 1. **No Symptom Swallowing**: Fix root causes of failing tests; never comment out assertions or swallow error returns.
 1. **Preserve English Comment Rule**: Ensure any new code comments or documentation additions strictly adhere to the English language requirement.
 1. **Strict PR Merge Prohibition**: Always leave created Pull Requests open. Never attempt to merge a Pull Request unless explicitly instructed by the user.
+1. **No Unsolicited Actions on Other Branches/PRs**: Never modify, rebase, or resolve conflicts on PRs or branches without explicit user instructions.
