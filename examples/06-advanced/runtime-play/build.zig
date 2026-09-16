@@ -23,7 +23,7 @@ pub fn build(b: *std.Build) !void {
     }
 
     const exe = b.addExecutable(.{
-        .name = "noise",
+        .name = "runtime-play",
         .root_module = exe_mod,
     });
     b.installArtifact(exe);
