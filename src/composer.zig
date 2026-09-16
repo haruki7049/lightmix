@@ -115,6 +115,9 @@ pub fn inner(comptime T: type) type {
                 if (waveinfo.wave.sample_rate != options.sample_rate or waveinfo.wave.channels != options.channels) {
                     return error.MismatchedWaveProperties;
                 }
+                if (waveinfo.start_point % options.channels != 0) {
+                    return error.UnalignedChannelOffset;
+                }
             }
 
             var list: std.array_list.Aligned(WaveInfo, null) = .empty;
@@ -155,6 +158,9 @@ pub fn inner(comptime T: type) type {
             if (waveinfo.wave.sample_rate != self.sample_rate or waveinfo.wave.channels != self.channels) {
                 return error.MismatchedWaveProperties;
             }
+            if (waveinfo.start_point % self.channels != 0) {
+                return error.UnalignedChannelOffset;
+            }
 
             var d: std.array_list.Aligned(WaveInfo, null) = .empty;
             try d.appendSlice(self.allocator, self.info);
@@ -185,6 +191,9 @@ pub fn inner(comptime T: type) type {
             for (append_list) |waveinfo| {
                 if (waveinfo.wave.sample_rate != self.sample_rate or waveinfo.wave.channels != self.channels) {
                     return error.MismatchedWaveProperties;
+                }
+                if (waveinfo.start_point % self.channels != 0) {
+                    return error.UnalignedChannelOffset;
                 }
             }
 
@@ -239,6 +248,9 @@ pub fn inner(comptime T: type) type {
             for (self.info) |waveinfo| {
                 if (waveinfo.wave.sample_rate != self.sample_rate or waveinfo.wave.channels != self.channels) {
                     return error.MismatchedWaveProperties;
+                }
+                if (waveinfo.start_point % self.channels != 0) {
+                    return error.UnalignedChannelOffset;
                 }
                 const ep = waveinfo.start_point + waveinfo.wave.samples.len;
 

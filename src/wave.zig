@@ -398,6 +398,8 @@ pub fn inner(comptime T: type) type {
         pub const MixErrors = error{
             /// The waves being mixed have mismatched sample lengths, sample rates, or channel counts
             MismatchedWaveProperties,
+            /// The wave start point is not aligned to channel boundaries
+            UnalignedChannelOffset,
         };
 
         /// Errors that can occur when filling zeros to end.

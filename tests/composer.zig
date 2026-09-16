@@ -76,6 +76,24 @@ test "Composer finalize empty composition" {
     try std.testing.expectEqual(result.channels, 1);
 }
 
+test "Composer append with unaligned channel offset returns error" {
+    const allocator = std.testing.allocator;
+    var composer = Composer(f64).init(allocator, .{
+        .sample_rate = 44100,
+        .channels = 2,
+    });
+    defer composer.deinit();
+
+    const data = [_]f64{ 0.1, 0.2, 0.3, 0.4 };
+    const wave = try Wave(f64).init(&data, allocator, .{
+        .sample_rate = 44100,
+        .channels = 2,
+    });
+    defer wave.deinit();
+
+    try std.testing.expectError(error.UnalignedChannelOffset, composer.append(.{ .wave = wave, .start_point = 1 }));
+}
+
 fn generate_soundless_data(length: usize, allocator: std.mem.Allocator) ![]const f64 {
     var list: std.array_list.Aligned(f64, null) = .empty;
 
