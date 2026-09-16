@@ -1,3 +1,19 @@
+//! # Build-Time Audio Playback
+//!
+//! This example demonstrates build-time audio generation and playback.
+//! Using `l.addPlay` in `build.zig`, the generated wave file is automatically played
+//! through standard system audio output when executing `zig build play`.
+//!
+//! ## What you'll learn:
+//! - Configuring build steps with `l.addPlay` and `l.installPlay`
+//! - Generating and playing audio directly during the build process
+//! - Previewing audio artifacts during build workflow
+//!
+//! ## Run this example:
+//! ```
+//! zig build play
+//! ```
+
 const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
