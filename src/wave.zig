@@ -406,6 +406,8 @@ pub fn inner(comptime T: type) type {
         pub const FillZeroErrors = error{
             /// The start index exceeds the sample length or the end index
             InvalidTruncationRange,
+            /// The start or end index is not aligned to channel boundaries
+            UnalignedChannelOffset,
         };
 
         /// Truncates the wave at a start point and fills with zeros to the end point.
@@ -422,10 +424,15 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Errors
         /// - `InvalidTruncationRange`: If `start > self.samples.len` or `start > end`
+        /// - `UnalignedChannelOffset`: If `start` or `end` is not aligned to channel boundaries
         /// - Allocator error (errors.OutOfMemory)
         pub fn fill_zero_to_end(self: Self, start: usize, end: usize) (FillZeroErrors || std.mem.Allocator.Error)!Self {
             if (start > self.samples.len or start > end) {
                 return error.InvalidTruncationRange;
+            }
+
+            if (start % self.channels != 0 or end % self.channels != 0) {
+                return error.UnalignedChannelOffset;
             }
 
             const result_samples = try self.allocator.alloc(T, end);
@@ -1144,6 +1151,17 @@ pub fn inner(comptime T: type) type {
 
             try testing.expectError(error.InvalidTruncationRange, wave.fill_zero_to_end(5, 10));
             try testing.expectError(error.InvalidTruncationRange, wave.fill_zero_to_end(2, 1));
+
+            // Unaligned channel offset test for multi-channel wave
+            const stereo_samples: []const T = &[_]T{ 1.0, 2.0, 3.0, 4.0 };
+            const stereo_wave = try Self.init(stereo_samples, allocator, .{
+                .sample_rate = 44100,
+                .channels = 2,
+            });
+            defer stereo_wave.deinit();
+
+            try testing.expectError(error.UnalignedChannelOffset, stereo_wave.fill_zero_to_end(1, 4));
+            try testing.expectError(error.UnalignedChannelOffset, stereo_wave.fill_zero_to_end(0, 3));
         }
 
         test "filter_with" {
