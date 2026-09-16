@@ -173,6 +173,23 @@ try wave.write(.wav, &writer.interface, .{
 });
 ```
 
+#### Channel Conversion Helpers
+
+`Wave(T)` provides convenient helper methods to convert channel counts:
+
+- **`to_mono()`**: Converts the wave to mono (1 channel). Averages multi-channel audio frames into a single channel.
+- **`to_stereo(pan)`**: Converts a mono wave to stereo (2 channels) applying panning (`-1.0` for hard left, `0.0` for center, `1.0` for hard right).
+
+```zig
+// Convert to mono
+const mono_wave = try wave.to_mono();
+defer mono_wave.deinit();
+
+// Convert to stereo with panning (e.g., pan 50% right)
+const stereo_wave = try wave.to_stereo(0.5);
+defer stereo_wave.deinit();
+```
+
 ### `Composer`
 
 `Composer` is a generic type function that accepts a sample type parameter (same as Wave). It contains a `Composer(T).WaveInfo` array, which contains a `Wave(T)` and the timing when it plays.
