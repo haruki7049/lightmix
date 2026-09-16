@@ -208,7 +208,7 @@ const composer: lightmix.Composer(f64) = try lightmix.Composer(f64).init_with(in
 });
 defer composer.deinit(); // Composer.info is also owned by the passed allocator, so you must free this composer.
 
-const result: lightmix.Wave(f64) = composer.finalize(.{}); // Let's finalize to create a Wave(f64)!!
+const result: lightmix.Wave(f64) = try composer.finalize(.{}); // Let's finalize to create a Wave(f64)!!
 defer result.deinit(); // Don't forget to free the Wave data.
 ```
 
