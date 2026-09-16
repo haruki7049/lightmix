@@ -847,21 +847,6 @@ pub fn inner(comptime T: type) type {
             }
         }
 
-        fn tmp_file(allocator: std.mem.Allocator) !struct { std.fs.File, std.testing.TmpDir, []const u8 } {
-            const timestamp: i64 = std.time.timestamp();
-            const timestamp_str: []const u8 = try std.fmt.allocPrint(allocator, "{s}", .{timestamp});
-
-            const tmp = std.testing.tmpDir(.{});
-            const file = try tmp.dir.createFile(timestamp_str ++ ".wav", .{});
-
-            return .{ file, tmp, timestamp_str };
-        }
-
-        /// Options for the `play` function (reserved for future use).
-        pub const PlayOptions = struct {
-            do_cleanup: bool,
-        };
-
         test "read & deinit" {
             const allocator = testing.allocator;
             var reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
