@@ -37,8 +37,8 @@ Before contributing new features, please understand `lightmix`'s core architectu
    Waveforms are held in memory buffers (`Wave(T)`). Simplicity, safety, and deterministic calculation take priority over premature streaming pipelines.
 6. **Stateless Randomness**:
    `lightmix` does not embed internal pseudo-random number generators (PRNG). Callers pass generated noise buffers directly (e.g., using `std.Random.DefaultPrng`), guaranteeing full caller control over random seeds and determinism.
-7. **Clipping as Sound Expression**:
-   Overdriven signals and clipping are treated as valid acoustic timbre (distortion/fuzz). Core operations never auto-normalize or throw errors on clipping; raw values are preserved and clamped only during final format quantization.
+7. **Crash Noise & Clipping as Sound Sources**:
+   Overdriven signals, clipping, and crash noise are treated as valid sound sources in themselves. Core operations never sanitize, auto-normalize, or fail on out-of-bounds sample values; raw sample data is preserved as-is, deferring quantization behavior entirely to underlying format codecs (such as `zigggwavvv`).
 8. **Multi-Format Ingestion**:
    In addition to pure algorithmic synthesis, importing external audio sources (`Wave(T).read`) across WAV and future compressed formats (FLAC, Ogg Vorbis) is an essential supported workflow.
 9. **Unified Export & Cross-Format Metadata**:

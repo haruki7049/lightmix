@@ -34,8 +34,8 @@ I created this project because I felt a disconnect between existing audio synthe
   `lightmix` adopts an explicit in-memory model where entire waveforms are held in memory buffers. For game sound effects and typical multi-minute tracks, this provides maximum simplicity, safety, and performance without the complexity of streaming pipelines.
 - **Stateless Randomness & External PRNG**:
   `lightmix` does not embed pseudo-random number generators or hidden global state. When synthesizing noise-based signals (e.g., explosions or wind), callers supply sample data directly (e.g., using `std.Random.DefaultPrng`), ensuring total control over random seeds and determinism.
-- **Clipping Permitted as Acoustic Expression**:
-  Overdriven signals and clipping are treated as valid sound-design choices (distortion, overdrive, square-wave saturation). Mixing and arithmetic do not auto-normalize or fail builds with errors on clipping; raw sample values are preserved until quantization during format export.
+- **Crash Noise & Clipping as Valid Sound Sources**:
+  Overdriven signals, clipping, and crash noise are treated as valid sound sources in themselves. `lightmix` never auto-normalizes, sanitizes, or aborts builds with errors on out-of-bounds sample values during synthesis and mixing; raw values are preserved as-is, leaving sample quantization behavior entirely to underlying format codecs (such as `zigggwavvv`).
 - **Pure Synthesis with Multi-Format Ingestion**:
   While pure mathematical and algorithmic synthesis is the library's core motivation, importing external audio sources (`Wave(T).read`) across multiple formats (WAV, FLAC, Ogg Vorbis) is an essential capability for sampling, mashups, and real-world game sound design.
 - **Unified Format Export & Cross-Format Metadata**:
