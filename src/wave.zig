@@ -13,7 +13,7 @@ const testing = std.testing;
 /// ## Usage
 /// ```zig
 /// const Wave = lightmix.Wave;
-/// const wave = Wave(f64).init(samples, allocator, .{
+/// const wave = try Wave(f64).init(samples, allocator, .{
 ///     .sample_rate = 44100,
 ///     .channels = 1,
 /// });

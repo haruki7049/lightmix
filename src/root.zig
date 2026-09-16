@@ -32,7 +32,7 @@
 //!     }
 //!
 //!     // Wave(T).init() creates a deep copy of samples
-//!     const wave: Wave(f64) = Wave(f64).init(&samples, allocator, .{
+//!     const wave: Wave(f64) = try Wave(f64).init(&samples, allocator, .{
 //!         .sample_rate = 44100,
 //!         .channels = 1,
 //!     });
@@ -46,7 +46,7 @@
 //!     defer composer.deinit();
 //!
 //!     // Composer(T).append() modifies the Composer in-place
-//!     composer.append(.{ .wave = wave, .start_point = 0 });
+//!     try composer.append(.{ .wave = wave, .start_point = 0 });
 //!
 //!     const result: Wave(f64) = try composer.finalize(.{});
 //!     defer result.deinit();
