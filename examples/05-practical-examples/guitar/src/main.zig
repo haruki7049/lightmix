@@ -48,7 +48,9 @@ fn generateGuitarNote(frequency: f64, allocator: std.mem.Allocator) !Wave(f64) {
     const period = @as(usize, @intFromFloat(sample_rate / frequency));
 
     // Initialize delay buffer with noise
-    var buffer: [2000]f64 = undefined;
+    var buffer: [4096]f64 = undefined;
+    if (period == 0 or period > buffer.len) return error.FrequencyOutOfBounds;
+
     var prng = std.Random.DefaultPrng.init(0);
     const rand = prng.random();
 
