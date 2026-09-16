@@ -712,13 +712,13 @@ pub fn inner(comptime T: type) type {
         ///     samples[i] = 0.5 * @sin(radians_per_sec * t);
         /// }
         ///
-        /// const wave: Wave(f64) = Wave(f64).init(samples[0..], allocator, .{
+        /// var wave: Wave(f64) = try Wave(f64).init(samples[0..], allocator, .{
         ///     .sample_rate = 44100,
         ///     .channels = 1,
         /// });
+        /// defer wave.deinit();
         ///
-        /// const decayed_wave: Wave(f64) = wave.filter(decay);
-        /// defer decayed_wave.deinit();
+        /// try wave.filter_with(DecayWithDebugPrintArgs, decay_with_debug_print, .{ .string = "hello" });
         /// ```
         pub fn filter_with(
             self: *Self,
@@ -736,13 +736,12 @@ pub fn inner(comptime T: type) type {
             self.* = result;
         }
 
-        /// Applies a filter function to the wave.
+        /// Applies a filter function to the wave in-place.
         ///
-        /// The original wave is automatically freed after the filter is applied.
-        /// This enables chaining multiple filters together efficiently.
+        /// The original wave's sample buffer is automatically freed and replaced with the filter result on success.
         ///
         /// ## Parameters
-        /// - `self`: The wave to filter (will be freed after filtering)
+        /// - `self`: Pointer to the wave to filter (modified in-place, replaced on success)
         /// - `filter_fn`: The filter function to apply
         ///
         /// ## Errors
@@ -784,13 +783,13 @@ pub fn inner(comptime T: type) type {
         ///     samples[i] = 0.5 * @sin(radians_per_sec * t);
         /// }
         ///
-        /// const wave: Wave(f64) = Wave(f64).init(samples[0..], allocator, .{
+        /// var wave: Wave(f64) = try Wave(f64).init(samples[0..], allocator, .{
         ///     .sample_rate = 44100,
         ///     .channels = 1,
         /// });
+        /// defer wave.deinit();
         ///
-        /// const decayed_wave: Wave(f64) = wave.filter(decay);
-        /// defer decayed_wave.deinit();
+        /// try wave.filter(decay);
         /// ```
         pub fn filter(
             self: *Self,
