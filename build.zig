@@ -183,6 +183,31 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
     });
     test_step.dependOn(bt_play_wave.step);
 
+    // Integration test for use_fact chunk option in addWave (#221)
+    const bt_fact_wave = try addWave(b, bt_gen_mod, .{
+        .optimize = optimize,
+        .format = .{ .wav = .{
+            .bits = 16,
+            .format_code = .pcm,
+            .use_fact = true,
+            .name = "test-use-fact.wav",
+        } },
+    });
+    const test_fact_exe = b.addExecutable(.{
+        .name = "test_build_fact",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tests/build_fact.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "lightmix", .module = lightmix_mod },
+            },
+        }),
+    });
+    const run_test_fact = b.addRunArtifact(test_fact_exe);
+    run_test_fact.addFileArg(bt_fact_wave.output_file);
+    test_step.dependOn(&run_test_fact.step);
+
     // Integration test for use_peak and peak_timestamp chunk options in addWave (#222)
     const bt_peak_wave = try addWave(b, bt_gen_mod, .{
         .optimize = optimize,
