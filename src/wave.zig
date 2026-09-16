@@ -495,6 +495,85 @@ pub fn inner(comptime T: type) type {
             };
         }
 
+        /// Options for channel conversion/upmixing/downmixing.
+        pub const ChannelConvertOptions = struct {
+            /// Pan position for mono-to-stereo conversion: [-1.0 (hard left), 1.0 (hard right)]
+            /// Default is 0.0 (center panning).
+            pan: f32 = 0.0,
+        };
+
+        /// Converts wave sample data to a target channel count (upmixing or downmixing).
+        ///
+        /// - Mono (1) to Stereo (2): Applies panning `options.pan` to left/right channels.
+        /// - Stereo (2) to Mono (1): Averages left and right channel samples `(L + R) / 2.0`.
+        /// - Same channel count: Returns a clone of the original wave.
+        /// - General N to M: Replicates mono or averages N channels to target M channels.
+        ///
+        /// ## Parameters
+        /// - `self`: The source wave to convert
+        /// - `target_channels`: Target channel count (e.g., 1 for mono, 2 for stereo)
+        /// - `options`: Conversion options including pan positioning
+        ///
+        /// ## Returns
+        /// A new Wave instance converted to `target_channels`
+        pub fn to_channels(
+            self: Self,
+            target_channels: u16,
+            options: ChannelConvertOptions,
+        ) std.mem.Allocator.Error!Self {
+            if (self.channels == target_channels) {
+                return self.clone(null);
+            }
+
+            const total_frames = if (self.channels > 0) self.samples.len / self.channels else 0;
+            const new_len = total_frames * target_channels;
+            const new_samples = try self.allocator.alloc(T, new_len);
+            errdefer self.allocator.free(new_samples);
+
+            if (self.channels == 1 and target_channels == 2) {
+                const pan_clamped = std.math.clamp(options.pan, -1.0, 1.0);
+                const left_gain: T = @floatCast(@min(1.0, 1.0 - pan_clamped));
+                const right_gain: T = @floatCast(@min(1.0, 1.0 + pan_clamped));
+
+                for (0..total_frames) |i| {
+                    const m = self.samples[i];
+                    new_samples[i * 2] = m * left_gain;
+                    new_samples[i * 2 + 1] = m * right_gain;
+                }
+            } else if (self.channels == 2 and target_channels == 1) {
+                for (0..total_frames) |i| {
+                    const l = self.samples[i * 2];
+                    const r = self.samples[i * 2 + 1];
+                    new_samples[i] = (l + r) / 2.0;
+                }
+            } else if (self.channels == 1) {
+                for (0..total_frames) |i| {
+                    const m = self.samples[i];
+                    for (0..target_channels) |ch| {
+                        new_samples[i * target_channels + ch] = m;
+                    }
+                }
+            } else {
+                for (0..total_frames) |i| {
+                    var sum: T = 0.0;
+                    for (0..self.channels) |ch| {
+                        sum += self.samples[i * self.channels + ch];
+                    }
+                    const avg = sum / @as(T, @floatFromInt(self.channels));
+                    for (0..target_channels) |ch| {
+                        new_samples[i * target_channels + ch] = avg;
+                    }
+                }
+            }
+
+            return Self{
+                .samples = new_samples,
+                .allocator = self.allocator,
+                .sample_rate = self.sample_rate,
+                .channels = target_channels,
+            };
+        }
+
         /// Reads wave data from a file using the specified format.
         ///
         /// ## Parameters
@@ -1250,6 +1329,44 @@ pub fn inner(comptime T: type) type {
             try testing.expectError(error.MismatchedWaveProperties, wave1.mix(wave3, .{}));
             // Mismatched channels
             try testing.expectError(error.MismatchedWaveProperties, wave1.mix(wave4, .{}));
+        }
+
+        test "to_channels upmixing mono to stereo with panning" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 1.0, 0.5 };
+            const wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave.deinit();
+
+            const stereo_center = try wave.to_channels(2, .{ .pan = 0.0 });
+            defer stereo_center.deinit();
+
+            try testing.expectEqual(stereo_center.channels, 2);
+            try testing.expectEqual(stereo_center.samples.len, 4);
+            try testing.expectApproxEqAbs(stereo_center.samples[0], 1.0, 0.00001);
+            try testing.expectApproxEqAbs(stereo_center.samples[1], 1.0, 0.00001);
+            try testing.expectApproxEqAbs(stereo_center.samples[2], 0.5, 0.00001);
+            try testing.expectApproxEqAbs(stereo_center.samples[3], 0.5, 0.00001);
+
+            const stereo_left = try wave.to_channels(2, .{ .pan = -1.0 });
+            defer stereo_left.deinit();
+
+            try testing.expectApproxEqAbs(stereo_left.samples[0], 1.0, 0.00001);
+            try testing.expectApproxEqAbs(stereo_left.samples[1], 0.0, 0.00001);
+        }
+
+        test "to_channels downmixing stereo to mono" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 1.0, 0.6, 0.4, 0.2 };
+            const wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 2 });
+            defer wave.deinit();
+
+            const mono = try wave.to_channels(1, .{});
+            defer mono.deinit();
+
+            try testing.expectEqual(mono.channels, 1);
+            try testing.expectEqual(mono.samples.len, 2);
+            try testing.expectApproxEqAbs(mono.samples[0], 0.8, 0.00001);
+            try testing.expectApproxEqAbs(mono.samples[1], 0.3, 0.00001);
         }
 
         test "read with different sample rates" {
