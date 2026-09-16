@@ -130,6 +130,22 @@ Whenever creating an Issue or Pull Request using the `gh` CLI, agents **MUST** r
   gh project item-add 11 --owner haruki7049 --url <ISSUE_OR_PR_URL>
   ```
 
+### Priority and Estimate Configuration
+
+Whenever creating an Issue or Pull Request, agents **MUST** set the **Priority** and **Estimate** fields in GitHub Project 11 (`lightmix GitHub Project`):
+
+- **Priority**: Single-select field (`P0`, `P1`, or `P2`).
+  - `P0`: Critical blockers, emergency bug fixes, or build failures.
+  - `P1`: Core architectural changes, important refactoring, or high-value features.
+  - `P2`: Documentation updates, minor fixes, or routine maintenance.
+- **Estimate**: Numeric complexity estimate (e.g. `1`, `2`, `3`, `5`).
+
+Configure these fields via `gh project item-edit`:
+```bash
+gh project item-edit 11 --owner haruki7049 --url <ISSUE_OR_PR_URL> --field "Priority" --value "P1"
+gh project item-edit 11 --owner haruki7049 --url <ISSUE_OR_PR_URL> --field "Estimate" --number 2
+```
+
 ### Labels (Tags) Assignment
 
 Whenever creating an Issue or Pull Request using the `gh` CLI, agents **MUST** assign relevant labels (tags) to categorize the item (e.g. `feat`, `fix`, `docs`, `refactor`, `build.zig`, `Wave(T)`, `composer`, etc.):
@@ -163,3 +179,4 @@ ______________________________________________________________________
 1. **Preserve Headless Execution**: Ensure all build steps, examples, and tests run cleanly in headless environments without physical audio devices or sound daemons. Playback utilities (`play()`) must remain strictly auxiliary preview helpers.
 1. **Preserve Pure Zig**: Avoid introducing C source files, C library dependencies, or external non-Zig toolchain dependencies into core synthesis, manipulation, or codec logic.
 1. **Always Assign Labels**: When creating Issues or Pull Requests with `gh`, always assign relevant labels (e.g., `fix`, `feat`, `docs`, `refactor`, `Wave(T)`, `build.zig`) to categorize the work.
+1. **Always Set Priority and Estimate**: When registering Issues or Pull Requests to the GitHub Project, always configure the `Priority` (`P0`/`P1`/`P2`) and `Estimate` numeric value using `gh project item-edit`.
