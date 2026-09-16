@@ -700,6 +700,31 @@ pub fn inner(comptime T: type) type {
             try testing.expectApproxEqAbs(result.samples[3], 0.2, 0.00001);
         }
 
+        test "append_converted downmixes stereo wave to mono composer" {
+            const allocator = testing.allocator;
+            var composer = Self.init(allocator, .{
+                .sample_rate = 44100,
+                .channels = 1,
+            });
+            defer composer.deinit();
+
+            const stereo_samples = [_]T{ 1.0, 0.6, 0.4, 0.2 };
+            const stereo_wave = try Wave(T).init(&stereo_samples, allocator, .{ .sample_rate = 44100, .channels = 2 });
+            defer stereo_wave.deinit();
+
+            const converted = try composer.append_converted(.{ .wave = stereo_wave, .start_point = 0 }, .{});
+            defer converted.deinit();
+
+            const result = try composer.finalize(.{});
+            defer result.deinit();
+
+            try testing.expectEqual(result.channels, 1);
+            try testing.expectEqual(result.samples.len, 2);
+
+            try testing.expectApproxEqAbs(result.samples[0], 0.8, 0.00001);
+            try testing.expectApproxEqAbs(result.samples[1], 0.3, 0.00001);
+        }
+
         test "finalize with staggered 2-channel interleaved stereo waveforms" {
             const allocator = testing.allocator;
             var composer = Self.init(allocator, .{
