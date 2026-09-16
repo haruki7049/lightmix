@@ -141,6 +141,7 @@ Whenever creating an Issue or Pull Request, agents **MUST** set the **Priority**
 - **Estimate**: Numeric complexity estimate (e.g. `1`, `2`, `3`, `5`).
 
 Configure these fields via `gh project item-edit`:
+
 ```bash
 gh project item-edit 11 --owner haruki7049 --url <ISSUE_OR_PR_URL> --field "Priority" --value "P1"
 gh project item-edit 11 --owner haruki7049 --url <ISSUE_OR_PR_URL> --field "Estimate" --number 2
