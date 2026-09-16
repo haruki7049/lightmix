@@ -1006,6 +1006,42 @@ pub fn inner(comptime T: type) type {
             try testing.expectEqual(normalized.samples[2], 0.0);
         }
 
+        test "normalize edge cases: zero target peak and negative target peak" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 0.5, -0.2 };
+            const wave = try Self.init(samples, allocator, .{
+                .sample_rate = 44100,
+                .channels = 1,
+            });
+            defer wave.deinit();
+
+            // Zero target peak
+            const zero_norm = try wave.normalize(0.0);
+            defer zero_norm.deinit();
+            try testing.expectEqual(zero_norm.samples[0], 0.0);
+            try testing.expectEqual(zero_norm.samples[1], 0.0);
+
+            // Negative target peak
+            const neg_norm = try wave.normalize(-0.5);
+            defer neg_norm.deinit();
+            try testing.expectApproxEqAbs(neg_norm.samples[0], -0.5, 0.00001);
+            try testing.expectApproxEqAbs(neg_norm.samples[1], 0.2, 0.00001);
+        }
+
+        test "normalize edge case: empty samples" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{};
+            const wave = try Self.init(samples, allocator, .{
+                .sample_rate = 44100,
+                .channels = 1,
+            });
+            defer wave.deinit();
+
+            const empty_norm = try wave.normalize(1.0);
+            defer empty_norm.deinit();
+            try testing.expectEqual(empty_norm.samples.len, 0);
+        }
+
         test "mix with custom multiplication mixer" {
             const allocator = testing.allocator;
             const mult_mixer = struct {
