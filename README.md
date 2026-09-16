@@ -93,6 +93,9 @@ pub fn build(b: *std.Build) !void {
             .name = "result.wav", // Output filename (optional, defaults to "result.wav")
             .format_code = .pcm, // Wave format code (e.g., .pcm, .ieee_float)
             .bits = 16, // The bits depth for this wave (e.g., 8, 16, 24, 32)
+            .use_fact = false, // Include fact chunk in WAV header (optional, defaults to false)
+            .use_peak = false, // Include PEAK chunk in WAV header (optional, defaults to false)
+            .peak_timestamp = 0, // Timestamp for PEAK chunk (optional, defaults to 0)
         } },
         .path = .{ .custom = "share" }, // Install directory (optional, defaults to "share")
     });
@@ -111,7 +114,12 @@ pub fn build(b: *std.Build) !void {
 - **`func_name`**: The name of the function in your module that generates the Wave. The function must have the signature `pub fn name(init: std.process.Init) !lightmix.Wave(T)` where T is your chosen sample type (e.g., f64) (default: `"gen"`).
 - **`path`**: The installation directory relative to the install prefix (default: `.{ .custom = "share" }`).
 - **`optimize`**: Optimization mode for the standalone wave generator executable (default: `.ReleaseFast`). Using `addWave` compiles a high-performance native generator binary (`.ReleaseFast`), enabling extremely fast audio synthesis during `zig build` without compiler `comptime` interpreter slowdowns.
-- **`format`**: Tagged union specifying output format options (e.g., `.wav = .{ .name = "result.wav", .bits = 16, .format_code = .pcm }`).
+- **`format`**: Tagged union specifying output format options (`.wav = WavOptions`).
+  - **`bits`**: Bit depth for the output WAV file (e.g., `16`, `24`, `32`).
+  - **`format_code`**: Audio encoding format (e.g., `.pcm`, `.ieee_float`).
+  - **`use_fact`**: Whether to write a `fact` chunk in the WAV header (default: `false`).
+  - **`use_peak`**: Whether to write a `PEAK` chunk in the WAV header (default: `false`).
+  - **`peak_timestamp`**: Timestamp value (in Unix epoch seconds) written to the `PEAK` chunk when `use_peak` is `true` (default: `0`).
 
 You can find a complete example in [./examples/06-advanced/build-time-generation](./examples/06-advanced/build-time-generation).
 
