@@ -441,6 +441,58 @@ pub fn inner(comptime T: type) type {
             try testing.expectEqual(result.sample_rate, 44100);
             try testing.expectEqual(result.channels, 1);
         }
+
+        test "MismatchedWaveProperties error handling in Composer" {
+            const allocator = testing.allocator;
+            var composer = Self.init(allocator, .{
+                .sample_rate = 44100,
+                .channels = 1,
+            });
+            defer composer.deinit();
+
+            const samples = [_]T{ 0.1, 0.2, 0.3 };
+            const diff_rate_wave = try Wave(T).init(&samples, allocator, .{
+                .sample_rate = 48000,
+                .channels = 1,
+            });
+            defer diff_rate_wave.deinit();
+
+            try testing.expectError(error.MismatchedWaveProperties, composer.append(.{ .wave = diff_rate_wave, .start_point = 0 }));
+
+            const diff_info: []const WaveInfo = &[_]WaveInfo{.{ .wave = diff_rate_wave, .start_point = 0 }};
+            try testing.expectError(error.MismatchedWaveProperties, Self.init_with(diff_info, allocator, .{ .sample_rate = 44100, .channels = 1 }));
+        }
+
+        test "finalize with staggered overlapping waves" {
+            const allocator = testing.allocator;
+            var composer = Self.init(allocator, .{
+                .sample_rate = 44100,
+                .channels = 1,
+            });
+            defer composer.deinit();
+
+            const samples1 = [_]T{ 0.5, 0.5, 0.5 };
+            const wave1 = try Wave(T).init(&samples1, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave1.deinit();
+
+            const samples2 = [_]T{ 0.3, 0.3, 0.3 };
+            const wave2 = try Wave(T).init(&samples2, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave2.deinit();
+
+            // wave1 starts at index 0 (spans 0..2)
+            // wave2 starts at index 1 (spans 1..3)
+            try composer.append(.{ .wave = wave1, .start_point = 0 });
+            try composer.append(.{ .wave = wave2, .start_point = 1 });
+
+            const result = try composer.finalize(.{});
+            defer result.deinit();
+
+            try testing.expectEqual(result.samples.len, 4);
+            try testing.expectApproxEqAbs(result.samples[0], 0.5, 0.00001);
+            try testing.expectApproxEqAbs(result.samples[1], 0.8, 0.00001);
+            try testing.expectApproxEqAbs(result.samples[2], 0.8, 0.00001);
+            try testing.expectApproxEqAbs(result.samples[3], 0.3, 0.00001);
+        }
     };
 }
 
