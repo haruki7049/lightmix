@@ -182,7 +182,7 @@ pub fn init(
     samples: []const T,
     allocator: std.mem.Allocator,
     options: InitOptions,
-) Self {
+) std.mem.Allocator.Error!Self {
     // Implementation
 }
 ```
@@ -204,7 +204,7 @@ When creating generic functions:
 /// ## Usage
 /// ```zig
 /// const Wave = lightmix.Wave;
-/// const wave = Wave(f64).init(samples, allocator, .{
+/// const wave = try Wave(f64).init(samples, allocator, .{
 ///     .sample_rate = 44100,
 ///     .channels = 1,
 /// });
@@ -227,7 +227,7 @@ pub fn inner(comptime T: type) type {
 ```zig
 test "no memory leaks" {
     const allocator = std.testing.allocator;
-    const wave = Wave(f64).init(samples, allocator, .{
+    const wave = try Wave(f64).init(samples, allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
@@ -251,7 +251,7 @@ test "no memory leaks" {
 test "init creates deep copy of samples" {
     const allocator = testing.allocator;
     var original_samples = [_]T{ 1.0, 2.0, 3.0 };
-    const wave = Self.init(&original_samples, allocator, .{
+    const wave = try Self.init(&original_samples, allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
