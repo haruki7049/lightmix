@@ -39,7 +39,7 @@
 //!     defer wave.deinit();
 //!
 //!     // Create a composition with multiple waves
-//!     var composer: Composer(f64) = Composer(f64).init(allocator, .{
+//!     var composer: Composer(f64) = try Composer(f64).init(allocator, .{
 //!         .sample_rate = 44100,
 //!         .channels = 1,
 //!     });

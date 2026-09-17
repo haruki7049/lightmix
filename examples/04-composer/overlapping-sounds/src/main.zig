@@ -17,7 +17,7 @@ pub fn main(init: std.process.Init) !void {
     const allocator = init.arena.allocator();
     const io = init.io;
 
-    var composer = Composer(f64).init(allocator, .{
+    var composer = try Composer(f64).init(allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
