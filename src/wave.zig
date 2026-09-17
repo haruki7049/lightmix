@@ -218,12 +218,17 @@ pub fn inner(comptime T: type) type {
         /// A new Wave instance containing a copy of the sample data
         ///
         /// ## Errors
+        /// - `InvalidChannelCount`: If `options.channels` is zero
+        /// - `InvalidSampleRate`: If `options.sample_rate` is zero
         /// - Allocator error (errors.OutOfMemory)
         pub fn init(
             samples: []const T,
             allocator: std.mem.Allocator,
             options: InitOptions,
-        ) std.mem.Allocator.Error!Self {
+        ) (MixErrors || std.mem.Allocator.Error)!Self {
+            if (options.channels == 0) return error.InvalidChannelCount;
+            if (options.sample_rate == 0) return error.InvalidSampleRate;
+
             const owned_samples = try allocator.alloc(T, samples.len);
             @memcpy(owned_samples, samples);
 
@@ -434,7 +439,7 @@ pub fn inner(comptime T: type) type {
             UnalignedChannelOffset,
         };
 
-        /// Errors that can occur when mixing waves.
+        /// Errors that can occur when mixing waves or validating properties.
         pub const MixErrors = error{
             /// The waves being mixed have mismatched sample lengths, sample rates, or channel counts
             MismatchedWaveProperties,
@@ -442,6 +447,10 @@ pub fn inner(comptime T: type) type {
             UnalignedChannelOffset,
             /// Calculation overflowed usize
             Overflow,
+            /// Invalid channel count (channels must be non-zero)
+            InvalidChannelCount,
+            /// Invalid sample rate (sample_rate must be non-zero)
+            InvalidSampleRate,
         };
 
         /// Errors that can occur when filling zeros to end.
@@ -569,12 +578,16 @@ pub fn inner(comptime T: type) type {
             self: Self,
             target_channels: u16,
             options: ChannelConvertOptions,
-        ) std.mem.Allocator.Error!Self {
+        ) (MixErrors || std.mem.Allocator.Error)!Self {
+            if (target_channels == 0 or self.channels == 0) {
+                return error.InvalidChannelCount;
+            }
+
             if (self.channels == target_channels) {
                 return self.clone(null);
             }
 
-            const total_frames = if (self.channels > 0) self.samples.len / self.channels else 0;
+            const total_frames = self.samples.len / self.channels;
             const new_len = total_frames * target_channels;
             const new_samples = try self.allocator.alloc(T, new_len);
             errdefer self.allocator.free(new_samples);
@@ -613,7 +626,7 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A new Wave instance converted to mono (1 channel).
-        pub fn to_mono(self: Self) std.mem.Allocator.Error!Self {
+        pub fn to_mono(self: Self) (MixErrors || std.mem.Allocator.Error)!Self {
             return self.to_channels(1, .{});
         }
 
@@ -624,7 +637,7 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A new Wave instance converted to stereo (2 channels).
-        pub fn to_stereo(self: Self, pan: f32) std.mem.Allocator.Error!Self {
+        pub fn to_stereo(self: Self, pan: f32) (MixErrors || std.mem.Allocator.Error)!Self {
             return self.to_channels(2, .{ .pan = pan });
         }
 
@@ -922,6 +935,33 @@ pub fn inner(comptime T: type) type {
 
             try testing.expectEqual(wave.sample_rate, 44100);
             try testing.expectEqual(wave.channels, 1);
+        }
+
+        test "init returns error when channels or sample_rate is zero" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 0.1, 0.2 };
+
+            try testing.expectError(error.InvalidChannelCount, Self.init(samples, allocator, .{
+                .sample_rate = 44100,
+                .channels = 0,
+            }));
+
+            try testing.expectError(error.InvalidSampleRate, Self.init(samples, allocator, .{
+                .sample_rate = 0,
+                .channels = 1,
+            }));
+        }
+
+        test "to_channels returns error when target_channels or self.channels is zero" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 0.1, 0.2 };
+            const wave = try Self.init(samples, allocator, .{
+                .sample_rate = 44100,
+                .channels = 1,
+            });
+            defer wave.deinit();
+
+            try testing.expectError(error.InvalidChannelCount, wave.to_channels(0, .{}));
         }
 
         test "clone creates deep copy of samples" {
