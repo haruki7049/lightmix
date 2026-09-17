@@ -13,7 +13,7 @@ const Wave = @import("./root.zig").Wave;
 /// ## Usage
 /// ```zig
 /// const Composer = lightmix.Composer;
-/// var composer = Composer(f64).init(allocator, .{
+/// var composer = try Composer(f64).init(allocator, .{
 ///     .sample_rate = 44100,
 ///     .channels = 1,
 /// });
@@ -55,12 +55,24 @@ pub fn inner(comptime T: type) type {
         /// - `allocator`: Memory allocator for internal allocations
         /// - `options`: Initialization options (sample rate and channel count)
         ///
-        /// ## Returns
-        /// A new Composer instance with no waves
+        /// Errors that can occur when initializing a Composer.
+        pub const InitErrors = error{
+            /// Invalid channel count (channels must be non-zero)
+            InvalidChannelCount,
+            /// Invalid sample rate (sample_rate must be non-zero)
+            InvalidSampleRate,
+        };
+
+        /// ## Errors
+        /// - `InvalidChannelCount`: If `options.channels` is zero
+        /// - `InvalidSampleRate`: If `options.sample_rate` is zero
         pub fn init(
             allocator: std.mem.Allocator,
             options: InitOptions,
-        ) Self {
+        ) InitErrors!Self {
+            if (options.channels == 0) return error.InvalidChannelCount;
+            if (options.sample_rate == 0) return error.InvalidSampleRate;
+
             return Self{
                 .allocator = allocator,
                 .info = &[_]WaveInfo{},
@@ -80,11 +92,19 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A new Composer instance with allocated capacity
+        ///
+        /// ## Errors
+        /// - `InvalidChannelCount`: If `options.channels` is zero
+        /// - `InvalidSampleRate`: If `options.sample_rate` is zero
+        /// - Allocator error (errors.OutOfMemory)
         pub fn init_capacity(
             capacity: usize,
             allocator: std.mem.Allocator,
             options: InitOptions,
-        ) std.mem.Allocator.Error!Self {
+        ) (InitErrors || Wave(T).MixErrors || std.mem.Allocator.Error)!Self {
+            if (options.channels == 0) return error.InvalidChannelCount;
+            if (options.sample_rate == 0) return error.InvalidSampleRate;
+
             const list = try std.ArrayListUnmanaged(WaveInfo).initCapacity(allocator, capacity);
             return Self{
                 .allocator = allocator,
@@ -119,11 +139,21 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A new Composer instance containing the provided waves
+        ///
+        /// ## Errors
+        /// - `InvalidChannelCount`: If `options.channels` is zero
+        /// - `InvalidSampleRate`: If `options.sample_rate` is zero
+        /// - `MismatchedWaveProperties`: If wave properties mismatch options
+        /// - `UnalignedChannelOffset`: If start_point is unaligned
+        /// - Allocator error (errors.OutOfMemory)
         pub fn init_with(
             info: []const WaveInfo,
             allocator: std.mem.Allocator,
             options: InitOptions,
-        ) (Wave(T).MixErrors || std.mem.Allocator.Error)!Self {
+        ) (InitErrors || Wave(T).MixErrors || std.mem.Allocator.Error)!Self {
+            if (options.channels == 0) return error.InvalidChannelCount;
+            if (options.sample_rate == 0) return error.InvalidSampleRate;
+
             for (info) |waveinfo| {
                 if (waveinfo.wave.sample_rate != options.sample_rate or waveinfo.wave.channels != options.channels) {
                     return error.MismatchedWaveProperties;
@@ -173,7 +203,7 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Example
         /// ```
-        /// var composer: Composer(f64) = Composer(f64).init(allocator, .{
+        /// var composer: Composer(f64) = try Composer(f64).init(allocator, .{
         ///     .sample_rate = 44100,
         ///     .channels = 1,
         /// });
@@ -350,7 +380,7 @@ pub fn inner(comptime T: type) type {
             total_samples: usize,
             block_buffer: []T,
 
-            pub fn init(composer: Self, options: StreamOptions) (Wave(T).MixErrors || std.mem.Allocator.Error)!BlockIterator {
+            pub fn init(composer: Self, options: StreamOptions) (InitErrors || Wave(T).MixErrors || std.mem.Allocator.Error)!BlockIterator {
                 var total_samples: usize = 0;
                 for (composer.info) |waveinfo| {
                     if (waveinfo.wave.sample_rate != composer.sample_rate or waveinfo.wave.channels != composer.channels) {
@@ -436,17 +466,48 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A `BlockIterator` for chunked rendering
-        pub fn render_stream(self: Self, options: StreamOptions) (Wave(T).MixErrors || std.mem.Allocator.Error)!BlockIterator {
+        pub fn render_stream(self: Self, options: StreamOptions) (InitErrors || Wave(T).MixErrors || std.mem.Allocator.Error)!BlockIterator {
             return BlockIterator.init(self, options);
         }
 
         test "init & deinit" {
             const allocator = testing.allocator;
-            const composer = Self.init(allocator, .{
+            const composer = try Self.init(allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
             defer composer.deinit();
+        }
+
+        test "init validation returns error for zero channels or sample_rate" {
+            const allocator = testing.allocator;
+
+            try testing.expectError(error.InvalidChannelCount, Self.init(allocator, .{
+                .sample_rate = 44100,
+                .channels = 0,
+            }));
+            try testing.expectError(error.InvalidSampleRate, Self.init(allocator, .{
+                .sample_rate = 0,
+                .channels = 1,
+            }));
+
+            try testing.expectError(error.InvalidChannelCount, Self.init_capacity(10, allocator, .{
+                .sample_rate = 44100,
+                .channels = 0,
+            }));
+            try testing.expectError(error.InvalidSampleRate, Self.init_capacity(10, allocator, .{
+                .sample_rate = 0,
+                .channels = 1,
+            }));
+
+            try testing.expectError(error.InvalidChannelCount, Self.init_with(&.{}, allocator, .{
+                .sample_rate = 44100,
+                .channels = 0,
+            }));
+            try testing.expectError(error.InvalidSampleRate, Self.init_with(&.{}, allocator, .{
+                .sample_rate = 0,
+                .channels = 1,
+            }));
         }
 
         test "init_capacity & deinit" {
@@ -463,7 +524,7 @@ pub fn inner(comptime T: type) type {
 
         test "ensureUnusedCapacity & sequential appends" {
             const allocator = testing.allocator;
-            var composer = Self.init(allocator, .{
+            var composer = try Self.init(allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -507,7 +568,7 @@ pub fn inner(comptime T: type) type {
         test "append" {
             const allocator = testing.allocator;
             var reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
-            var composer = Self.init(allocator, .{
+            var composer = try Self.init(allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -523,7 +584,7 @@ pub fn inner(comptime T: type) type {
 
         test "appendSlice" {
             const allocator = testing.allocator;
-            var composer = Self.init(allocator, .{
+            var composer = try Self.init(allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -545,7 +606,7 @@ pub fn inner(comptime T: type) type {
 
         test "finalize" {
             const allocator = testing.allocator;
-            var composer = Self.init(allocator, .{
+            var composer = try Self.init(allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -581,7 +642,7 @@ pub fn inner(comptime T: type) type {
 
         test "MismatchedWaveProperties error handling in Composer" {
             const allocator = testing.allocator;
-            var composer = Self.init(allocator, .{
+            var composer = try Self.init(allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -602,7 +663,7 @@ pub fn inner(comptime T: type) type {
 
         test "append returns MismatchedWaveProperties for mismatched sample rates" {
             const allocator = testing.allocator;
-            var composer = Self.init(allocator, .{
+            var composer = try Self.init(allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -633,7 +694,7 @@ pub fn inner(comptime T: type) type {
 
         test "finalize with staggered overlapping waves" {
             const allocator = testing.allocator;
-            var composer = Self.init(allocator, .{
+            var composer = try Self.init(allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -664,7 +725,7 @@ pub fn inner(comptime T: type) type {
 
         test "render_stream produces identical output to finalize in blocks" {
             const allocator = testing.allocator;
-            var composer = Self.init(allocator, .{
+            var composer = try Self.init(allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -702,7 +763,7 @@ pub fn inner(comptime T: type) type {
 
         test "render_stream with block_size larger than composition length" {
             const allocator = testing.allocator;
-            var composer = Self.init(allocator, .{ .sample_rate = 44100, .channels = 1 });
+            var composer = try Self.init(allocator, .{ .sample_rate = 44100, .channels = 1 });
             defer composer.deinit();
 
             const samples = [_]T{ 0.1, 0.2, 0.3 };
@@ -725,7 +786,7 @@ pub fn inner(comptime T: type) type {
 
         test "render_stream with unaligned block_size" {
             const allocator = testing.allocator;
-            var composer = Self.init(allocator, .{ .sample_rate = 44100, .channels = 1 });
+            var composer = try Self.init(allocator, .{ .sample_rate = 44100, .channels = 1 });
             defer composer.deinit();
 
             const samples = [_]T{ 0.1, 0.2, 0.3, 0.4, 0.5 };
@@ -754,7 +815,7 @@ pub fn inner(comptime T: type) type {
 
         test "render_stream on empty composer" {
             const allocator = testing.allocator;
-            var composer = Self.init(allocator, .{ .sample_rate = 44100, .channels = 1 });
+            var composer = try Self.init(allocator, .{ .sample_rate = 44100, .channels = 1 });
             defer composer.deinit();
 
             var iterator = try composer.render_stream(.{ .block_size = 4 });
@@ -765,7 +826,7 @@ pub fn inner(comptime T: type) type {
 
         test "render_stream with unaligned block_size returns UnalignedChannelOffset" {
             const allocator = testing.allocator;
-            var composer = Self.init(allocator, .{ .sample_rate = 44100, .channels = 2 });
+            var composer = try Self.init(allocator, .{ .sample_rate = 44100, .channels = 2 });
             defer composer.deinit();
 
             const samples = [_]T{ 0.1, 0.2, 0.3, 0.4 };
@@ -778,7 +839,7 @@ pub fn inner(comptime T: type) type {
 
         test "finalize and render_stream return Overflow on sample end_point overflow" {
             const allocator = testing.allocator;
-            var composer = Self.init(allocator, .{ .sample_rate = 44100, .channels = 1 });
+            var composer = try Self.init(allocator, .{ .sample_rate = 44100, .channels = 1 });
             defer composer.deinit();
 
             const samples = [_]T{ 0.1, 0.2 };
@@ -793,7 +854,7 @@ pub fn inner(comptime T: type) type {
 
         test "append_converted upmixes mono wave to stereo composer with panning" {
             const allocator = testing.allocator;
-            var composer = Self.init(allocator, .{
+            var composer = try Self.init(allocator, .{
                 .sample_rate = 44100,
                 .channels = 2,
             });
@@ -820,7 +881,7 @@ pub fn inner(comptime T: type) type {
 
         test "append_converted downmixes stereo wave to mono composer" {
             const allocator = testing.allocator;
-            var composer = Self.init(allocator, .{
+            var composer = try Self.init(allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -845,7 +906,7 @@ pub fn inner(comptime T: type) type {
 
         test "finalize with staggered 2-channel interleaved stereo waveforms" {
             const allocator = testing.allocator;
-            var composer = Self.init(allocator, .{
+            var composer = try Self.init(allocator, .{
                 .sample_rate = 44100,
                 .channels = 2,
             });
