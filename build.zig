@@ -498,7 +498,7 @@ pub const CompileWave = struct {
 /// where the resulting WAV file is installed.
 pub const CreateWaveOptions = struct {
     /// Name of the function in the module that generates the Wave.
-    /// The function must have signature: `pub fn name() !lightmix.Wave(T)`
+    /// The function must have signature: `pub fn name(init: std.process.Init) !lightmix.Wave(T)`
     /// where T is typically f64, f80, or f128.
     func_name: []const u8 = "gen",
 
