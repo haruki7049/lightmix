@@ -21,7 +21,7 @@ pub fn main(init: std.process.Init) !void {
     const io = init.io;
 
     // Create composer
-    var composer = Composer(f64).init(allocator, .{
+    var composer = try Composer(f64).init(allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
