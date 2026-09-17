@@ -55,3 +55,62 @@ test "read truncated wav stream returns error" {
         return error.ExpectedError;
     }
 }
+
+test "zero-length wave operations" {
+    const allocator = std.testing.allocator;
+    const empty_samples: []const f64 = &[_]f64{};
+
+    const wave = try Wave(f64).init(empty_samples, allocator, .{
+        .sample_rate = 44100,
+        .channels = 1,
+    });
+    defer wave.deinit();
+
+    // to_channels on empty wave
+    const converted = try wave.to_channels(2, .{});
+    defer converted.deinit();
+    try std.testing.expectEqual(converted.samples.len, 0);
+
+    // separate on empty wave should return error
+    try std.testing.expectError(error.SeparatingZeroLengthWave, wave.separate(.{
+        .allocator = allocator,
+        .separate_point = 0,
+    }));
+
+    // fill_zero_to_end with 0, 0
+    const filled = try wave.fill_zero_to_end(0, 0);
+    defer filled.deinit();
+    try std.testing.expectEqual(filled.samples.len, 0);
+}
+
+test "floating-point precision boundary testing for f80 and f128" {
+    const allocator = std.testing.allocator;
+
+    // f80 testing
+    {
+        const samples_f80: []const f80 = &[_]f80{ 0.1234567890123456789, -0.9876543210987654321 };
+        const wave_f80 = try Wave(f80).init(samples_f80, allocator, .{
+            .sample_rate = 48000,
+            .channels = 2,
+        });
+        defer wave_f80.deinit();
+
+        const cloned_f80 = try wave_f80.clone(null);
+        defer cloned_f80.deinit();
+        try std.testing.expectEqualSlices(f80, wave_f80.samples, cloned_f80.samples);
+    }
+
+    // f128 testing
+    {
+        const samples_f128: []const f128 = &[_]f128{ 0.12345678901234567890123456789, -0.98765432109876543210987654321 };
+        const wave_f128 = try Wave(f128).init(samples_f128, allocator, .{
+            .sample_rate = 96000,
+            .channels = 2,
+        });
+        defer wave_f128.deinit();
+
+        const cloned_f128 = try wave_f128.clone(null);
+        defer cloned_f128.deinit();
+        try std.testing.expectEqualSlices(f128, wave_f128.samples, cloned_f128.samples);
+    }
+}
