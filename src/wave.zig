@@ -35,6 +35,25 @@ pub fn inner(comptime T: type) type {
         pub const LowLevelInterfaces = enum {
             wav,
 
+            /// Base header size in bytes of a standard WAV PCM file:
+            /// RIFF header (12 bytes) + fmt chunk (24 bytes) + data chunk header (8 bytes) = 44 bytes.
+            pub const WAV_BASE_HEADER_SIZE: usize = 44;
+
+            /// Total size in bytes of a WAV `fact` chunk:
+            /// chunk ID (4 bytes) + chunk size (4 bytes) + sample length uint32 (4 bytes) = 12 bytes.
+            pub const WAV_FACT_CHUNK_SIZE: usize = 12;
+
+            /// Header size in bytes of a WAV `PEAK` chunk before per-channel peak records:
+            /// chunk ID (4 bytes) + chunk size (4 bytes) + version uint32 (4 bytes) + timestamp uint32 (4 bytes) = 16 bytes.
+            pub const WAV_PEAK_CHUNK_HEADER_SIZE: usize = 16;
+
+            /// Size in bytes of a single channel peak record in a WAV `PEAK` chunk:
+            /// peak value f32 (4 bytes) + position uint32 (4 bytes) = 8 bytes.
+            pub const WAV_PEAK_POINT_SIZE_PER_CHANNEL: usize = 8;
+
+            /// Alias for `WAV_PEAK_POINT_SIZE_PER_CHANNEL`.
+            pub const WAV_PEAK_POINT_SIZE: usize = WAV_PEAK_POINT_SIZE_PER_CHANNEL;
+
             /// Reads wave data using the specified file format.
             ///
             /// ## Parameters
@@ -134,8 +153,16 @@ pub fn inner(comptime T: type) type {
                 return switch (self) {
                     .wav => {
                         const bytes_per_sample = (@as(usize, options.bits) + 7) / 8;
-                        const header_size: usize = 44;
-                        return header_size + (wave.samples.len * bytes_per_sample);
+                        var header_size: usize = WAV_BASE_HEADER_SIZE;
+                        if (options.use_fact) {
+                            header_size += WAV_FACT_CHUNK_SIZE;
+                        }
+                        if (options.use_peak) {
+                            header_size += WAV_PEAK_CHUNK_HEADER_SIZE + (@as(usize, wave.channels) * WAV_PEAK_POINT_SIZE_PER_CHANNEL);
+                        }
+                        const data_len = wave.samples.len * bytes_per_sample;
+                        const padding: usize = if (data_len % 2 == 1) 1 else 0;
+                        return header_size + data_len + padding;
                     },
                 };
             }
@@ -157,6 +184,10 @@ pub fn inner(comptime T: type) type {
             pub const sizeWavOptions = struct {
                 /// Bits per sample (e.g. 16 or 24)
                 bits: u16,
+                /// Whether to include a `fact` chunk in the size calculation
+                use_fact: bool = false,
+                /// Whether to include a `PEAK` chunk in the size calculation
+                use_peak: bool = false,
             };
 
             /// Raw wave data returned by low-level format decoders.
@@ -1129,7 +1160,7 @@ pub fn inner(comptime T: type) type {
             const file_bytes = try tmpDir.dir.readFileAlloc(io, "float.wav", allocator, .limited(64 * 1024));
             defer allocator.free(file_bytes);
 
-            try testing.expect(file_bytes.len > 44);
+            try testing.expect(file_bytes.len > LowLevelInterfaces.WAV_BASE_HEADER_SIZE);
         }
 
         test "mix" {
@@ -1566,12 +1597,53 @@ pub fn inner(comptime T: type) type {
             });
             defer wave.deinit();
 
+            const base_size = LowLevelInterfaces.WAV_BASE_HEADER_SIZE;
+            const fact_size = LowLevelInterfaces.WAV_FACT_CHUNK_SIZE;
+            const peak_header = LowLevelInterfaces.WAV_PEAK_CHUNK_HEADER_SIZE;
+            const peak_point = LowLevelInterfaces.WAV_PEAK_POINT_SIZE_PER_CHANNEL;
+
             // 16-bit: 44 header bytes + 4 samples * 2 bytes = 52 bytes
             try testing.expectEqual(wave.size(.wav, .{ .bits = 16 }), 52);
+            try testing.expectEqual(wave.size(.wav, .{ .bits = 16 }), base_size + 4 * 2);
+
             // 24-bit: 44 header bytes + 4 samples * 3 bytes = 56 bytes
             try testing.expectEqual(wave.size(.wav, .{ .bits = 24 }), 56);
+            try testing.expectEqual(wave.size(.wav, .{ .bits = 24 }), base_size + 4 * 3);
+
             // 32-bit: 44 header bytes + 4 samples * 4 bytes = 60 bytes
             try testing.expectEqual(wave.size(.wav, .{ .bits = 32 }), 60);
+            try testing.expectEqual(wave.size(.wav, .{ .bits = 32 }), base_size + 4 * 4);
+
+            // With fact chunk: 52 + 12 = 64 bytes
+            try testing.expectEqual(wave.size(.wav, .{ .bits = 16, .use_fact = true }), 64);
+            try testing.expectEqual(wave.size(.wav, .{ .bits = 16, .use_fact = true }), base_size + 4 * 2 + fact_size);
+
+            // With PEAK chunk (1 channel: 16 + 8 = 24 bytes): 52 + 24 = 76 bytes
+            try testing.expectEqual(wave.size(.wav, .{ .bits = 16, .use_peak = true }), 76);
+            try testing.expectEqual(wave.size(.wav, .{ .bits = 16, .use_peak = true }), base_size + 4 * 2 + peak_header + 1 * peak_point);
+
+            // With both fact and PEAK chunks: 52 + 12 + 24 = 88 bytes
+            try testing.expectEqual(wave.size(.wav, .{ .bits = 16, .use_fact = true, .use_peak = true }), 88);
+            try testing.expectEqual(wave.size(.wav, .{ .bits = 16, .use_fact = true, .use_peak = true }), base_size + 4 * 2 + fact_size + peak_header + 1 * peak_point);
+
+            // Stereo wave with PEAK chunk (2 channels: 16 + 16 = 32 bytes)
+            const stereo_samples: []const T = &[_]T{ 0.1, 0.2, 0.3, 0.4 };
+            const stereo_wave = try Self.init(stereo_samples, allocator, .{
+                .sample_rate = 44100,
+                .channels = 2,
+            });
+            defer stereo_wave.deinit();
+            // 44 header bytes + 32 PEAK bytes + 4 samples * 2 bytes = 84 bytes
+            try testing.expectEqual(stereo_wave.size(.wav, .{ .bits = 16, .use_peak = true }), 84);
+            try testing.expectEqual(stereo_wave.size(.wav, .{ .bits = 16, .use_peak = true }), base_size + peak_header + 2 * peak_point + 4 * 2);
+        }
+
+        test "WAV header size constants" {
+            try testing.expectEqual(LowLevelInterfaces.WAV_BASE_HEADER_SIZE, 44);
+            try testing.expectEqual(LowLevelInterfaces.WAV_FACT_CHUNK_SIZE, 12);
+            try testing.expectEqual(LowLevelInterfaces.WAV_PEAK_CHUNK_HEADER_SIZE, 16);
+            try testing.expectEqual(LowLevelInterfaces.WAV_PEAK_POINT_SIZE_PER_CHANNEL, 8);
+            try testing.expectEqual(LowLevelInterfaces.WAV_PEAK_POINT_SIZE, 8);
         }
 
         test "fill_zero_to_end error when start is greater than end" {
