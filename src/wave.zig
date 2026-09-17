@@ -134,8 +134,16 @@ pub fn inner(comptime T: type) type {
                 return switch (self) {
                     .wav => {
                         const bytes_per_sample = (@as(usize, options.bits) + 7) / 8;
-                        const header_size: usize = 44;
-                        return header_size + (wave.samples.len * bytes_per_sample);
+                        var header_size: usize = 44;
+                        if (options.use_fact) {
+                            header_size += 12;
+                        }
+                        if (options.use_peak) {
+                            header_size += 16 + (@as(usize, wave.channels) * 8);
+                        }
+                        const data_len = wave.samples.len * bytes_per_sample;
+                        const padding: usize = if (data_len % 2 == 1) 1 else 0;
+                        return header_size + data_len + padding;
                     },
                 };
             }
@@ -157,6 +165,10 @@ pub fn inner(comptime T: type) type {
             pub const sizeWavOptions = struct {
                 /// Bits per sample (e.g. 16 or 24)
                 bits: u16,
+                /// Whether to include a `fact` chunk in the size calculation
+                use_fact: bool = false,
+                /// Whether to include a `PEAK` chunk in the size calculation
+                use_peak: bool = false,
             };
 
             /// Raw wave data returned by low-level format decoders.
@@ -1570,6 +1582,23 @@ pub fn inner(comptime T: type) type {
             try testing.expectEqual(wave.size(.wav, .{ .bits = 24 }), 56);
             // 32-bit: 44 header bytes + 4 samples * 4 bytes = 60 bytes
             try testing.expectEqual(wave.size(.wav, .{ .bits = 32 }), 60);
+
+            // With fact chunk: 52 + 12 = 64 bytes
+            try testing.expectEqual(wave.size(.wav, .{ .bits = 16, .use_fact = true }), 64);
+            // With PEAK chunk (1 channel: 16 + 8 = 24 bytes): 52 + 24 = 76 bytes
+            try testing.expectEqual(wave.size(.wav, .{ .bits = 16, .use_peak = true }), 76);
+            // With both fact and PEAK chunks: 52 + 12 + 24 = 88 bytes
+            try testing.expectEqual(wave.size(.wav, .{ .bits = 16, .use_fact = true, .use_peak = true }), 88);
+
+            // Stereo wave with PEAK chunk (2 channels: 16 + 16 = 32 bytes)
+            const stereo_samples: []const T = &[_]T{ 0.1, 0.2, 0.3, 0.4 };
+            const stereo_wave = try Self.init(stereo_samples, allocator, .{
+                .sample_rate = 44100,
+                .channels = 2,
+            });
+            defer stereo_wave.deinit();
+            // 44 header bytes + 32 PEAK bytes + 4 samples * 2 bytes = 84 bytes
+            try testing.expectEqual(stereo_wave.size(.wav, .{ .bits = 16, .use_peak = true }), 84);
         }
 
         test "fill_zero_to_end error when start is greater than end" {
