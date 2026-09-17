@@ -574,6 +574,10 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A new Wave instance converted to `target_channels`
+        ///
+        /// ## Errors
+        /// - `InvalidChannelCount`: If `target_channels` or `self.channels` is zero
+        /// - Allocator error (errors.OutOfMemory)
         pub fn to_channels(
             self: Self,
             target_channels: u16,
@@ -626,6 +630,10 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A new Wave instance converted to mono (1 channel).
+        ///
+        /// ## Errors
+        /// - `InvalidChannelCount`: If `self.channels` is zero
+        /// - Allocator error (errors.OutOfMemory)
         pub fn to_mono(self: Self) (MixErrors || std.mem.Allocator.Error)!Self {
             return self.to_channels(1, .{});
         }
@@ -637,6 +645,10 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Returns
         /// A new Wave instance converted to stereo (2 channels).
+        ///
+        /// ## Errors
+        /// - `InvalidChannelCount`: If `self.channels` is zero
+        /// - Allocator error (errors.OutOfMemory)
         pub fn to_stereo(self: Self, pan: f32) (MixErrors || std.mem.Allocator.Error)!Self {
             return self.to_channels(2, .{ .pan = pan });
         }
