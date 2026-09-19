@@ -874,6 +874,7 @@ pub fn inner(comptime T: type) type {
         /// ## Errors
         /// Returns errors from the audio engine initialization or playback
         pub fn play(self: Self) anyerror!void {
+            if (self.samples.len == 0) return;
             const allocator = self.allocator;
             var threaded = std.Io.Threaded.init(allocator, .{});
             const io = threaded.io();
