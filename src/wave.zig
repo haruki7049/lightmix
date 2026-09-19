@@ -876,6 +876,7 @@ pub fn inner(comptime T: type) type {
         pub fn play(self: Self) anyerror!void {
             const allocator = self.allocator;
             var threaded = std.Io.Threaded.init(allocator, .{});
+            defer threaded.deinit();
             const io = threaded.io();
 
             zaudio.init(allocator);
