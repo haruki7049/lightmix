@@ -49,12 +49,6 @@ pub fn inner(comptime T: type) type {
             channels: u16,
         };
 
-        /// Creates a new empty Composer instance.
-        ///
-        /// ## Parameters
-        /// - `allocator`: Memory allocator for internal allocations
-        /// - `options`: Initialization options (sample rate and channel count)
-        ///
         /// Errors that can occur when initializing a Composer.
         pub const InitErrors = error{
             /// Invalid channel count (channels must be non-zero)
@@ -63,6 +57,12 @@ pub fn inner(comptime T: type) type {
             InvalidSampleRate,
         };
 
+        /// Creates a new empty Composer instance.
+        ///
+        /// ## Parameters
+        /// - `allocator`: Memory allocator for internal allocations
+        /// - `options`: Initialization options (sample rate and channel count)
+        ///
         /// ## Errors
         /// - `InvalidChannelCount`: If `options.channels` is zero
         /// - `InvalidSampleRate`: If `options.sample_rate` is zero
