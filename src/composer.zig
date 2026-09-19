@@ -101,7 +101,7 @@ pub fn inner(comptime T: type) type {
             capacity: usize,
             allocator: std.mem.Allocator,
             options: InitOptions,
-        ) (InitErrors || Wave(T).MixErrors || std.mem.Allocator.Error)!Self {
+        ) (InitErrors || std.mem.Allocator.Error)!Self {
             if (options.channels == 0) return error.InvalidChannelCount;
             if (options.sample_rate == 0) return error.InvalidSampleRate;
 
