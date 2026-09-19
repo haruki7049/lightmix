@@ -229,6 +229,7 @@ pub fn inner(comptime T: type) type {
         ) (MixErrors || std.mem.Allocator.Error)!Self {
             if (options.channels == 0) return error.InvalidChannelCount;
             if (options.sample_rate == 0) return error.InvalidSampleRate;
+            if (samples.len % options.channels != 0) return error.UnalignedChannelOffset;
 
             const owned_samples = try allocator.alloc(T, samples.len);
             @memcpy(owned_samples, samples);
@@ -979,7 +980,7 @@ pub fn inner(comptime T: type) type {
 
         test "clone creates deep copy of samples" {
             const allocator = testing.allocator;
-            const samples: []const T = &[_]T{ 1.0, 2.0, 3.0 };
+            const samples: []const T = &[_]T{ 1.0, 2.0, 3.0, 4.0 };
 
             const wave = try Self.init(samples, allocator, .{
                 .sample_rate = 44100,
@@ -1440,8 +1441,8 @@ pub fn inner(comptime T: type) type {
 
         test "mix preserves wave properties" {
             const allocator = testing.allocator;
-            const samples1: []const T = &[_]T{ 1.0, 2.0, 3.0 };
-            const samples2: []const T = &[_]T{ 0.5, 1.0, 1.5 };
+            const samples1: []const T = &[_]T{ 1.0, 2.0, 3.0, 4.0 };
+            const samples2: []const T = &[_]T{ 0.5, 1.0, 1.5, 2.0 };
 
             const wave1 = try Self.init(samples1, allocator, .{
                 .sample_rate = 48000,
@@ -1460,16 +1461,17 @@ pub fn inner(comptime T: type) type {
 
             try testing.expectEqual(result.sample_rate, 48000);
             try testing.expectEqual(result.channels, 2);
-            try testing.expectEqual(result.samples.len, 3);
+            try testing.expectEqual(result.samples.len, 4);
             try testing.expectEqual(result.samples[0], 1.5);
             try testing.expectEqual(result.samples[1], 3.0);
             try testing.expectEqual(result.samples[2], 4.5);
+            try testing.expectEqual(result.samples[3], 6.0);
         }
 
         test "mix with mismatched properties returns error" {
             const allocator = testing.allocator;
             const samples1: []const T = &[_]T{ 1.0, 2.0 };
-            const samples2: []const T = &[_]T{ 1.0, 2.0, 3.0 };
+            const samples2: []const T = &[_]T{ 1.0, 2.0, 3.0, 4.0 };
 
             const wave1 = try Self.init(samples1, allocator, .{ .sample_rate = 44100, .channels = 2 });
             defer wave1.deinit();
