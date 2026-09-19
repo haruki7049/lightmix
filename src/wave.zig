@@ -220,6 +220,7 @@ pub fn inner(comptime T: type) type {
         /// ## Errors
         /// - `InvalidChannelCount`: If `options.channels` is zero
         /// - `InvalidSampleRate`: If `options.sample_rate` is zero
+        /// - `UnalignedChannelOffset`: If `samples.len` is not a multiple of `options.channels`
         /// - Allocator error (errors.OutOfMemory)
         pub fn init(
             samples: []const T,
