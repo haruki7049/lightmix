@@ -879,6 +879,7 @@ pub fn inner(comptime T: type) type {
             if (self.samples.len == 0) return;
             const allocator = self.allocator;
             var threaded = std.Io.Threaded.init(allocator, .{});
+            defer threaded.deinit();
             const io = threaded.io();
 
             zaudio.init(allocator);
