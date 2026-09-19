@@ -682,7 +682,8 @@ pub fn inner(comptime T: type) type {
             // Mismatched sample rate on append_converted
             try testing.expectError(error.MismatchedWaveProperties, composer.append_converted(.{ .wave = wave_48k, .start_point = 0 }, .{}));
 
-            const wave_stereo_44k = try Wave(T).init(&samples, allocator, .{
+            const stereo_samples = [_]T{ 0.1, 0.2, 0.3, 0.4 };
+            const wave_stereo_44k = try Wave(T).init(&stereo_samples, allocator, .{
                 .sample_rate = 44100,
                 .channels = 2,
             });
