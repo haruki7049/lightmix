@@ -965,6 +965,114 @@ pub fn inner(comptime T: type) type {
             }));
         }
 
+        test "init channel alignment validation" {
+            const allocator = testing.allocator;
+
+            const samples = [_]T{ 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7 };
+
+            // Unaligned sample counts for stereo (channels = 2)
+            try testing.expectError(error.UnalignedChannelOffset, Self.init(samples[0..1], allocator, .{
+                .sample_rate = 44100,
+                .channels = 2,
+            }));
+            try testing.expectError(error.UnalignedChannelOffset, Self.init(samples[0..3], allocator, .{
+                .sample_rate = 44100,
+                .channels = 2,
+            }));
+            try testing.expectError(error.UnalignedChannelOffset, Self.init(samples[0..5], allocator, .{
+                .sample_rate = 44100,
+                .channels = 2,
+            }));
+
+            // Unaligned sample counts for 3 channels
+            try testing.expectError(error.UnalignedChannelOffset, Self.init(samples[0..1], allocator, .{
+                .sample_rate = 44100,
+                .channels = 3,
+            }));
+            try testing.expectError(error.UnalignedChannelOffset, Self.init(samples[0..2], allocator, .{
+                .sample_rate = 44100,
+                .channels = 3,
+            }));
+            try testing.expectError(error.UnalignedChannelOffset, Self.init(samples[0..4], allocator, .{
+                .sample_rate = 44100,
+                .channels = 3,
+            }));
+
+            // Unaligned sample counts for quad (channels = 4)
+            try testing.expectError(error.UnalignedChannelOffset, Self.init(samples[0..1], allocator, .{
+                .sample_rate = 44100,
+                .channels = 4,
+            }));
+            try testing.expectError(error.UnalignedChannelOffset, Self.init(samples[0..2], allocator, .{
+                .sample_rate = 44100,
+                .channels = 4,
+            }));
+            try testing.expectError(error.UnalignedChannelOffset, Self.init(samples[0..3], allocator, .{
+                .sample_rate = 44100,
+                .channels = 4,
+            }));
+            try testing.expectError(error.UnalignedChannelOffset, Self.init(samples[0..5], allocator, .{
+                .sample_rate = 44100,
+                .channels = 4,
+            }));
+            try testing.expectError(error.UnalignedChannelOffset, Self.init(samples[0..6], allocator, .{
+                .sample_rate = 44100,
+                .channels = 4,
+            }));
+
+            // Valid channel-aligned sample counts (including empty samples.len == 0)
+            const empty_samples: []const T = &[_]T{};
+            const wave_empty_mono = try Self.init(empty_samples, allocator, .{
+                .sample_rate = 44100,
+                .channels = 1,
+            });
+            defer wave_empty_mono.deinit();
+            try testing.expectEqual(wave_empty_mono.samples.len, 0);
+
+            const wave_empty_stereo = try Self.init(empty_samples, allocator, .{
+                .sample_rate = 44100,
+                .channels = 2,
+            });
+            defer wave_empty_stereo.deinit();
+            try testing.expectEqual(wave_empty_stereo.samples.len, 0);
+
+            const wave_empty_quad = try Self.init(empty_samples, allocator, .{
+                .sample_rate = 44100,
+                .channels = 4,
+            });
+            defer wave_empty_quad.deinit();
+            try testing.expectEqual(wave_empty_quad.samples.len, 0);
+
+            // Valid aligned counts
+            const wave_stereo_2 = try Self.init(samples[0..2], allocator, .{
+                .sample_rate = 44100,
+                .channels = 2,
+            });
+            defer wave_stereo_2.deinit();
+            try testing.expectEqual(wave_stereo_2.samples.len, 2);
+
+            const wave_stereo_4 = try Self.init(samples[0..4], allocator, .{
+                .sample_rate = 44100,
+                .channels = 2,
+            });
+            defer wave_stereo_4.deinit();
+            try testing.expectEqual(wave_stereo_4.samples.len, 4);
+
+            const wave_stereo_6 = try Self.init(samples[0..6], allocator, .{
+                .sample_rate = 44100,
+                .channels = 2,
+            });
+            defer wave_stereo_6.deinit();
+            try testing.expectEqual(wave_stereo_6.samples.len, 6);
+
+            const wave_quad_4 = try Self.init(samples[0..4], allocator, .{
+                .sample_rate = 44100,
+                .channels = 4,
+            });
+            defer wave_quad_4.deinit();
+            try testing.expectEqual(wave_quad_4.samples.len, 4);
+        }
+
         test "to_channels returns error when target_channels or self.channels is zero" {
             const allocator = testing.allocator;
             const samples: []const T = &[_]T{ 0.1, 0.2 };
@@ -1823,6 +1931,41 @@ test "Run tests for each samples' type" {
     _ = inner(f80);
     _ = inner(f64);
     // _ = inner(f32); zigggwavvv 0.2.1 cannot use f32 as samples' type
+}
+
+test "Wave(T).init channel alignment across all float types" {
+    inline for (.{ f64, f80, f128 }) |FloatType| {
+        const allocator = std.testing.allocator;
+        const samples = [_]FloatType{ 1.0, 2.0, 3.0 };
+
+        // 3 samples with stereo (2 channels) is unaligned
+        try std.testing.expectError(error.UnalignedChannelOffset, inner(FloatType).init(&samples, allocator, .{
+            .sample_rate = 44100,
+            .channels = 2,
+        }));
+
+        // 3 samples with quad (4 channels) is unaligned
+        try std.testing.expectError(error.UnalignedChannelOffset, inner(FloatType).init(&samples, allocator, .{
+            .sample_rate = 44100,
+            .channels = 4,
+        }));
+
+        // 2 samples with stereo (2 channels) is aligned
+        const wave = try inner(FloatType).init(samples[0..2], allocator, .{
+            .sample_rate = 44100,
+            .channels = 2,
+        });
+        defer wave.deinit();
+        try std.testing.expectEqual(wave.samples.len, 2);
+
+        // empty samples with stereo (2 channels) is aligned
+        const empty_wave = try inner(FloatType).init(&[_]FloatType{}, allocator, .{
+            .sample_rate = 44100,
+            .channels = 2,
+        });
+        defer empty_wave.deinit();
+        try std.testing.expectEqual(empty_wave.samples.len, 0);
+    }
 }
 
 fn test_filter_without_args(comptime SampleType: type, original: inner(SampleType)) !inner(SampleType) {
