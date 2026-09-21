@@ -666,13 +666,22 @@ pub fn inner(comptime T: type) type {
         /// A new Wave instance containing the audio data from the file
         ///
         /// ## Errors
-        /// Returns errors from the underlying format decoder or allocation failures
+        /// - `InvalidChannelCount`: If the decoded channel count is zero
+        /// - `InvalidSampleRate`: If the decoded sample rate is zero
+        /// - `UnalignedChannelOffset`: If the decoded sample length is not a multiple of the channel count
+        /// - Errors from the underlying format decoder or allocation failures
         pub fn read(
             file_extension: LowLevelInterfaces,
             allocator: std.mem.Allocator,
             reader: anytype,
         ) anyerror!Self {
             const lowlevel_wave = try file_extension.read(allocator, reader);
+            errdefer allocator.free(lowlevel_wave.samples);
+
+            // Keep the same invariants as `init`, which the decoder does not guarantee.
+            if (lowlevel_wave.channels == 0) return error.InvalidChannelCount;
+            if (lowlevel_wave.sample_rate == 0) return error.InvalidSampleRate;
+            if (lowlevel_wave.samples.len % lowlevel_wave.channels != 0) return error.UnalignedChannelOffset;
 
             return Self{
                 .samples = lowlevel_wave.samples,
@@ -907,6 +916,48 @@ pub fn inner(comptime T: type) type {
             while (!sound.isAtEnd()) {
                 try io.sleep(std.Io.Duration.fromNanoseconds(10 * std.time.ns_per_ms), .real);
             }
+        }
+
+        test "read returns InvalidChannelCount when the decoded channel count is zero" {
+            const allocator = testing.allocator;
+            var buf: [@embedFile("./assets/sine.wav").len]u8 = undefined;
+            @memcpy(&buf, @embedFile("./assets/sine.wav"));
+            // The channel count is a little-endian u16 at byte offset 22 of a canonical WAV header.
+            std.mem.writeInt(u16, buf[22..24], 0, .little);
+
+            var reader = std.Io.Reader.fixed(&buf);
+            try testing.expectError(error.InvalidChannelCount, Self.read(.wav, allocator, &reader));
+        }
+
+        test "read returns InvalidSampleRate when the decoded sample rate is zero" {
+            const allocator = testing.allocator;
+            var buf: [@embedFile("./assets/sine.wav").len]u8 = undefined;
+            @memcpy(&buf, @embedFile("./assets/sine.wav"));
+            // The sample rate is a little-endian u32 at byte offset 24 of a canonical WAV header.
+            std.mem.writeInt(u32, buf[24..28], 0, .little);
+
+            var reader = std.Io.Reader.fixed(&buf);
+            try testing.expectError(error.InvalidSampleRate, Self.read(.wav, allocator, &reader));
+        }
+
+        test "read returns UnalignedChannelOffset when the sample length is not a multiple of the channel count" {
+            const allocator = testing.allocator;
+
+            var original_reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
+            const original = try Self.read(.wav, allocator, &original_reader);
+            const sample_count = original.samples.len;
+            original.deinit();
+
+            // Pick the smallest channel count greater than one that does not divide the sample count.
+            var channels: u16 = 2;
+            while (sample_count % channels == 0) : (channels += 1) {}
+
+            var buf: [@embedFile("./assets/sine.wav").len]u8 = undefined;
+            @memcpy(&buf, @embedFile("./assets/sine.wav"));
+            std.mem.writeInt(u16, buf[22..24], channels, .little);
+
+            var reader = std.Io.Reader.fixed(&buf);
+            try testing.expectError(error.UnalignedChannelOffset, Self.read(.wav, allocator, &reader));
         }
 
         test "read & deinit" {
