@@ -368,11 +368,21 @@ pub fn inner(comptime T: type) type {
         pub const StreamOptions = struct {
             /// Mixer function to blend overlapping samples.
             mixer: *const fn (T, T) T = Wave(T).saturating_mixing_expression,
-            /// Block size in samples (default: 4096 samples).
-            block_size: usize = 4096,
+            /// Block size in samples.
+            ///
+            /// `0` (the default) selects an automatic size: 4096 samples rounded up to the next
+            /// multiple of the composer's channel count. An explicit value must be a multiple of
+            /// the channel count, otherwise `render_stream` returns `error.UnalignedChannelOffset`.
+            block_size: usize = 0,
         };
 
+        /// Default block size in samples, before rounding up to a multiple of the channel count.
+        const DEFAULT_BLOCK_SIZE: usize = 4096;
+
         /// Iterator that renders the composition in fixed-size blocks to minimize peak memory consumption.
+        ///
+        /// The iterator borrows the composer's wave entries, so the composer and every wave
+        /// appended to it must outlive the iterator. Call `deinit` to release the block buffer.
         pub const BlockIterator = struct {
             composer: Self,
             options: StreamOptions,
@@ -380,6 +390,20 @@ pub fn inner(comptime T: type) type {
             total_samples: usize,
             block_buffer: []T,
 
+            /// Creates an iterator over the composition after validating every entry.
+            ///
+            /// ## Parameters
+            /// - `composer`: The composer to render
+            /// - `options`: Streaming options (mixer function, block size)
+            ///
+            /// ## Returns
+            /// A `BlockIterator`. The caller owns it and must call `deinit`.
+            ///
+            /// ## Errors
+            /// - `MismatchedWaveProperties`: If an entry differs from the composer's sample rate or channel count
+            /// - `UnalignedChannelOffset`: If an entry's start point or an explicit `block_size` is not a multiple of the channel count
+            /// - `Overflow`: If an entry's end point overflows `usize`
+            /// - Allocator error (errors.OutOfMemory)
             pub fn init(composer: Self, options: StreamOptions) (InitErrors || Wave(T).MixErrors || std.mem.Allocator.Error)!BlockIterator {
                 var total_samples: usize = 0;
                 for (composer.info) |waveinfo| {
@@ -395,8 +419,12 @@ pub fn inner(comptime T: type) type {
                     }
                 }
 
-                const bs = if (options.block_size == 0) 4096 else options.block_size;
-                if (bs % composer.channels != 0) {
+                const channels: usize = composer.channels;
+                const bs = if (options.block_size == 0)
+                    (DEFAULT_BLOCK_SIZE + channels - 1) / channels * channels
+                else
+                    options.block_size;
+                if (bs % channels != 0) {
                     return error.UnalignedChannelOffset;
                 }
                 const buf = try composer.allocator.alloc(T, bs);
@@ -823,6 +851,53 @@ pub fn inner(comptime T: type) type {
             defer iterator.deinit();
 
             try testing.expectEqual(iterator.next(), null);
+        }
+
+        test "render_stream with default options on channel counts that do not divide 4096" {
+            const allocator = testing.allocator;
+            const channel_counts = [_]u16{ 3, 5, 6, 7 };
+
+            for (channel_counts) |channels| {
+                var composer = try Self.init(allocator, .{ .sample_rate = 44100, .channels = channels });
+                defer composer.deinit();
+
+                const samples = try allocator.alloc(T, @as(usize, channels) * 3);
+                defer allocator.free(samples);
+                for (samples, 0..) |*sample, i| sample.* = @as(T, @floatFromInt(i)) * 0.01;
+
+                const wave = try Wave(T).init(samples, allocator, .{ .sample_rate = 44100, .channels = channels });
+                defer wave.deinit();
+                try composer.append(.{ .wave = wave, .start_point = 0 });
+
+                const finalized = try composer.finalize(.{});
+                defer finalized.deinit();
+
+                var iterator = try composer.render_stream(.{});
+                defer iterator.deinit();
+
+                // The automatic block size must be aligned to the channel count.
+                try testing.expectEqual(@as(usize, 0), iterator.options.block_size % channels);
+                try testing.expect(iterator.options.block_size >= 4096);
+
+                var streamed: std.array_list.Aligned(T, null) = .empty;
+                defer streamed.deinit(allocator);
+                while (iterator.next()) |block| {
+                    try streamed.appendSlice(allocator, block);
+                }
+
+                try testing.expectEqual(finalized.samples.len, streamed.items.len);
+                for (finalized.samples, streamed.items) |expected, actual| {
+                    try testing.expectApproxEqAbs(expected, actual, 0.00001);
+                }
+            }
+        }
+
+        test "render_stream with explicit block_size of 4096 on 3 channels returns UnalignedChannelOffset" {
+            const allocator = testing.allocator;
+            var composer = try Self.init(allocator, .{ .sample_rate = 44100, .channels = 3 });
+            defer composer.deinit();
+
+            try testing.expectError(error.UnalignedChannelOffset, composer.render_stream(.{ .block_size = 4096 }));
         }
 
         test "render_stream with unaligned block_size returns UnalignedChannelOffset" {
