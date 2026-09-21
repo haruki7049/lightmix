@@ -66,7 +66,7 @@ Follow this recommended order:
   - `wave.to_mono()`: Downmix multi-channel audio to mono (1 channel).
   - `wave.to_stereo(pan)`: Upmix mono audio to stereo (2 channels) with panning (`-1.0` hard left, `0.0` center, `1.0` hard right).
 - **WAV Header Chunks (`WavOptions`)**:
-  - Customize build-time WAV generation in `build.zig` via `addWave` options: `.use_fact = true`, `.use_peak = true`, and `.peak_timestamp = <epoch_seconds>`.
+  - Customize build-time WAV generation in `build.zig` via `addWave` options: `.use_fact = true`, `.use_peak = true`, and `.peak_timestamp = <epoch_seconds>` (use `l.currentTimestamp(b)` to stamp the current time).
 
 ## ⚠️ Important
 

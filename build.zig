@@ -238,6 +238,31 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
     run_test_peak.addFileArg(bt_peak_wave.output_file);
     test_step.dependOn(&run_test_peak.step);
 
+    // Integration test for currentTimestamp used as peak_timestamp in addWave (#366)
+    const bt_peak_now_timestamp = currentTimestamp(b);
+    const bt_peak_now_wave = try addWave(b, bt_gen_mod, .{
+        .optimize = optimize,
+        .format = .{ .wav = .{
+            .bits = 16,
+            .format_code = .pcm,
+            .use_peak = true,
+            .peak_timestamp = bt_peak_now_timestamp,
+            .name = "test-use-peak-now.wav",
+        } },
+    });
+    const test_peak_now_exe = b.addExecutable(.{
+        .name = "test_build_peak_now",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tests/build_peak_now.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    const run_test_peak_now = b.addRunArtifact(test_peak_now_exe);
+    run_test_peak_now.addFileArg(bt_peak_now_wave.output_file);
+    run_test_peak_now.addArg(b.fmt("{d}", .{bt_peak_now_timestamp}));
+    test_step.dependOn(&run_test_peak_now.step);
+
     // Integration test for ieee_float format code in addWave (#230)
     const bt_float_wave = try addWave(b, bt_gen_mod, .{
         .optimize = optimize,
@@ -326,6 +351,35 @@ pub fn addWave(
     return switch (options.format) {
         .wav => Generator.Wav.gen(b, mod, options),
     };
+}
+
+/// Returns a timestamp in seconds since the Unix epoch, suitable for `WavOptions.peak_timestamp`.
+///
+/// If the `SOURCE_DATE_EPOCH` environment variable is set to a valid unsigned integer, that value
+/// is returned so that builds stay reproducible. Otherwise the current wall-clock time is used.
+/// Values outside the `u32` range are saturated instead of trapping.
+///
+/// Note: a wall-clock value changes on every `zig build`, so the generated wave is not cached
+/// across invocations. Leave `peak_timestamp` at its default (`0`) for a reproducible output.
+///
+/// ## Usage
+/// ```zig
+/// const wave = try l.addWave(b, mod, .{
+///     .format = .{ .wav = .{
+///         .bits = 16,
+///         .format_code = .pcm,
+///         .use_peak = true,
+///         .peak_timestamp = l.currentTimestamp(b),
+///     } },
+/// });
+/// ```
+pub fn currentTimestamp(b: *std.Build) u32 {
+    if (b.graph.environ_map.get("SOURCE_DATE_EPOCH")) |value| {
+        if (std.fmt.parseInt(u32, value, 10)) |seconds| return seconds else |_| {}
+    }
+
+    const seconds = std.Io.Clock.real.now(b.graph.io).toSeconds();
+    return std.math.lossyCast(u32, seconds);
 }
 
 const Generator = struct {
