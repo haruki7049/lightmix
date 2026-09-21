@@ -325,41 +325,6 @@ pub fn inner(comptime T: type) type {
             };
         }
 
-        /// Normalizes wave samples so the peak absolute amplitude equals `target_peak`.
-        ///
-        /// ## Parameters
-        /// - `self`: The wave to normalize
-        /// - `target_peak`: The desired peak amplitude (typically 1.0)
-        ///
-        /// ## Returns
-        /// A new Wave with normalized samples
-        pub fn normalize(self: Self, target_peak: T) std.mem.Allocator.Error!Self {
-            var max_amp: T = 0.0;
-            for (self.samples) |sample| {
-                const abs_s = @abs(sample);
-                if (abs_s > max_amp) max_amp = abs_s;
-            }
-
-            const new_samples = try self.allocator.alloc(T, self.samples.len);
-            errdefer self.allocator.free(new_samples);
-
-            if (max_amp == 0.0) {
-                @memset(new_samples, 0.0);
-            } else {
-                const scale = target_peak / max_amp;
-                for (self.samples, 0..) |sample, i| {
-                    new_samples[i] = sample * scale;
-                }
-            }
-
-            return Self{
-                .samples = new_samples,
-                .allocator = self.allocator,
-                .sample_rate = self.sample_rate,
-                .channels = self.channels,
-            };
-        }
-
         /// Separates a wave into two waves at the specified sample index.
         ///
         /// ## Parameters
@@ -1217,76 +1182,6 @@ pub fn inner(comptime T: type) type {
             // Opposing extreme inputs
             try testing.expectApproxEqAbs(Self.saturating_mixing_expression(5.0, -4.5), 0.5, 0.00001);
             try testing.expectApproxEqAbs(Self.saturating_mixing_expression(-10.0, 9.2), -0.8, 0.00001);
-        }
-
-        test "normalize wave samples" {
-            const allocator = testing.allocator;
-            const samples: []const T = &[_]T{ 0.2, -0.5, 0.1 };
-            const wave = try Self.init(samples, allocator, .{
-                .sample_rate = 44100,
-                .channels = 1,
-            });
-            defer wave.deinit();
-
-            const normalized = try wave.normalize(1.0);
-            defer normalized.deinit();
-
-            try testing.expectApproxEqAbs(normalized.samples[0], 0.4, 0.00001);
-            try testing.expectApproxEqAbs(normalized.samples[1], -1.0, 0.00001);
-            try testing.expectApproxEqAbs(normalized.samples[2], 0.2, 0.00001);
-        }
-
-        test "normalize with all zero wave" {
-            const allocator = testing.allocator;
-            const samples: []const T = &[_]T{ 0.0, 0.0, 0.0 };
-            const wave = try Self.init(samples, allocator, .{
-                .sample_rate = 44100,
-                .channels = 1,
-            });
-            defer wave.deinit();
-
-            const normalized = try wave.normalize(1.0);
-            defer normalized.deinit();
-
-            try testing.expectEqual(normalized.samples[0], 0.0);
-            try testing.expectEqual(normalized.samples[1], 0.0);
-            try testing.expectEqual(normalized.samples[2], 0.0);
-        }
-
-        test "normalize edge cases: zero target peak and negative target peak" {
-            const allocator = testing.allocator;
-            const samples: []const T = &[_]T{ 0.5, -0.2 };
-            const wave = try Self.init(samples, allocator, .{
-                .sample_rate = 44100,
-                .channels = 1,
-            });
-            defer wave.deinit();
-
-            // Zero target peak
-            const zero_norm = try wave.normalize(0.0);
-            defer zero_norm.deinit();
-            try testing.expectEqual(zero_norm.samples[0], 0.0);
-            try testing.expectEqual(zero_norm.samples[1], 0.0);
-
-            // Negative target peak
-            const neg_norm = try wave.normalize(-0.5);
-            defer neg_norm.deinit();
-            try testing.expectApproxEqAbs(neg_norm.samples[0], -0.5, 0.00001);
-            try testing.expectApproxEqAbs(neg_norm.samples[1], 0.2, 0.00001);
-        }
-
-        test "normalize edge case: empty samples" {
-            const allocator = testing.allocator;
-            const samples: []const T = &[_]T{};
-            const wave = try Self.init(samples, allocator, .{
-                .sample_rate = 44100,
-                .channels = 1,
-            });
-            defer wave.deinit();
-
-            const empty_norm = try wave.normalize(1.0);
-            defer empty_norm.deinit();
-            try testing.expectEqual(empty_norm.samples.len, 0);
         }
 
         test "mix with custom multiplication mixer" {
