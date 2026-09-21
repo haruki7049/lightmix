@@ -88,19 +88,23 @@ pub fn inner(comptime T: type) type {
             /// - `writer`: A writer interface for the output bytes
             /// - `options`: Format-specific write options (see `writeOptions`)
             ///
+            /// The wave's samples are only read and are not copied or modified; the caller keeps ownership.
+            ///
             /// ## Errors
             /// Returns errors from the underlying format encoder or I/O failures
             pub fn write(self: LowLevelInterfaces, wave: Self, writer: anytype, options: writeOptions(self)) anyerror!void {
                 switch (self) {
                     .wav => {
+                        // The encoder only reads `samples` (its type is a mutable slice because the
+                        // struct owns it for `deinit`). Borrow the wave's buffer instead of duplicating it,
+                        // and never call the encoder's `deinit`, which would free memory owned by `wave`.
                         const zigggwavvv_wave = zigggwavvv.Wave(T).init(.{
                             .format_code = options.format_code,
                             .sample_rate = wave.sample_rate,
                             .channels = wave.channels,
                             .bits = options.bits,
-                            .samples = try wave.allocator.dupe(T, wave.samples),
+                            .samples = @constCast(wave.samples),
                         });
-                        defer zigggwavvv_wave.deinit(wave.allocator);
 
                         try zigggwavvv_wave.write(writer, .{
                             .allocator = wave.allocator,
@@ -1925,6 +1929,43 @@ pub fn inner(comptime T: type) type {
             for (samples, read_wave.samples) |expected, actual| {
                 try testing.expectApproxEqAbs(expected, actual, 0.001);
             }
+        }
+
+        test "write borrows samples without modifying or freeing them" {
+            const allocator = testing.allocator;
+            const io = testing.io;
+            const samples: []const T = &[_]T{ 0.25, -0.5, 0.75, -1.0 };
+            const wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave.deinit();
+
+            var tmpDir = testing.tmpDir(.{});
+            defer tmpDir.cleanup();
+
+            {
+                var file = try tmpDir.dir.createFile(io, "borrow.wav", .{});
+                defer file.close(io);
+                const buf = try allocator.alloc(u8, 64 * 1024);
+                defer allocator.free(buf);
+                var writer = file.writer(io, buf);
+
+                try wave.write(.wav, &writer.interface, .{
+                    .bits = 32,
+                    .format_code = .ieee_float,
+                });
+                try writer.interface.flush();
+            }
+
+            // The wave still owns intact samples after writing (a double free would be reported by the testing allocator).
+            try testing.expectEqualSlices(T, samples, wave.samples);
+
+            const file_bytes = try tmpDir.dir.readFileAlloc(io, "borrow.wav", allocator, .limited(64 * 1024));
+            defer allocator.free(file_bytes);
+            var reader = std.Io.Reader.fixed(file_bytes);
+
+            const read_wave = try Self.read(.wav, allocator, &reader);
+            defer read_wave.deinit();
+
+            try testing.expectEqualSlices(T, samples, read_wave.samples);
         }
     };
 }
