@@ -332,13 +332,16 @@ pub fn inner(comptime T: type) type {
             };
         }
 
-        /// Mixer function type for blending two overlapping samples.
-        pub const MixerFn = *const fn (T, T) T;
+        /// Mixer function type for blending two overlapping samples (an alias of `Wave(T).MixerFn`).
+        pub const MixerFn = Wave(T).MixerFn;
 
         /// Options for stream rendering using `render_stream`.
         pub const StreamOptions = struct {
             /// Mixer function to blend overlapping samples.
-            mixer: *const fn (T, T) T = Wave(T).saturating_mixing_expression,
+            ///
+            /// Defaults to the same plain sum as `Wave(T).mixOptions`, so `finalize` and `render_stream`
+            /// produce the same samples. Use `Wave(T).saturating_mixing_expression` to clamp to `[-1.0, 1.0]`.
+            mixer: MixerFn = Wave(T).default_mixing_expression,
             /// Block size in samples.
             ///
             /// `0` (the default) selects an automatic size: 4096 samples rounded up to the next
@@ -762,6 +765,44 @@ pub fn inner(comptime T: type) type {
             }
         }
 
+        test "finalize and render_stream agree on overlapping samples above 1.0 with default and shared mixers" {
+            const allocator = testing.allocator;
+            var composer = try Self.init(allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer composer.deinit();
+
+            const samples = [_]T{ 0.8, 0.9, -0.8 };
+            const wave = try Wave(T).init(&samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave.deinit();
+
+            try composer.append(.{ .wave = wave, .start_point = 0 });
+            try composer.append(.{ .wave = wave, .start_point = 0 });
+
+            // The default mixer is a plain sum in both APIs, so overlapping peaks are not clamped.
+            const default_finalized = try composer.finalize(.{});
+            defer default_finalized.deinit();
+            try testing.expectApproxEqAbs(1.6, default_finalized.samples[0], 0.00001);
+            try testing.expectApproxEqAbs(1.8, default_finalized.samples[1], 0.00001);
+            try testing.expectApproxEqAbs(-1.6, default_finalized.samples[2], 0.00001);
+
+            var default_iterator = try composer.render_stream(.{});
+            defer default_iterator.deinit();
+            const default_block = default_iterator.next().?;
+            try testing.expectEqualSlices(T, default_finalized.samples, default_block);
+
+            // One mixer value can be shared by Wave(T).mix, finalize and render_stream.
+            const mixer: Wave(T).MixerFn = Wave(T).saturating_mixing_expression;
+            const mixed = try wave.mix(wave, .{ .mixer = mixer });
+            defer mixed.deinit();
+            const saturated = try composer.finalize(.{ .mixer = mixer });
+            defer saturated.deinit();
+            var iterator = try composer.render_stream(.{ .mixer = mixer });
+            defer iterator.deinit();
+            const block = iterator.next().?;
+
+            try testing.expectEqualSlices(T, &[_]T{ 1.0, 1.0, -1.0 }, saturated.samples);
+            try testing.expectEqualSlices(T, saturated.samples, block);
+            try testing.expectEqualSlices(T, saturated.samples, mixed.samples);
+        }
         test "render_stream with block_size larger than composition length" {
             const allocator = testing.allocator;
             var composer = try Self.init(allocator, .{ .sample_rate = 44100, .channels = 1 });
