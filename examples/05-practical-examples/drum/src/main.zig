@@ -41,7 +41,7 @@ fn generateSnare(allocator: std.mem.Allocator) !Wave(f64) {
     // Generate pink noise for snare wires
     const pink_noise = try generatePinkNoise(allocator);
     defer pink_noise.deinit();
-    // Apply aggressive decay to noise; each function returns a new wave
+    // Apply aggressive decay to noise
     const noise_decay1 = try fastDecayFilter(f64, pink_noise);
     defer noise_decay1.deinit();
     const noise_decay2 = try fastDecayFilter(f64, noise_decay1);

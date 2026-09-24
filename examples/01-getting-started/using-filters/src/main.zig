@@ -1,11 +1,12 @@
 //! # Using Filters - Transform Your Audio
 //!
-//! This example demonstrates how to transform audio waves with plain functions.
-//! We'll create a sine wave and pass it to a decay function to create a fade-out effect.
+//! A "filter" here is not a library feature but any function you write yourself.
+//! It may return a new wave or modify a wave in place; this example returns a new wave.
+//! We create a sine wave and pass it to a decay filter to create a fade-out effect.
 //!
 //! ## What you'll learn:
 //! - How to write a function that takes a wave and returns a new wave
-//! - How to call it directly and manage the ownership of both waves
+//! - How to call your own filter directly
 //! - Why no wrapper method on `Wave(T)` is needed
 //!
 //! ## Run this example:
@@ -38,7 +39,7 @@ pub fn main(init: std.process.Init) !void {
     });
     defer original.deinit();
 
-    // Call the function directly. It returns a new wave, so both waves are freed by the caller
+    // Call the filter directly; this one returns a new wave
     const wave = try decayFilter(f64, original);
     defer wave.deinit();
 

@@ -1,12 +1,13 @@
 //! # Filtering - Apply Multiple Transformations
 //!
-//! This example shows how to apply several transformation functions in sequence.
-//! We'll create a sine wave and apply decay and volume reduction functions to it.
+//! Filters are functions you write yourself, so they can be applied in any order and
+//! may return a new wave or modify one in place; this example returns new waves.
+//! We create a sine wave and apply decay and volume reduction filters to it.
 //!
 //! ## What you'll learn:
-//! - How to apply multiple functions one after another
-//! - Freeing each intermediate wave
-//! - Composing plain functions instead of chaining methods
+//! - How to apply multiple filters one after another
+//! - Writing your own filters
+//! - Composing filters as plain functions
 
 const std = @import("std");
 const lightmix = @import("lightmix");
@@ -33,7 +34,7 @@ pub fn main(init: std.process.Init) !void {
     });
     defer original.deinit();
 
-    // Each function returns a new wave, so free the intermediate one explicitly
+    // Each filter here returns a new wave
     const decayed = try decayFilter(f64, original); // Apply fade-out
     defer decayed.deinit();
     const wave = try halveSampleValuesFilter(f64, decayed); // Reduce volume
