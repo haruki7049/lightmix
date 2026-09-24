@@ -41,7 +41,9 @@ pub fn build(b: *std.Build) !void {
         // - Linux (ALSA) uses raw system calls only.
         // - macOS (CoreAudio) opens AudioToolbox at runtime with dlopen, from libSystem, which
         //   every macOS executable links (bundled with Zig, so no macOS SDK is needed).
-        .linux, .macos => {},
+        // - Windows (WinMM) imports winmm.dll through `extern` declarations; Zig generates the
+        //   import library itself, so no Windows SDK is needed.
+        .linux, .macos, .windows => {},
         // The other targets still play through zaudio (miniaudio) until their Pure Zig backends land (#296).
         else => play_mod.linkLibrary(zaudio.artifact("miniaudio")),
     }
