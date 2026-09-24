@@ -20,13 +20,6 @@ pub fn build(b: *std.Build) !void {
         },
     });
 
-    // Library linking on Linux
-    if (target.result.os.tag == .linux) {
-        mod.linkSystemLibrary("alsa", .{});
-        mod.linkSystemLibrary("libpulse", .{});
-        mod.linkSystemLibrary("libpipewire-0.3", .{});
-    }
-
     const wave = try l.addWave(b, mod, .{
         .func_name = "gen",
         .format = .{ .wav = .{

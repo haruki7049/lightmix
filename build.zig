@@ -8,23 +8,36 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    // Options
+    const test_playback = b.option(bool, "test-playback", "Build the playback examples in the test step (needs a C toolchain)") orelse false;
+
     // Dependencies
     const zigggwavvv = b.dependency("zigggwavvv", .{});
     const zaudio = b.dependency("zaudio", .{});
 
-    // Library module declaration
+    // Library module declaration (Pure Zig, no audio backend)
     const lib_mod = b.addModule("lightmix", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
         .imports = &.{
             .{ .name = "zigggwavvv", .module = zigggwavvv.module("zigggwavvv") },
+        },
+    });
+
+    // Playback module declaration (developer preview helper, links miniaudio)
+    // Declaring the module compiles nothing, so users who never import it need no C toolchain.
+    const play_mod = b.addModule("lightmix_play", .{
+        .root_source_file = b.path("src/play.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
             .{ .name = "zaudio", .module = zaudio.module("root") },
         },
     });
 
     // miniaudio linking
-    lib_mod.linkLibrary(zaudio.artifact("miniaudio"));
+    play_mod.linkLibrary(zaudio.artifact("miniaudio"));
 
     // # macOS
     // apple-sdk framework linking is needed if your machine runs macOS.
@@ -46,11 +59,11 @@ pub fn build(b: *std.Build) !void {
         if (maybe_sdkroot) |sdkroot_envvar| {
             const trimmed_sdkroot = std.mem.trim(u8, sdkroot_envvar, " \t\r\n");
             const sdkroot: []const u8 = try std.mem.concat(b.allocator, u8, &.{ trimmed_sdkroot, "/System/Library/Frameworks" });
-            lib_mod.addFrameworkPath(.{ .cwd_relative = sdkroot });
+            play_mod.addFrameworkPath(.{ .cwd_relative = sdkroot });
 
-            // This part adds library paths to lib_mod variable.
+            // This part adds library paths to play_mod variable.
             const sdkroot_libpath: []const u8 = try std.mem.concat(b.allocator, u8, &.{ trimmed_sdkroot, "/usr/lib" });
-            lib_mod.addLibraryPath(.{ .cwd_relative = sdkroot_libpath });
+            play_mod.addLibraryPath(.{ .cwd_relative = sdkroot_libpath });
         }
     }
 
@@ -101,8 +114,16 @@ pub fn build(b: *std.Build) !void {
     const run_composer_integration_tests = b.addRunArtifact(composer_integration_test);
     test_step.dependOn(&run_composer_integration_tests.step);
 
+    // Playback unit tests (opt-in, because miniaudio needs a C toolchain)
+    if (test_playback) {
+        const play_unit_tests = b.addTest(.{
+            .root_module = play_mod,
+        });
+        test_step.dependOn(&b.addRunArtifact(play_unit_tests).step);
+    }
+
     // Examples
-    try example_verifications(b, target, optimize, lib_mod, test_step);
+    try example_verifications(b, target, optimize, lib_mod, if (test_playback) play_mod else null, test_step);
 
     // Docs
     const docs_step = b.step("docs", "Emit docs");
@@ -115,7 +136,7 @@ pub fn build(b: *std.Build) !void {
 }
 
 /// Examples' verifications
-fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, lightmix_mod: *std.Build.Module, test_step: *std.Build.Step) !void {
+fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, lightmix_mod: *std.Build.Module, maybe_play_mod: ?*std.Build.Module, test_step: *std.Build.Step) !void {
     const example_files = &[_][]const u8{
         "examples/01-getting-started/hello-wave/src/main.zig",
         "examples/01-getting-started/using-filters/src/main.zig",
@@ -131,7 +152,6 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
         "examples/04-composer/simple-sequence/src/main.zig",
         "examples/05-practical-examples/drum/src/main.zig",
         "examples/05-practical-examples/guitar/src/main.zig",
-        "examples/06-advanced/runtime-play/src/main.zig",
     };
 
     for (example_files, 0..) |ex_path, i| {
@@ -149,6 +169,23 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
             .root_module = example_mod,
         });
         test_step.dependOn(&example_exe.step);
+    }
+
+    // Playback examples need miniaudio, so they are built only with `-Dtest-playback`.
+    if (maybe_play_mod) |play_mod| {
+        const runtime_play_exe = b.addExecutable(.{
+            .name = "example_runtime_play",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("examples/06-advanced/runtime-play/src/main.zig"),
+                .target = target,
+                .optimize = optimize,
+                .imports = &.{
+                    .{ .name = "lightmix", .module = lightmix_mod },
+                    .{ .name = "lightmix_play", .module = play_mod },
+                },
+            }),
+        });
+        test_step.dependOn(&runtime_play_exe.step);
     }
 
     const bt_gen_mod = b.createModule(.{
@@ -622,7 +659,7 @@ pub fn installWave(b: *std.Build, wave: *CompileWave) void {
 ///
 /// This function creates a build step that:
 /// 1. Generates an executable that calls the wave generation function
-/// 2. Calls the play() method on the resulting Wave
+/// 2. Passes the resulting Wave to `lightmix_play.play`
 /// 3. Returns a Run step that can be added as a dependency
 ///
 /// ## Parameters
@@ -650,11 +687,12 @@ pub fn addPlay(
     const play_source = try std.fmt.allocPrint(b.allocator,
         \\const std = @import("std");
         \\const user_module = @import("user_module");
+        \\const lightmix_play = @import("lightmix_play");
         \\
         \\pub fn main(init: std.process.Init) !void {{
         \\    const wave = try user_module.{s}(init);
         \\    defer wave.deinit();
-        \\    try wave.play();
+        \\    try lightmix_play.play(wave);
         \\}}
         \\
     , .{wave.create_wave_options.func_name});
@@ -662,6 +700,9 @@ pub fn addPlay(
     // Create a write files step to generate the temporary source
     const write_files = b.addWriteFiles();
     const play_source_file = write_files.add("play_wave.zig", play_source);
+
+    // The playback module lives in this package, so fetch it through the caller's dependency on lightmix.
+    const lightmix_dep = b.dependencyFromBuildZig(@This(), .{});
 
     const host_user_mod = b.createModule(.{
         .root_source_file = wave.root_module.root_source_file,
@@ -682,6 +723,7 @@ pub fn addPlay(
             .optimize = options.optimize,
             .imports = &.{
                 .{ .name = "user_module", .module = host_user_mod },
+                .{ .name = "lightmix_play", .module = lightmix_dep.module("lightmix_play") },
             },
         }),
     });

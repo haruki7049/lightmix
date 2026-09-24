@@ -13,14 +13,9 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
         .imports = &.{
             .{ .name = "lightmix", .module = lightmix.module("lightmix") },
+            .{ .name = "lightmix_play", .module = lightmix.module("lightmix_play") },
         },
     });
-
-    if (target.result.os.tag == .linux) {
-        exe_mod.linkSystemLibrary("alsa", .{});
-        exe_mod.linkSystemLibrary("libpulse", .{});
-        exe_mod.linkSystemLibrary("libpipewire-0.3", .{});
-    }
 
     const exe = b.addExecutable(.{
         .name = "runtime-play",

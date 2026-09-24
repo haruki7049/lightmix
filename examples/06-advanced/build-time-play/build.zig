@@ -16,12 +16,6 @@ pub fn build(b: *std.Build) !void {
         },
     });
 
-    if (target.result.os.tag == .linux) {
-        mod.linkSystemLibrary("alsa", .{});
-        mod.linkSystemLibrary("libpulse", .{});
-        mod.linkSystemLibrary("libpipewire-0.3", .{});
-    }
-
     const wave = try l.addWave(b, mod, .{
         // .func_name = "gen", // The default value of func_name is "gen"
         .format = .{ .wav = .{
