@@ -248,9 +248,16 @@ pub fn inner(comptime T: type) type {
             };
         }
 
+        /// Mixer function type for blending two samples. It is a function pointer so that one mixer value
+        /// can be shared between `Wave(T).mix`, `Composer(T).finalize` and `Composer(T).render_stream`.
+        pub const MixerFn = *const fn (T, T) T;
+
         /// Options for mixing two waves together.
+        ///
+        /// The default mixer is `default_mixing_expression`, a plain sum that never clamps. Pass
+        /// `saturating_mixing_expression` to clamp the result to `[-1.0, 1.0]`.
         pub const mixOptions = struct {
-            mixer: fn (T, T) T = default_mixing_expression,
+            mixer: MixerFn = default_mixing_expression,
         };
 
         /// Default mixing function that adds two samples together.
