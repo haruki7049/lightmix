@@ -89,7 +89,12 @@ pub fn inner(comptime T: type) type {
             /// - `options`: Format-specific write options (see `writeOptions`)
             ///
             /// ## Errors
-            /// Returns errors from the underlying format encoder or I/O failures
+            /// Returns errors from the underlying format encoder or I/O failures.
+            ///
+            /// ## Out-of-range and non-finite samples
+            /// Finite samples outside `[-1.0, 1.0]` are not rejected; the codec clamps them when quantizing to PCM.
+            /// `NaN` and infinite samples cannot be quantized, so a PCM write fails with `error.NonFiniteSample`.
+            /// IEEE float formats store them as they are. `lightmix` itself never sanitizes samples.
             pub fn write(self: LowLevelInterfaces, wave: Self, writer: anytype, options: writeOptions(self)) anyerror!void {
                 switch (self) {
                     .wav => {
@@ -665,7 +670,12 @@ pub fn inner(comptime T: type) type {
         /// - `options`: Format-specific write options (e.g. bit depth, format code)
         ///
         /// ## Errors
-        /// Returns errors from the underlying format encoder or I/O failures
+        /// Returns errors from the underlying format encoder or I/O failures.
+        ///
+        /// ## Out-of-range and non-finite samples
+        /// Finite samples outside `[-1.0, 1.0]` are not rejected; the codec clamps them when quantizing to PCM.
+        /// `NaN` and infinite samples cannot be quantized, so a PCM write fails with `error.NonFiniteSample`.
+        /// IEEE float formats store them as they are. `lightmix` itself never sanitizes samples.
         pub fn write(self: Self, file_extension: LowLevelInterfaces, writer: anytype, options: LowLevelInterfaces.writeOptions(file_extension)) anyerror!void {
             try file_extension.write(self, writer, options);
         }
@@ -1271,6 +1281,61 @@ pub fn inner(comptime T: type) type {
             defer allocator.free(file_bytes);
 
             try testing.expect(file_bytes.len > LowLevelInterfaces.WAV_BASE_HEADER_SIZE);
+        }
+
+        test "write clamps finite out-of-range samples for pcm" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 1.5, -2.0, 0.5 };
+            const wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave.deinit();
+
+            var out: std.Io.Writer.Allocating = .init(allocator);
+            defer out.deinit();
+            try wave.write(.wav, &out.writer, .{ .bits = 16, .format_code = .pcm });
+
+            var reader = std.Io.Reader.fixed(out.written());
+            const read_wave = try Self.read(.wav, allocator, &reader);
+            defer read_wave.deinit();
+
+            try testing.expectEqual(3, read_wave.samples.len);
+            try testing.expectApproxEqAbs(1.0, read_wave.samples[0], 0.0001);
+            try testing.expectApproxEqAbs(-1.0, read_wave.samples[1], 0.0001);
+            try testing.expectApproxEqAbs(0.5, read_wave.samples[2], 0.0001);
+        }
+
+        test "write returns NonFiniteSample for NaN and Inf samples in pcm" {
+            const allocator = testing.allocator;
+            const non_finite = [_]T{ std.math.nan(T), std.math.inf(T), -std.math.inf(T) };
+
+            for (non_finite) |value| {
+                const samples: []const T = &[_]T{ 0.1, value, 0.2 };
+                const wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
+                defer wave.deinit();
+
+                var out: std.Io.Writer.Allocating = .init(allocator);
+                defer out.deinit();
+                try testing.expectError(error.NonFiniteSample, wave.write(.wav, &out.writer, .{ .bits = 16, .format_code = .pcm }));
+            }
+        }
+
+        test "write stores NaN and Inf samples as they are for ieee float" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ std.math.nan(T), std.math.inf(T), -std.math.inf(T) };
+            const wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave.deinit();
+
+            var out: std.Io.Writer.Allocating = .init(allocator);
+            defer out.deinit();
+            try wave.write(.wav, &out.writer, .{ .bits = 32, .format_code = .ieee_float });
+
+            var reader = std.Io.Reader.fixed(out.written());
+            const read_wave = try Self.read(.wav, allocator, &reader);
+            defer read_wave.deinit();
+
+            try testing.expectEqual(3, read_wave.samples.len);
+            try testing.expect(std.math.isNan(read_wave.samples[0]));
+            try testing.expect(std.math.isPositiveInf(read_wave.samples[1]));
+            try testing.expect(std.math.isNegativeInf(read_wave.samples[2]));
         }
 
         test "mix" {
