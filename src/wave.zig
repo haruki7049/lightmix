@@ -98,14 +98,14 @@ pub fn inner(comptime T: type) type {
             pub fn write(self: LowLevelInterfaces, wave: Self, writer: anytype, options: writeOptions(self)) anyerror!void {
                 switch (self) {
                     .wav => {
+                        // `init` does not copy the samples, so `wave` keeps ownership and no `deinit` is needed here.
                         const zigggwavvv_wave = zigggwavvv.Wave(T).init(.{
                             .format_code = options.format_code,
                             .sample_rate = wave.sample_rate,
                             .channels = wave.channels,
                             .bits = options.bits,
-                            .samples = try wave.allocator.dupe(T, wave.samples),
+                            .samples = wave.samples,
                         });
-                        defer zigggwavvv_wave.deinit(wave.allocator);
 
                         try zigggwavvv_wave.write(writer, .{
                             .allocator = wave.allocator,
