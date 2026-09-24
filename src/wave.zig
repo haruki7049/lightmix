@@ -1,6 +1,5 @@
 const std = @import("std");
 const zigggwavvv = @import("zigggwavvv");
-const zaudio = @import("zaudio");
 const testing = std.testing;
 
 /// Wave type function: Creates a Wave type for the specified sample type.
@@ -740,50 +739,6 @@ pub fn inner(comptime T: type) type {
             options: LowLevelInterfaces.sizeOptions(file_extension),
         ) usize {
             return file_extension.size(self, options);
-        }
-
-        /// Plays the wave audio through the system audio output.
-        ///
-        /// Initializes the audio engine, converts samples to f32, and blocks until
-        /// playback completes.
-        ///
-        /// ## Parameters
-        /// - `self`: The wave to play
-        ///
-        /// ## Errors
-        /// Returns errors from the audio engine initialization or playback
-        pub fn play(self: Self) anyerror!void {
-            if (self.samples.len == 0) return;
-            const allocator = self.allocator;
-            var threaded = std.Io.Threaded.init(allocator, .{});
-            defer threaded.deinit();
-            const io = threaded.io();
-
-            zaudio.init(allocator);
-            defer zaudio.deinit();
-
-            var engine: *zaudio.Engine = try zaudio.Engine.create(null);
-            defer engine.destroy();
-
-            const samples = try allocator.alloc(f32, self.samples.len);
-            defer allocator.free(samples);
-
-            for (self.samples, 0..) |orig_sample, i| {
-                samples[i] = @as(f32, @floatCast(orig_sample));
-            }
-
-            var buffer_config = zaudio.AudioBuffer.Config.init(.float32, self.channels, samples.len / self.channels, samples.ptr);
-            buffer_config.sample_rate = self.sample_rate;
-            const buffer = try zaudio.AudioBuffer.create(buffer_config);
-            defer buffer.destroy();
-            const sound = try engine.createSoundFromDataSource(buffer.asDataSourceMut(), .{}, null);
-            defer sound.destroy();
-
-            try sound.start();
-
-            while (!sound.isAtEnd()) {
-                try io.sleep(std.Io.Duration.fromNanoseconds(10 * std.time.ns_per_ms), .real);
-            }
         }
 
         test "read returns InvalidFormat when the decoded channel count is zero" {
