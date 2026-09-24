@@ -30,7 +30,7 @@ Before contributing new features, please understand `lightmix`'s core architectu
    - **In Scope**: Foundational primitives for waveform data structures (`Wave(T)`), timeline mixing (`Composer(T)`), WAV encoding/decoding, and build integration (`addWave`).
    - **Out of Scope (Non-Goals)**: Heavy DSP effect suites (reverb, chorus, flanger, etc.) and specialized synthesizer instrument presets. These belong in higher-level libraries or application code.
 1. **Playback is Auxiliary**:
-   Real-time audio playback (`lightmix_play.play()`, `addPlay`) is strictly a local developer preview helper. Changes to the core synthesis and build pipeline must never introduce runtime audio server dependencies or break headless CI execution.
+   Real-time audio playback (`play()`, `addPlay`) is strictly a local developer preview helper. Changes to the core synthesis and build pipeline must never introduce runtime audio server dependencies or break headless CI execution.
 1. **Flat Generic Typing**:
    `lightmix` treats floating-point sample types (`f64`, `f80`, `f128`, and future `f32`) flatly via `comptime T: type`. Do not hardcode or prioritize a specific sample type in core structures.
 1. **In-Memory Buffer Model**:
@@ -369,7 +369,7 @@ pub fn main() !void {
 
 - **Deterministic Output**: Ensure all synthesis routines produce bit-identical output across supported operating systems and CPU architectures.
 - **Headless Compatibility**: Standard build and test steps must never assume physical audio hardware or active sound daemons (ALSA, PulseAudio, PipeWire, CoreAudio).
-- **Playback as Helper**: The `lightmix_play.play()` and `addPlay` utilities are preview helpers; never introduce playback dependencies into core synthesis or file generation logic.
+- **Playback as Helper**: The `play()` and `addPlay` utilities are preview helpers; never introduce playback dependencies into core synthesis or file generation logic.
 
 ### Sample Rates
 

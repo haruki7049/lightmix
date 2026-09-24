@@ -1,5 +1,6 @@
 const std = @import("std");
 const zigggwavvv = @import("zigggwavvv");
+const playback = @import("./play/backend.zig");
 const testing = std.testing;
 
 /// Wave type function: Creates a Wave type for the specified sample type.
@@ -739,6 +740,46 @@ pub fn inner(comptime T: type) type {
             options: LowLevelInterfaces.sizeOptions(file_extension),
         ) usize {
             return file_extension.size(self, options);
+        }
+
+        /// Plays the wave audio through the system audio output.
+        ///
+        /// A developer preview helper: converts samples to f32 and blocks until playback
+        /// completes. The wave is only read; its ownership stays with the caller.
+        ///
+        /// Playback goes through a Pure Zig backend chosen for the target at compile time:
+        /// ALSA on Linux, CoreAudio on macOS and WinMM on Windows. No C library is linked.
+        ///
+        /// ## Parameters
+        /// - `self`: The wave to play
+        ///
+        /// ## Errors
+        /// Returns `error.UnsupportedPlatform` on other targets, and errors from the conversion
+        /// buffer allocation and from the playback backend (e.g. no output device)
+        pub fn play(self: Self) anyerror!void {
+            if (self.samples.len == 0) return;
+            const allocator = self.allocator;
+            var threaded = std.Io.Threaded.init(allocator, .{});
+            defer threaded.deinit();
+            const io = threaded.io();
+
+            const samples = try allocator.alloc(f32, self.samples.len);
+            defer allocator.free(samples);
+            for (self.samples, samples) |sample, *dest| {
+                dest.* = @floatCast(sample);
+            }
+
+            try playback.Selected.play(allocator, io, .{
+                .samples = samples,
+                .sample_rate = self.sample_rate,
+                .channels = self.channels,
+            });
+        }
+
+        test "play returns immediately for an empty wave" {
+            const wave = try Self.init(&.{}, testing.allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave.deinit();
+            try wave.play();
         }
 
         test "read returns InvalidFormat when the decoded channel count is zero" {

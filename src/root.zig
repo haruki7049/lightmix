@@ -59,4 +59,5 @@ pub const Composer = @import("./composer.zig").inner;
 test "Import tests" {
     _ = @import("./wave.zig");
     _ = @import("./composer.zig");
+    _ = @import("./play/backend.zig");
 }

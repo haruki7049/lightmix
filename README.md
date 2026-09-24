@@ -30,7 +30,7 @@ I created this project because I felt a disconnect between existing audio synthe
   High-level DSP effects (such as reverb, flanger, or chorus) and specialized synthesizer sound presets are considered **out of scope** (Non-Goals) for the core library. They belong in separate domain libraries or user application code.
 
 - **Playback as a Verification Helper**:
-  Real-time audio playback (`lightmix_play.play()`, `addPlay`) is provided strictly as a developer convenience to preview generated sounds during development. It is an auxiliary feature and must never block or compromise headless CI runs or core audio generation.
+  Real-time audio playback (`play()`, `addPlay`) is provided strictly as a developer convenience to preview generated sounds during development. It is an auxiliary feature and must never block or compromise headless CI runs or core audio generation.
 
 - **Flat Generic Typing**:
   Audio samples are generic over `comptime T: type` (`f64`, `f80`, `f128`, with `f32` planned once underlying codec support is ready). No single floating-point precision is prioritized; users choose the balance between precision and memory overhead.

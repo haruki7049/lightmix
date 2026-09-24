@@ -3,7 +3,7 @@
 //! A playback backend is a namespace (a Zig file) that sends a `Buffer` to an audio output.
 //! Each backend must declare:
 //!
-//! - `pub const name: []const u8`: A short name of the backend (e.g. `"zaudio"`).
+//! - `pub const name: []const u8`: A short name of the backend (e.g. `"alsa"`).
 //! - `pub fn play(allocator: std.mem.Allocator, io: std.Io, buffer: Buffer) !void`:
 //!   Plays `buffer` and blocks until playback completes. The buffer is only read; its
 //!   ownership stays with the caller.
@@ -42,8 +42,7 @@ fn select(comptime os_tag: std.Target.Os.Tag) type {
         .linux => @import("./backends/alsa.zig"),
         .macos => @import("./backends/coreaudio.zig"),
         .windows => @import("./backends/winmm.zig"),
-        // The other targets use zaudio until the Pure Zig backends replace it (#296).
-        else => @import("./backends/zaudio.zig"),
+        else => @import("./backends/unsupported.zig"),
     };
     comptime assertBackend(Backend);
     return Backend;
@@ -87,4 +86,5 @@ test "assertBackend accepts a backend that matches the interface" {
 
 test "Import tests" {
     _ = Selected;
+    _ = @import("./backends/unsupported.zig");
 }

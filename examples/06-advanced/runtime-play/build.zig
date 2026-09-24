@@ -13,7 +13,6 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
         .imports = &.{
             .{ .name = "lightmix", .module = lightmix.module("lightmix") },
-            .{ .name = "lightmix_play", .module = lightmix.module("lightmix_play") },
         },
     });
 
