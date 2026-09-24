@@ -59,14 +59,14 @@ pub fn inner(comptime T: type) type {
             /// ## Parameters
             /// - `self`: The file format to use for decoding
             /// - `allocator`: Memory allocator for sample data
-            /// - `reader`: A reader interface providing the raw file bytes
+            /// - `reader`: The `std.Io.Reader` interface (e.g. `&file_reader.interface` or `std.Io.Reader.fixed(bytes)`) providing the raw file bytes
             ///
             /// ## Returns
             /// A `LowLevelWave` containing the decoded samples, sample rate, and channel count
             ///
             /// ## Errors
             /// Returns errors from the underlying format decoder or allocation failures
-            pub fn read(self: LowLevelInterfaces, allocator: std.mem.Allocator, reader: anytype) anyerror!LowLevelWave {
+            pub fn read(self: LowLevelInterfaces, allocator: std.mem.Allocator, reader: *std.Io.Reader) anyerror!LowLevelWave {
                 return switch (self) {
                     .wav => {
                         const v = try zigggwavvv.Wave(T).read(allocator, reader);
@@ -85,7 +85,7 @@ pub fn inner(comptime T: type) type {
             /// ## Parameters
             /// - `self`: The file format to use for encoding
             /// - `wave`: The wave instance to write
-            /// - `writer`: A writer interface for the output bytes
+            /// - `writer`: The `std.Io.Writer` interface (e.g. `&file_writer.interface`) for the output bytes; the caller must flush it
             /// - `options`: Format-specific write options (see `writeOptions`)
             ///
             /// ## Errors
@@ -95,7 +95,7 @@ pub fn inner(comptime T: type) type {
             /// Finite samples outside `[-1.0, 1.0]` are not rejected; the codec clamps them when quantizing to PCM.
             /// `NaN` and infinite samples cannot be quantized, so a PCM write fails with `error.NonFiniteSample`.
             /// IEEE float formats store them as they are. `lightmix` itself never sanitizes samples.
-            pub fn write(self: LowLevelInterfaces, wave: Self, writer: anytype, options: writeOptions(self)) anyerror!void {
+            pub fn write(self: LowLevelInterfaces, wave: Self, writer: *std.Io.Writer, options: writeOptions(self)) anyerror!void {
                 switch (self) {
                     .wav => {
                         // `init` does not copy the samples, so `wave` keeps ownership and no `deinit` is needed here.
@@ -630,7 +630,7 @@ pub fn inner(comptime T: type) type {
         /// ## Parameters
         /// - `file_extension`: The file format to use for decoding (e.g. `.wav`)
         /// - `allocator`: Memory allocator for sample data
-        /// - `reader`: A reader interface for reading the audio file data
+        /// - `reader`: The `std.Io.Reader` interface providing the audio file data
         ///
         /// ## Returns
         /// A new Wave instance containing the audio data from the file
@@ -643,7 +643,7 @@ pub fn inner(comptime T: type) type {
         pub fn read(
             file_extension: LowLevelInterfaces,
             allocator: std.mem.Allocator,
-            reader: anytype,
+            reader: *std.Io.Reader,
         ) anyerror!Self {
             const lowlevel_wave = try file_extension.read(allocator, reader);
             errdefer allocator.free(lowlevel_wave.samples);
@@ -666,7 +666,7 @@ pub fn inner(comptime T: type) type {
         /// ## Parameters
         /// - `self`: The wave to write
         /// - `file_extension`: The file format to use for encoding (e.g. `.wav`)
-        /// - `writer`: A writer interface for writing the audio file data
+        /// - `writer`: The `std.Io.Writer` interface for writing the audio file data; the caller must flush it
         /// - `options`: Format-specific write options (e.g. bit depth, format code)
         ///
         /// ## Errors
@@ -676,7 +676,7 @@ pub fn inner(comptime T: type) type {
         /// Finite samples outside `[-1.0, 1.0]` are not rejected; the codec clamps them when quantizing to PCM.
         /// `NaN` and infinite samples cannot be quantized, so a PCM write fails with `error.NonFiniteSample`.
         /// IEEE float formats store them as they are. `lightmix` itself never sanitizes samples.
-        pub fn write(self: Self, file_extension: LowLevelInterfaces, writer: anytype, options: LowLevelInterfaces.writeOptions(file_extension)) anyerror!void {
+        pub fn write(self: Self, file_extension: LowLevelInterfaces, writer: *std.Io.Writer, options: LowLevelInterfaces.writeOptions(file_extension)) anyerror!void {
             try file_extension.write(self, writer, options);
         }
 
