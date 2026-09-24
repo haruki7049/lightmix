@@ -293,11 +293,11 @@ zig test src/wave.zig --test-filter "no memory leaks"
 Write clear, descriptive commit messages:
 
 ```
-Add filter chaining example
+Add function composition example
 
 - Create new example in examples/03-wave-operations/
-- Demonstrate using multiple filters in sequence
-- Include documentation about filter composition
+- Demonstrate using multiple transformation functions in sequence
+- Include documentation about function composition
 ```
 
 ### Pull Request Process
@@ -345,15 +345,15 @@ When creating examples:
 - **Show expected output** or results
 
 ```zig
-//! # Filter Chaining Example
+//! # Function Composition Example
 //!
-//! This example demonstrates how to chain multiple filters together.
+//! This example demonstrates how to apply multiple transformation functions in sequence.
 //! We apply decay and volume reduction to create a fade-out effect.
 //!
 //! ## What you'll learn:
-//! - Chaining filter functions
+//! - Applying transformation functions in sequence
 //! - Creating composite effects
-//! - Managing filter ownership
+//! - Managing the ownership of intermediate waves
 
 const std = @import("std");
 const lightmix = @import("lightmix");
