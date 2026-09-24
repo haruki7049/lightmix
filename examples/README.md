@@ -11,9 +11,9 @@ Welcome to the lightmix examples! This directory contains a comprehensive set of
 Start here if you're new to lightmix! These examples introduce the basics with clear, simple code.
 
 - **hello-wave** - Create your first sine wave and save it to a WAV file
-- **using-filters** - Learn how to apply filters to transform audio
+- **using-filters** - Learn how to transform audio with a filter function you write yourself
 
-**What you'll learn:** Basic Wave creation, saving audio files, applying simple filters
+**What you'll learn:** Basic Wave creation, saving audio files, applying a simple self-written filter
 
 ### 02-wave-basics/
 
@@ -36,10 +36,10 @@ Learn about the building blocks of sound synthesis. Each example generates a dif
 Once you can generate waves, learn how to transform and combine them.
 
 - **mixing-waves** - Combine multiple waves to create chords and complex sounds
-- **filtering** - Chain multiple filters for audio effects
+- **filtering** - Apply several self-written filters in sequence
 - **frequency-changes** - Change pitch by altering frequency
 
-**What you'll learn:** Wave mixing, filter chaining, additive synthesis, pitch relationships
+**What you'll learn:** Wave mixing, filter composition, additive synthesis, pitch relationships
 
 ### 04-composer/
 

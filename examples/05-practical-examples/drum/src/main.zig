@@ -39,18 +39,23 @@ pub fn main(init: std.process.Init) !void {
 
 fn generateSnare(allocator: std.mem.Allocator) !Wave(f64) {
     // Generate pink noise for snare wires
-    var noise: Wave(f64) = try generatePinkNoise(allocator);
+    const pink_noise = try generatePinkNoise(allocator);
+    defer pink_noise.deinit();
     // Apply aggressive decay to noise
-    try noise.filter(fastDecayFilter);
-    try noise.filter(fastDecayFilter);
-    try noise.filter(fastDecayFilter);
+    const noise_decay1 = try fastDecayFilter(f64, pink_noise);
+    defer noise_decay1.deinit();
+    const noise_decay2 = try fastDecayFilter(f64, noise_decay1);
+    defer noise_decay2.deinit();
+    const noise = try fastDecayFilter(f64, noise_decay2);
     defer noise.deinit();
 
     // Generate low sine for drum body
-    var tone = try generateDrumTone(allocator);
+    const drum_tone = try generateDrumTone(allocator);
+    defer drum_tone.deinit();
     // Apply decay to tone
-    try tone.filter(fastDecayFilter);
-    try tone.filter(halveSampleValuesFilter);
+    const tone_decayed = try fastDecayFilter(f64, drum_tone);
+    defer tone_decayed.deinit();
+    const tone = try halveSampleValuesFilter(f64, tone_decayed);
     defer tone.deinit();
 
     // Mix together

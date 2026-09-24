@@ -1,12 +1,13 @@
 //! # Filtering - Apply Multiple Transformations
 //!
-//! This example shows how to chain multiple filters together to transform audio.
-//! We'll create a sine wave and apply decay, volume reduction, and distortion filters.
+//! Filters are functions you write yourself, so they can be applied in any order and
+//! may return a new wave or modify one in place; this example returns new waves.
+//! We create a sine wave and apply decay and volume reduction filters to it.
 //!
 //! ## What you'll learn:
-//! - How to chain multiple filters
-//! - Creating different types of audio effects
-//! - Understanding filter composition
+//! - How to apply multiple filters one after another
+//! - Writing your own filters
+//! - Composing filters as plain functions
 
 const std = @import("std");
 const lightmix = @import("lightmix");
@@ -27,12 +28,16 @@ pub fn main(init: std.process.Init) !void {
         samples[i] = 0.8 * @sin(radians_per_sec * t);
     }
 
-    var wave = try Wave(f64).init(samples[0..], allocator, .{
+    const original = try Wave(f64).init(samples[0..], allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });
-    try wave.filter(decayFilter); // Apply fade-out
-    try wave.filter(halveSampleValuesFilter); // Reduce volume
+    defer original.deinit();
+
+    // Each filter here returns a new wave
+    const decayed = try decayFilter(f64, original); // Apply fade-out
+    defer decayed.deinit();
+    const wave = try halveSampleValuesFilter(f64, decayed); // Reduce volume
     defer wave.deinit();
 
     const file = try std.Io.Dir.cwd().createFile(io, "result.wav", .{});

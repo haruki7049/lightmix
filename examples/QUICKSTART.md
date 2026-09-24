@@ -17,7 +17,7 @@ Follow this recommended order:
 1. **01-getting-started/** - Your first sounds (2 examples)
 
    - Start with `hello-wave` - creates a simple sine wave
-   - Then try `using-filters` - learn audio transformations
+   - Then try `using-filters` - learn audio transformations with a self-written filter
 
 1. **02-wave-basics/** - Understanding different sounds (5 examples)
 
@@ -27,7 +27,7 @@ Follow this recommended order:
 1. **03-wave-operations/** - Combining sounds (3 examples)
 
    - `mixing-waves` - create a musical chord
-   - `filtering` - chain effects
+   - `filtering` - apply several self-written filters in sequence
    - `frequency-changes` - change pitch
 
 1. **04-composer/** - Making music (2 examples)

@@ -7,7 +7,7 @@
 //!
 //! ### Wave
 //! The `Wave` type function creates audio waveform types for different sample formats.
-//! It supports operations like mixing, filtering, and reading/writing WAV files.
+//! It supports operations like mixing and reading/writing WAV files.
 //!
 //! ### Composer
 //! The `Composer` type function creates types for sequencing and overlaying multiple
