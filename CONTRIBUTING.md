@@ -38,7 +38,7 @@ Before contributing new features, please understand `lightmix`'s core architectu
 1. **Stateless Randomness**:
    `lightmix` does not embed internal pseudo-random number generators (PRNG). Callers pass generated noise buffers directly (e.g., using `std.Random.DefaultPrng`), guaranteeing full caller control over random seeds and determinism.
 1. **Crash Noise & Clipping as Sound Sources**:
-   Overdriven signals, clipping, and crash noise are treated as valid sound sources in themselves. Core operations never sanitize, auto-normalize, or fail on out-of-bounds sample values; raw sample data is preserved as-is, deferring quantization behavior entirely to underlying format codecs (such as `zigggwavvv`).
+   Overdriven signals, clipping, and crash noise are treated as valid sound sources in themselves. Core operations never sanitize, auto-normalize, or fail on out-of-bounds sample values; raw sample data is preserved as-is, deferring quantization behavior entirely to underlying format codecs (such as `zigggwavvv`). As a codec-level exception, a PCM write clamps finite out-of-range samples to `[-1.0, 1.0]` but fails with `NonFiniteSample` for `NaN` and infinite samples, which cannot be quantized (IEEE float formats store them as they are).
 1. **Multi-Format Ingestion**:
    In addition to pure algorithmic synthesis, importing external audio sources (`Wave(T).read`) is an essential supported workflow. Currently, standard uncompressed WAV is implemented, with pure Zig decoding for compressed formats (FLAC, Ogg Vorbis) planned on the roadmap (#138, #301).
 1. **Unified Export & Cross-Format Metadata**:
