@@ -33,20 +33,9 @@
           ...
         }:
         let
-          buildInputs =
-            (lib.optionals pkgs.stdenv.hostPlatform.isLinux [
-              pkgs.alsa-lib
-              pkgs.pulseaudio
-              pkgs.pipewire
-            ])
-            ++ (lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
-              pkgs.apple-sdk_26
-            ]);
-
           nativeBuildInputs = [
             # Compiler
             pkgs.zig_0_16
-            pkgs.pkg-config
 
             # LSP
             pkgs.nil
@@ -64,7 +53,7 @@
             src = lib.cleanSource ./.;
             doCheck = true;
 
-            inherit nativeBuildInputs buildInputs;
+            inherit nativeBuildInputs;
 
             postConfigure = ''
               ln -s ${pkgs.callPackage ./.deps.nix { }} zig-pkg
@@ -103,7 +92,7 @@
           };
 
           devShells.default = pkgs.mkShell {
-            inherit nativeBuildInputs buildInputs;
+            inherit nativeBuildInputs;
 
             inputsFrom = [
               config.treefmt.build.devShell

@@ -12,7 +12,7 @@ ______________________________________________________________________
 - **Architectural Principles & Scope**:
   - **Minimalist Core (Unix Philosophy)**: Focus strictly on low-level primitives: `Wave(T)` (waveform buffer & manipulation), `Composer(T)` (timeline arrangement & mixing), accurate WAV I/O, and `addWave` build-system integration.
   - **Non-Goals**: High-level DSP effect suites (reverb, delay, chorus, flanger) and synthesizer instrument presets belong in separate higher-level libraries or application code.
-  - **Auxiliary Playback**: `lightmix_play.play()` and `addPlay` are developer preview helpers only. They must never introduce hard audio server dependencies or interfere with headless CI execution.
+  - **Auxiliary Playback**: `play()` and `addPlay` are developer preview helpers only. They must never introduce hard audio server dependencies or interfere with headless CI execution.
   - **Flat Generic Typing**: Generic over `comptime T: type` (`f64`, `f80`, `f128`, and future `f32`). Do not hardcode or favor any single floating-point precision.
   - **In-Memory Buffer Model**: Full sample buffers are held in memory (`Wave(T)`) for deterministic safety and simplicity, avoiding premature streaming complexity.
   - **Stateless Randomness**: Do not embed PRNGs or hidden state; caller-provided noise buffers ensure deterministic control.
@@ -177,7 +177,7 @@ ______________________________________________________________________
 1. **No Unsolicited Actions on Other Branches/PRs**: Never modify, rebase, or resolve conflicts on PRs or branches without explicit user instructions.
 1. **Always Register to GitHub Project**: When creating Issues or Pull Requests with `gh`, always add them to `https://github.com/users/haruki7049/projects/11` (`lightmix GitHub Project`).
 1. **Adhere to Minimalist Scope**: Never add complex DSP effects (reverb, delay, flanger, etc.) or synthesizer instrument presets to the core library. Keep additions focused on fundamental waveform manipulation, mixing, and build-time generation.
-1. **Preserve Headless Execution**: Ensure all build steps, examples, and tests run cleanly in headless environments without physical audio devices or sound daemons. Playback utilities (`lightmix_play.play()`) must remain strictly auxiliary preview helpers.
+1. **Preserve Headless Execution**: Ensure all build steps, examples, and tests run cleanly in headless environments without physical audio devices or sound daemons. Playback utilities (`play()`) must remain strictly auxiliary preview helpers.
 1. **Preserve Pure Zig**: Avoid introducing C source files, C library dependencies, or external non-Zig toolchain dependencies into core synthesis, manipulation, or codec logic.
 1. **Always Assign Labels**: When creating Issues or Pull Requests with `gh`, always assign relevant labels (e.g., `fix`, `feat`, `docs`, `refactor`, `Wave(T)`, `build.zig`) to categorize the work.
 1. **Always Set Priority and Estimate**: When registering Issues or Pull Requests to the GitHub Project, always configure the `Priority` (`P0`/`P1`/`P2`) and `Estimate` numeric value using `gh project item-edit`.

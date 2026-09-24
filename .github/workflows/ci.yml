@@ -18,5 +18,3 @@ jobs:
       - run: zig fmt --check .
       - run: zig build docs
       - run: zig build test
-      # Playback unit tests and examples; they touch no audio device, so they run headless.
-      - run: zig build test -Dtest-playback
