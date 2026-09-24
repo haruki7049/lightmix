@@ -883,7 +883,7 @@ pub fn inner(comptime T: type) type {
             }
         }
 
-        test "read returns InvalidChannelCount when the decoded channel count is zero" {
+        test "read returns InvalidFormat when the decoded channel count is zero" {
             const allocator = testing.allocator;
             var buf: [@embedFile("./assets/sine.wav").len]u8 = undefined;
             @memcpy(&buf, @embedFile("./assets/sine.wav"));
@@ -891,10 +891,10 @@ pub fn inner(comptime T: type) type {
             std.mem.writeInt(u16, buf[22..24], 0, .little);
 
             var reader = std.Io.Reader.fixed(&buf);
-            try testing.expectError(error.InvalidChannelCount, Self.read(.wav, allocator, &reader));
+            try testing.expectError(error.InvalidFormat, Self.read(.wav, allocator, &reader));
         }
 
-        test "read returns InvalidSampleRate when the decoded sample rate is zero" {
+        test "read returns InvalidFormat when the decoded sample rate is zero" {
             const allocator = testing.allocator;
             var buf: [@embedFile("./assets/sine.wav").len]u8 = undefined;
             @memcpy(&buf, @embedFile("./assets/sine.wav"));
@@ -902,10 +902,10 @@ pub fn inner(comptime T: type) type {
             std.mem.writeInt(u32, buf[24..28], 0, .little);
 
             var reader = std.Io.Reader.fixed(&buf);
-            try testing.expectError(error.InvalidSampleRate, Self.read(.wav, allocator, &reader));
+            try testing.expectError(error.InvalidFormat, Self.read(.wav, allocator, &reader));
         }
 
-        test "read returns UnalignedChannelOffset when the sample length is not a multiple of the channel count" {
+        test "read returns InvalidFormat when the sample length is not a multiple of the channel count" {
             const allocator = testing.allocator;
 
             var original_reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
@@ -922,7 +922,7 @@ pub fn inner(comptime T: type) type {
             std.mem.writeInt(u16, buf[22..24], channels, .little);
 
             var reader = std.Io.Reader.fixed(&buf);
-            try testing.expectError(error.UnalignedChannelOffset, Self.read(.wav, allocator, &reader));
+            try testing.expectError(error.InvalidFormat, Self.read(.wav, allocator, &reader));
         }
 
         test "read & deinit" {
