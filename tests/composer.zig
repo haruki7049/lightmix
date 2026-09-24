@@ -62,7 +62,7 @@ test "Compose multiple soundless Wave" {
 
 test "Composer finalize empty composition" {
     const allocator = std.testing.allocator;
-    const composer = try Composer(f64).init(allocator, .{
+    var composer = try Composer(f64).init(allocator, .{
         .sample_rate = 44100,
         .channels = 1,
     });

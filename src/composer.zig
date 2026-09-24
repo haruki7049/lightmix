@@ -29,7 +29,12 @@ const Wave = @import("./root.zig").Wave;
 /// ```
 pub fn inner(comptime T: type) type {
     return struct {
-        info: []const WaveInfo,
+        /// The wave entries of the composition, like `std.ArrayList.items`.
+        ///
+        /// The slice is owned by `allocator` and may be reallocated by `append`, `appendSlice` and
+        /// `ensureUnusedCapacity`, so do not hold on to it across those calls. Do not modify `capacity`.
+        items: []WaveInfo,
+        /// The number of `WaveInfo` slots allocated for `items`.
         capacity: usize = 0,
         allocator: std.mem.Allocator,
         sample_rate: u32,
@@ -75,7 +80,7 @@ pub fn inner(comptime T: type) type {
 
             return Self{
                 .allocator = allocator,
-                .info = &[_]WaveInfo{},
+                .items = &.{},
                 .capacity = 0,
 
                 .sample_rate = options.sample_rate,
@@ -108,7 +113,7 @@ pub fn inner(comptime T: type) type {
             const list = try std.ArrayListUnmanaged(WaveInfo).initCapacity(allocator, capacity);
             return Self{
                 .allocator = allocator,
-                .info = list.items,
+                .items = list.items,
                 .capacity = list.capacity,
 
                 .sample_rate = options.sample_rate,
@@ -120,14 +125,19 @@ pub fn inner(comptime T: type) type {
         ///
         /// Note: This does not free the individual Wave instances stored in WaveInfo.
         /// Those must be freed separately by the caller.
-        pub fn deinit(self: Self) void {
+        ///
+        /// Like `std.ArrayList`, a `Composer` must not be copied and used through both copies:
+        /// appending to one copy leaves the other with a stale `items` and `capacity`.
+        /// `self` is invalidated after this call.
+        pub fn deinit(self: *Self) void {
             if (self.capacity > 0) {
                 var list = std.ArrayListUnmanaged(WaveInfo){
-                    .items = @constCast(self.info),
+                    .items = self.items,
                     .capacity = self.capacity,
                 };
                 list.deinit(self.allocator);
             }
+            self.* = undefined;
         }
 
         /// Creates a new Composer instance initialized with the provided wave information.
@@ -168,7 +178,7 @@ pub fn inner(comptime T: type) type {
 
             return Self{
                 .allocator = allocator,
-                .info = list.items,
+                .items = list.items,
                 .capacity = list.capacity,
 
                 .sample_rate = options.sample_rate,
@@ -184,11 +194,11 @@ pub fn inner(comptime T: type) type {
         /// - `additional_count`: Number of additional waves to ensure capacity for
         pub fn ensureUnusedCapacity(self: *Self, additional_count: usize) std.mem.Allocator.Error!void {
             var list = std.ArrayListUnmanaged(WaveInfo){
-                .items = @constCast(self.info),
+                .items = self.items,
                 .capacity = self.capacity,
             };
             try list.ensureUnusedCapacity(self.allocator, additional_count);
-            self.info = list.items;
+            self.items = list.items;
             self.capacity = list.capacity;
         }
 
@@ -222,11 +232,11 @@ pub fn inner(comptime T: type) type {
             }
 
             var list = std.ArrayListUnmanaged(WaveInfo){
-                .items = @constCast(self.info),
+                .items = self.items,
                 .capacity = self.capacity,
             };
             try list.append(self.allocator, waveinfo);
-            self.info = list.items;
+            self.items = list.items;
             self.capacity = list.capacity;
         }
 
@@ -249,11 +259,11 @@ pub fn inner(comptime T: type) type {
             }
 
             var list = std.ArrayListUnmanaged(WaveInfo){
-                .items = @constCast(self.info),
+                .items = self.items,
                 .capacity = self.capacity,
             };
             try list.appendSlice(self.allocator, append_list);
-            self.info = list.items;
+            self.items = list.items;
             self.capacity = list.capacity;
         }
 
@@ -280,7 +290,7 @@ pub fn inner(comptime T: type) type {
         /// - `MismatchedWaveProperties`: If component waves have different sample rates or channel counts
         /// - `OutOfMemory`: Allocator error when memory allocation fails
         pub fn finalize(self: Self, options: Wave(T).mixOptions) (Wave(T).MixErrors || std.mem.Allocator.Error)!Wave(T) {
-            if (self.info.len == 0) {
+            if (self.items.len == 0) {
                 return Wave(T).init(&.{}, self.allocator, .{
                     .sample_rate = self.sample_rate,
                     .channels = self.channels,
@@ -290,7 +300,7 @@ pub fn inner(comptime T: type) type {
             var end_point: usize = 0;
 
             // Calculate the length for emitted wave and validate component properties
-            for (self.info) |waveinfo| {
+            for (self.items) |waveinfo| {
                 if (waveinfo.wave.sample_rate != self.sample_rate or waveinfo.wave.channels != self.channels) {
                     return error.MismatchedWaveProperties;
                 }
@@ -307,7 +317,7 @@ pub fn inner(comptime T: type) type {
             errdefer self.allocator.free(result_samples);
             @memset(result_samples, 0.0);
 
-            for (self.info) |waveinfo| {
+            for (self.items) |waveinfo| {
                 for (waveinfo.wave.samples, 0..) |src_sample, i| {
                     const idx = waveinfo.start_point + i;
                     result_samples[idx] = options.mixer(result_samples[idx], src_sample);
@@ -343,9 +353,12 @@ pub fn inner(comptime T: type) type {
         /// Iterator that renders the composition in fixed-size blocks to minimize peak memory consumption.
         ///
         /// The iterator borrows the composer's wave entries, so the composer and every wave
-        /// appended to it must outlive the iterator. Call `deinit` to release the block buffer.
+        /// appended to it must outlive the iterator. Do not call `append`, `appendSlice` or
+        /// `ensureUnusedCapacity` while the iterator is in use, because they may reallocate the borrowed
+        /// entries. Call `deinit` to release the block buffer.
         pub const BlockIterator = struct {
-            composer: Self,
+            items: []const WaveInfo,
+            allocator: std.mem.Allocator,
             options: StreamOptions,
             current_offset: usize,
             total_samples: usize,
@@ -367,7 +380,7 @@ pub fn inner(comptime T: type) type {
             /// - Allocator error (errors.OutOfMemory)
             pub fn init(composer: Self, options: StreamOptions) (InitErrors || Wave(T).MixErrors || std.mem.Allocator.Error)!BlockIterator {
                 var total_samples: usize = 0;
-                for (composer.info) |waveinfo| {
+                for (composer.items) |waveinfo| {
                     if (waveinfo.wave.sample_rate != composer.sample_rate or waveinfo.wave.channels != composer.channels) {
                         return error.MismatchedWaveProperties;
                     }
@@ -392,7 +405,8 @@ pub fn inner(comptime T: type) type {
                 errdefer composer.allocator.free(buf);
 
                 return BlockIterator{
-                    .composer = composer,
+                    .items = composer.items,
+                    .allocator = composer.allocator,
                     .options = .{ .mixer = options.mixer, .block_size = bs },
                     .current_offset = 0,
                     .total_samples = total_samples,
@@ -401,7 +415,7 @@ pub fn inner(comptime T: type) type {
             }
 
             pub fn deinit(self: BlockIterator) void {
-                self.composer.allocator.free(self.block_buffer);
+                self.allocator.free(self.block_buffer);
             }
 
             /// Renders and returns the next block of samples.
@@ -420,7 +434,7 @@ pub fn inner(comptime T: type) type {
                 const block_start = self.current_offset;
                 const block_end = block_start + chunk_len;
 
-                for (self.composer.info) |waveinfo| {
+                for (self.items) |waveinfo| {
                     const wave_start = waveinfo.start_point;
                     const wave_end = wave_start + waveinfo.wave.samples.len;
 
@@ -461,7 +475,7 @@ pub fn inner(comptime T: type) type {
 
         test "init & deinit" {
             const allocator = testing.allocator;
-            const composer = try Self.init(allocator, .{
+            var composer = try Self.init(allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -508,7 +522,7 @@ pub fn inner(comptime T: type) type {
             defer composer.deinit();
 
             try testing.expect(composer.capacity >= 16);
-            try testing.expectEqual(composer.info.len, 0);
+            try testing.expectEqual(composer.items.len, 0);
         }
 
         test "ensureUnusedCapacity & sequential appends" {
@@ -534,7 +548,7 @@ pub fn inner(comptime T: type) type {
                 try composer.append(.{ .wave = wave, .start_point = i * 2 });
             }
 
-            try testing.expectEqual(composer.info.len, 10);
+            try testing.expectEqual(composer.items.len, 10);
             try testing.expectEqual(composer.capacity, initial_cap);
         }
 
@@ -547,7 +561,7 @@ pub fn inner(comptime T: type) type {
 
             const info: []const WaveInfo = &[_]WaveInfo{ .{ .wave = wave, .start_point = 0 }, .{ .wave = wave, .start_point = 0 } };
 
-            const composer = try Self.init_with(info, allocator, .{
+            var composer = try Self.init_with(info, allocator, .{
                 .sample_rate = 44100,
                 .channels = 1,
             });
@@ -568,7 +582,7 @@ pub fn inner(comptime T: type) type {
 
             try composer.append(.{ .wave = wave, .start_point = 0 });
 
-            try testing.expectEqualSlices(WaveInfo, composer.info, &[_]WaveInfo{.{ .wave = wave, .start_point = 0 }});
+            try testing.expectEqualSlices(WaveInfo, composer.items, &[_]WaveInfo{.{ .wave = wave, .start_point = 0 }});
         }
 
         test "appendSlice" {
@@ -590,7 +604,7 @@ pub fn inner(comptime T: type) type {
             try append_list.append(allocator, .{ .wave = wave, .start_point = 0 });
             try composer.appendSlice(append_list.items);
 
-            try testing.expectEqualSlices(WaveInfo, composer.info, &[_]WaveInfo{ .{ .wave = wave, .start_point = 0 }, .{ .wave = wave, .start_point = 0 } });
+            try testing.expectEqualSlices(WaveInfo, composer.items, &[_]WaveInfo{ .{ .wave = wave, .start_point = 0 }, .{ .wave = wave, .start_point = 0 } });
         }
 
         test "finalize" {

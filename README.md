@@ -254,11 +254,11 @@ const info: []const lightmix.Composer(f64).WaveInfo = &.{
     .{ .wave = wave, .start_point = 0 },
     .{ .wave = wave, .start_point = 44100 },
 };
-const composer: lightmix.Composer(f64) = try lightmix.Composer(f64).init_with(info, allocator, .{
+var composer: lightmix.Composer(f64) = try lightmix.Composer(f64).init_with(info, allocator, .{
     .sample_rate = 44100, // Samples per second.
     .channels = 1, // Channels for the Wave. If this composer has two channels, it means the wave is stereo.
 });
-defer composer.deinit(); // Composer.info is also owned by the passed allocator, so you must free this composer.
+defer composer.deinit(); // Composer.items is owned by the passed allocator, so you must free this composer. Do not copy a composer and use both copies, as with std.ArrayList.
 
 const result: lightmix.Wave(f64) = try composer.finalize(.{}); // Let's finalize to create a Wave(f64)!!
 defer result.deinit(); // Don't forget to free the Wave data.
