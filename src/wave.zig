@@ -935,6 +935,28 @@ pub fn inner(comptime T: type) type {
             try testing.expectError(error.InvalidFormat, Self.read(.wav, allocator, &reader));
         }
 
+        test "read returns an error when the fmt chunk is missing" {
+            const allocator = testing.allocator;
+            var buf: [@embedFile("./assets/sine.wav").len]u8 = undefined;
+            @memcpy(&buf, @embedFile("./assets/sine.wav"));
+            // Rename the `fmt ` chunk id (byte offset 12 of a canonical WAV) so that the chunk is skipped as unknown.
+            @memcpy(buf[12..16], "junk");
+
+            var reader = std.Io.Reader.fixed(&buf);
+            try testing.expectError(error.InvalidFormat, Self.read(.wav, allocator, &reader));
+        }
+
+        test "read returns an error when the data chunk is missing" {
+            const allocator = testing.allocator;
+            var buf: [@embedFile("./assets/sine.wav").len]u8 = undefined;
+            @memcpy(&buf, @embedFile("./assets/sine.wav"));
+            // Rename the `data` chunk id (byte offset 36 of a canonical WAV) so that the chunk is skipped as unknown.
+            @memcpy(buf[36..40], "junk");
+
+            var reader = std.Io.Reader.fixed(&buf);
+            try testing.expectError(error.InvalidFormat, Self.read(.wav, allocator, &reader));
+        }
+
         test "read & deinit" {
             const allocator = testing.allocator;
             var reader = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
