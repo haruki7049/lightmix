@@ -7,6 +7,9 @@
 //! This module does not import `lightmix`. `play` accepts any `Wave(T)` value by duck typing,
 //! so it works with the `lightmix` module of any dependency instance.
 //!
+//! `play` converts the wave into a `backend.Buffer` and hands it to the backend selected for
+//! the target operating system (`backend.Selected`). See `backend` for the backend interface.
+//!
 //! ## Usage
 //! ```zig
 //! const lightmix_play = @import("lightmix_play");
@@ -15,18 +18,20 @@
 //! ```
 
 const std = @import("std");
-const zaudio = @import("zaudio");
+
+/// The playback backend interface and the backend selected for the target.
+pub const backend = @import("./play/backend.zig");
 
 /// Plays the wave audio through the system audio output.
 ///
-/// Initializes the audio engine, converts samples to f32, and blocks until
-/// playback completes. The wave is only read; its ownership stays with the caller.
+/// Converts samples to f32 and blocks until playback completes. The wave is only read;
+/// its ownership stays with the caller.
 ///
 /// ## Parameters
 /// - `wave`: A `lightmix.Wave(T)` value, where `T` is a floating-point sample type
 ///
 /// ## Errors
-/// Returns errors from the audio engine initialization or playback
+/// Returns errors from the conversion buffer allocation and from the playback backend
 pub fn play(wave: anytype) anyerror!void {
     comptime assertWave(@TypeOf(wave));
 
@@ -36,31 +41,23 @@ pub fn play(wave: anytype) anyerror!void {
     defer threaded.deinit();
     const io = threaded.io();
 
-    zaudio.init(allocator);
-    defer zaudio.deinit();
-
-    var engine: *zaudio.Engine = try zaudio.Engine.create(null);
-    defer engine.destroy();
-
-    const samples = try allocator.alloc(f32, wave.samples.len);
+    const samples = try toF32(allocator, wave.samples);
     defer allocator.free(samples);
 
-    for (wave.samples, 0..) |orig_sample, i| {
-        samples[i] = @as(f32, @floatCast(orig_sample));
+    try backend.Selected.play(allocator, io, .{
+        .samples = samples,
+        .sample_rate = wave.sample_rate,
+        .channels = wave.channels,
+    });
+}
+
+/// Converts `samples` to f32. The caller owns the returned slice and frees it with `allocator`.
+fn toF32(allocator: std.mem.Allocator, samples: anytype) std.mem.Allocator.Error![]f32 {
+    const result = try allocator.alloc(f32, samples.len);
+    for (samples, result) |sample, *dest| {
+        dest.* = @floatCast(sample);
     }
-
-    var buffer_config = zaudio.AudioBuffer.Config.init(.float32, wave.channels, samples.len / wave.channels, samples.ptr);
-    buffer_config.sample_rate = wave.sample_rate;
-    const buffer = try zaudio.AudioBuffer.create(buffer_config);
-    defer buffer.destroy();
-    const sound = try engine.createSoundFromDataSource(buffer.asDataSourceMut(), .{}, null);
-    defer sound.destroy();
-
-    try sound.start();
-
-    while (!sound.isAtEnd()) {
-        try io.sleep(std.Io.Duration.fromNanoseconds(10 * std.time.ns_per_ms), .real);
-    }
+    return result;
 }
 
 /// Checks at compile time that `W` has the fields `play` reads from a `lightmix.Wave(T)`.
@@ -81,4 +78,18 @@ test "play returns immediately for an empty wave" {
         channels: u16,
     };
     try play(Fake{ .samples = &.{}, .allocator = std.testing.allocator, .sample_rate = 44100, .channels = 1 });
+}
+
+test "toF32 converts every sample without clamping" {
+    const allocator = std.testing.allocator;
+    inline for (.{ f64, f80, f128 }) |T| {
+        const samples = [_]T{ 0.0, 0.5, -0.25, 1.5 };
+        const result = try toF32(allocator, @as([]const T, &samples));
+        defer allocator.free(result);
+        try std.testing.expectEqualSlices(f32, &.{ 0.0, 0.5, -0.25, 1.5 }, result);
+    }
+}
+
+test "Import tests" {
+    _ = backend;
 }
