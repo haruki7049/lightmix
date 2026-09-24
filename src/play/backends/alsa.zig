@@ -304,8 +304,9 @@ fn ioctl(fd: linux.fd_t, request: u32, arg: usize) Error!void {
 /// NaN becomes silence (`0`).
 fn toInt(comptime Int: type, sample: f32) Int {
     if (std.math.isNan(sample)) return 0;
-    const max: f32 = @floatFromInt(std.math.maxInt(Int));
-    const clamped = std.math.clamp(sample, -1.0, 1.0);
+    // Scale in f64: f32 rounds maxInt(i32) up to 2^31, which overflows i32 at 1.0.
+    const max: f64 = @floatFromInt(std.math.maxInt(Int));
+    const clamped: f64 = std.math.clamp(sample, -1.0, 1.0);
     return @intFromFloat(@round(clamped * max));
 }
 
@@ -339,4 +340,7 @@ test "toInt saturates out-of-range samples and silences NaN" {
     try std.testing.expectEqual(@as(i16, -32767), toInt(i16, -2.0));
     try std.testing.expectEqual(@as(i16, 0), toInt(i16, std.math.nan(f32)));
     try std.testing.expectEqual(@as(i32, std.math.maxInt(i32)), toInt(i32, 1.0));
+    try std.testing.expectEqual(@as(i32, std.math.maxInt(i32)), toInt(i32, 1.5));
+    try std.testing.expectEqual(@as(i32, -std.math.maxInt(i32)), toInt(i32, -1.0));
+    try std.testing.expectEqual(@as(i32, 0), toInt(i32, std.math.nan(f32)));
 }
