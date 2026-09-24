@@ -537,36 +537,58 @@ pub fn inner(comptime T: type) type {
             /// Pan position for mono-to-stereo conversion: [-1.0 (hard left), 1.0 (hard right)]
             /// Default is 0.0 (center panning).
             pan: f32 = 0.0,
+            /// Optional gain matrix for custom channel routing, stored row-major with one row per
+            /// destination channel and one column per source channel (length `target_channels * self.channels`).
+            /// Destination channel `j` becomes the sum of `matrix[j * self.channels + i] * source_i`.
+            /// When set, it takes precedence over `pan` and the default routing, and it is also applied
+            /// when the source already has `target_channels` channels. The result is never clamped.
+            matrix: ?[]const T = null,
         };
+
+        /// Errors that can occur when converting the channel count of a wave.
+        pub const ChannelConvertErrors = error{
+            /// `options.matrix` does not hold `target_channels * self.channels` gains
+            InvalidChannelMatrix,
+        } || MixErrors;
 
         /// Converts wave sample data to a target channel count (upmixing or downmixing).
         ///
+        /// Without `options.matrix`:
         /// - Mono (1) to Stereo (2): Applies panning `options.pan` to left/right channels.
-        /// - Stereo (2) to Mono (1): Averages left and right channel samples `(L + R) / 2.0`.
+        /// - Mono (1) to N > 2: Copies the mono signal to every channel.
+        /// - N > 1 to Mono (1): Averages all source channels.
+        /// - N > 1 to M > 1: Routes channel `i` to channel `i` for every `i` below `min(N, M)`.
+        ///   Extra destination channels are silent (`0.0`), and extra source channels are dropped.
         /// - Same channel count: Returns a clone of the original wave.
-        /// - General N to M: Replicates mono or averages N channels to target M channels.
+        ///
+        /// With `options.matrix`, every destination channel is a weighted sum of the source channels.
         ///
         /// ## Parameters
         /// - `self`: The source wave to convert
         /// - `target_channels`: Target channel count (e.g., 1 for mono, 2 for stereo)
-        /// - `options`: Conversion options including pan positioning
+        /// - `options`: Conversion options including pan positioning and an optional gain matrix
         ///
         /// ## Returns
         /// A new Wave instance converted to `target_channels`
         ///
         /// ## Errors
         /// - `InvalidChannelCount`: If `target_channels` or `self.channels` is zero
+        /// - `InvalidChannelMatrix`: If `options.matrix` does not hold `target_channels * self.channels` gains
         /// - Allocator error (errors.OutOfMemory)
         pub fn to_channels(
             self: Self,
             target_channels: u16,
             options: ChannelConvertOptions,
-        ) (MixErrors || std.mem.Allocator.Error)!Self {
+        ) (ChannelConvertErrors || std.mem.Allocator.Error)!Self {
             if (target_channels == 0 or self.channels == 0) {
                 return error.InvalidChannelCount;
             }
 
-            if (self.channels == target_channels) {
+            if (options.matrix) |matrix| {
+                if (matrix.len != @as(usize, target_channels) * self.channels) {
+                    return error.InvalidChannelMatrix;
+                }
+            } else if (self.channels == target_channels) {
                 return self.clone(null);
             }
 
@@ -575,7 +597,16 @@ pub fn inner(comptime T: type) type {
             const new_samples = try self.allocator.alloc(T, new_len);
             errdefer self.allocator.free(new_samples);
 
-            if (self.channels == 1) {
+            if (options.matrix) |matrix| {
+                for (0..total_frames) |i| {
+                    const src = self.samples[i * self.channels .. (i + 1) * self.channels];
+                    for (0..target_channels) |j| {
+                        var sum: T = 0.0;
+                        for (src, matrix[j * self.channels .. (j + 1) * self.channels]) |s, gain| sum += s * gain;
+                        new_samples[i * target_channels + j] = sum;
+                    }
+                }
+            } else if (self.channels == 1) {
                 const pan_clamped = std.math.clamp(options.pan, -1.0, 1.0);
                 const left_gain: T = @floatCast(@min(1.0, 1.0 - pan_clamped));
                 const right_gain: T = @floatCast(@min(1.0, 1.0 + pan_clamped));
@@ -588,12 +619,19 @@ pub fn inner(comptime T: type) type {
                         @memset(new_samples[i * target_channels .. (i + 1) * target_channels], m);
                     }
                 }
-            } else {
+            } else if (target_channels == 1) {
                 const src_ch: T = @floatFromInt(self.channels);
                 for (0..total_frames) |i| {
                     var sum: T = 0.0;
                     for (self.samples[i * self.channels .. (i + 1) * self.channels]) |s| sum += s;
-                    @memset(new_samples[i * target_channels .. (i + 1) * target_channels], sum / src_ch);
+                    new_samples[i] = sum / src_ch;
+                }
+            } else {
+                const shared = @min(self.channels, target_channels);
+                for (0..total_frames) |i| {
+                    const dst = new_samples[i * target_channels .. (i + 1) * target_channels];
+                    @memcpy(dst[0..shared], self.samples[i * self.channels ..][0..shared]);
+                    @memset(dst[shared..], 0.0);
                 }
             }
 
@@ -613,7 +651,7 @@ pub fn inner(comptime T: type) type {
         /// ## Errors
         /// - `InvalidChannelCount`: If `self.channels` is zero
         /// - Allocator error (errors.OutOfMemory)
-        pub fn to_mono(self: Self) (MixErrors || std.mem.Allocator.Error)!Self {
+        pub fn to_mono(self: Self) (ChannelConvertErrors || std.mem.Allocator.Error)!Self {
             return self.to_channels(1, .{});
         }
 
@@ -628,7 +666,7 @@ pub fn inner(comptime T: type) type {
         /// ## Errors
         /// - `InvalidChannelCount`: If `self.channels` is zero
         /// - Allocator error (errors.OutOfMemory)
-        pub fn to_stereo(self: Self, pan: f32) (MixErrors || std.mem.Allocator.Error)!Self {
+        pub fn to_stereo(self: Self, pan: f32) (ChannelConvertErrors || std.mem.Allocator.Error)!Self {
             return self.to_channels(2, .{ .pan = pan });
         }
 
@@ -1492,8 +1530,7 @@ pub fn inner(comptime T: type) type {
                 try testing.expectApproxEqAbs(s, 0.4, 0.00001);
             }
         }
-
-        test "to_channels downmixing 4 channels to 2 channels" {
+        test "to_channels downmixing 4 channels to 2 channels keeps the first two channels" {
             const allocator = testing.allocator;
             const samples: []const T = &[_]T{ 1.0, 0.8, 0.6, 0.4, 0.4, 0.4, 0.0, 0.0 };
             const wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 4 });
@@ -1503,11 +1540,55 @@ pub fn inner(comptime T: type) type {
             defer stereo.deinit();
 
             try testing.expectEqual(stereo.channels, 2);
-            try testing.expectEqual(stereo.samples.len, 4);
-            try testing.expectApproxEqAbs(stereo.samples[0], 0.7, 0.00001);
-            try testing.expectApproxEqAbs(stereo.samples[1], 0.7, 0.00001);
-            try testing.expectApproxEqAbs(stereo.samples[2], 0.2, 0.00001);
-            try testing.expectApproxEqAbs(stereo.samples[3], 0.2, 0.00001);
+            try testing.expectEqualSlices(T, &[_]T{ 1.0, 0.8, 0.4, 0.4 }, stereo.samples);
+        }
+
+        test "to_channels upmixing stereo to 4 channels keeps L and R and silences the rest" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 0.5, -0.5, 0.25, -0.25 };
+            const wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 2 });
+            defer wave.deinit();
+
+            const quad = try wave.to_channels(4, .{});
+            defer quad.deinit();
+
+            try testing.expectEqual(quad.channels, 4);
+            try testing.expectEqualSlices(T, &[_]T{ 0.5, -0.5, 0.0, 0.0, 0.25, -0.25, 0.0, 0.0 }, quad.samples);
+        }
+
+        test "to_channels with a gain matrix routes channels freely" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 0.5, -0.5, 0.25, -0.25 };
+            const wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 2 });
+            defer wave.deinit();
+
+            // Same channel count: swap left and right.
+            const swapped = try wave.to_channels(2, .{ .matrix = &[_]T{ 0, 1, 1, 0 } });
+            defer swapped.deinit();
+            try testing.expectEqualSlices(T, &[_]T{ -0.5, 0.5, -0.25, 0.25 }, swapped.samples);
+
+            // Stereo to 3 channels: L, R and a third channel with double the level of L (1.0 is not clamped).
+            const three = try wave.to_channels(3, .{ .matrix = &[_]T{ 1, 0, 0, 1, 2, 0 } });
+            defer three.deinit();
+            try testing.expectEqualSlices(T, &[_]T{ 0.5, -0.5, 1.0, 0.25, -0.25, 0.5 }, three.samples);
+
+            // The matrix takes precedence over the pan of a mono source.
+            const mono_samples: []const T = &[_]T{0.5};
+            const mono = try Self.init(mono_samples, allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer mono.deinit();
+            const from_mono = try mono.to_channels(2, .{ .pan = -1.0, .matrix = &[_]T{ 1, 1 } });
+            defer from_mono.deinit();
+            try testing.expectEqualSlices(T, &[_]T{ 0.5, 0.5 }, from_mono.samples);
+        }
+
+        test "to_channels returns InvalidChannelMatrix when the matrix length does not match" {
+            const allocator = testing.allocator;
+            const samples: []const T = &[_]T{ 0.5, -0.5 };
+            const wave = try Self.init(samples, allocator, .{ .sample_rate = 44100, .channels = 2 });
+            defer wave.deinit();
+
+            try testing.expectError(error.InvalidChannelMatrix, wave.to_channels(2, .{ .matrix = &[_]T{ 1, 0, 0 } }));
+            try testing.expectError(error.InvalidChannelMatrix, wave.to_channels(1, .{ .matrix = &[_]T{} }));
         }
 
         test "to_mono helper method" {
