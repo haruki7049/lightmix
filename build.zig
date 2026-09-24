@@ -25,7 +25,7 @@ pub fn build(b: *std.Build) !void {
         },
     });
 
-    // Playback module declaration (developer preview helper, links miniaudio)
+    // Playback module declaration (developer preview helper)
     // Declaring the module compiles nothing, so users who never import it need no C toolchain.
     const play_mod = b.addModule("lightmix_play", .{
         .root_source_file = b.path("src/play.zig"),
@@ -36,35 +36,13 @@ pub fn build(b: *std.Build) !void {
         },
     });
 
-    // miniaudio linking
-    play_mod.linkLibrary(zaudio.artifact("miniaudio"));
-
-    // # macOS
-    // apple-sdk framework linking is needed if your machine runs macOS.
-    // This needs SDKROOT environment variable.
-    // Your SDKROOT should be a string as "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk" (If you don't set SDKROOT, lightmix uses "xcrun --show-sdk-path" command to get SDKROOT).
-    // You can use pkgs.apple-sdk on nixpkgs with "pkgs.mkShell". You should have SDKROOT environment variable by pkgs.apple-sdk's hook when you use "pkgs.mkShell".
-    //
-    // I must write below programs, because "miniaudio" linking needs macOS SDK on macOS.
     if (target.result.os.tag == .macos) {
-        const maybe_sdkroot: ?[]const u8 = b.graph.environ_map.get("SDKROOT") orelse inner: {
-            // Only run xcrun if the host operating system is macOS
-            if (b.graph.host.result.os.tag == .macos) {
-                const argv = &.{ "xcrun", "--show-sdk-path" };
-                const result = b.run(argv); // The stdout of "xcrun --show-sdk-path"
-                break :inner result;
-            }
-            break :inner null;
-        };
-        if (maybe_sdkroot) |sdkroot_envvar| {
-            const trimmed_sdkroot = std.mem.trim(u8, sdkroot_envvar, " \t\r\n");
-            const sdkroot: []const u8 = try std.mem.concat(b.allocator, u8, &.{ trimmed_sdkroot, "/System/Library/Frameworks" });
-            play_mod.addFrameworkPath(.{ .cwd_relative = sdkroot });
-
-            // This part adds library paths to play_mod variable.
-            const sdkroot_libpath: []const u8 = try std.mem.concat(b.allocator, u8, &.{ trimmed_sdkroot, "/usr/lib" });
-            play_mod.addLibraryPath(.{ .cwd_relative = sdkroot_libpath });
-        }
+        // The CoreAudio backend opens AudioToolbox at runtime with dlopen, so it links only libc
+        // (libSystem, bundled with Zig) and needs no macOS SDK.
+        play_mod.link_libc = true;
+    } else {
+        // The other targets still play through zaudio (miniaudio) until their Pure Zig backends land (#296).
+        play_mod.linkLibrary(zaudio.artifact("miniaudio"));
     }
 
     // Library installation
