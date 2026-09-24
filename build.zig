@@ -36,13 +36,14 @@ pub fn build(b: *std.Build) !void {
         },
     });
 
-    if (target.result.os.tag == .macos) {
-        // The CoreAudio backend opens AudioToolbox at runtime with dlopen, so it links only libc
-        // (libSystem, bundled with Zig) and needs no macOS SDK.
-        play_mod.link_libc = true;
-    } else {
+    switch (target.result.os.tag) {
+        // The Pure Zig backends link nothing themselves:
+        // - Linux (ALSA) uses raw system calls only.
+        // - macOS (CoreAudio) opens AudioToolbox at runtime with dlopen, from libSystem, which
+        //   every macOS executable links (bundled with Zig, so no macOS SDK is needed).
+        .linux, .macos => {},
         // The other targets still play through zaudio (miniaudio) until their Pure Zig backends land (#296).
-        play_mod.linkLibrary(zaudio.artifact("miniaudio"));
+        else => play_mod.linkLibrary(zaudio.artifact("miniaudio")),
     }
 
     // Library installation

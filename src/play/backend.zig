@@ -39,6 +39,7 @@ pub const Selected = select(builtin.os.tag);
 /// Returns the backend for `os_tag`.
 fn select(comptime os_tag: std.Target.Os.Tag) type {
     const Backend = switch (os_tag) {
+        .linux => @import("./backends/alsa.zig"),
         .macos => @import("./backends/coreaudio.zig"),
         // The other targets use zaudio until the Pure Zig backends replace it (#296).
         else => @import("./backends/zaudio.zig"),
