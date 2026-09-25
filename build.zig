@@ -272,10 +272,10 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
 /// A pointer to a value typed CompileWave
 ///
 /// ## Errors
-/// Returns errors from:
-/// - File system operations (creating cache directory, writing files)
-/// - Memory allocation failures
-/// - The user-provided wave generation function (if it returns an error)
+/// Only memory allocation failures (`error.OutOfMemory`), while the step and the source of the
+/// generator executable are created. Nothing is generated when `addWave` returns: the executable
+/// runs later, during `zig build`, so an error of the user-provided wave generation function, or
+/// of writing the file, fails that build step and not `addWave`.
 ///
 /// ## Usage
 /// ```zig

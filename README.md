@@ -67,7 +67,15 @@ I created this project because I felt a disconnect between existing audio synthe
 
 ## How to use
 
-In `build.zig`, import lightmix from `build.zig.zon` using `b.dependency()`:
+First, add lightmix to the `.dependencies` of your `build.zig.zon`. Run this in the directory of your package, with the tag of the release you want (the releases are listed on GitHub):
+
+```bash
+zig fetch --save https://github.com/haruki7049/lightmix/archive/refs/tags/0.26.0.tar.gz
+```
+
+It adds a `.lightmix` entry with the `.url` and the `.hash` of the archive.
+
+Then, in `build.zig`, import lightmix from `build.zig.zon` using `b.dependency()`:
 
 ```zig
 const lightmix = b.dependency("lightmix", .{});
