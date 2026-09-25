@@ -7,13 +7,17 @@
 //! `<sound/asound.h>`, through raw system calls. No library, not even libc, is linked.
 //!
 //! ## Device and format
-//! - The first playback device that can be opened is used, scanning cards and devices in order.
-//!   A device held by a sound server (PipeWire, PulseAudio) returns `error.DeviceBusy`.
+//! - The first playback device that can be opened and accepts the buffer is used, scanning cards
+//!   and devices in order. A device held by a sound server (PipeWire, PulseAudio) is skipped
+//!   without waiting, and `error.DeviceBusy` is returned when every device is held.
+//! - An HDMI device with no monitor attached is skipped, because it accepts samples silently. This
+//!   is read from `/proc/asound`; a device whose state cannot be read is treated as connected.
 //! - The sample format is the first one the device accepts among 32-bit float, 32-bit integer
 //!   and 16-bit integer, in the native byte order. Integer formats saturate samples outside
 //!   `[-1.0, 1.0]` and write NaN as silence.
 //! - The sample rate and the channel count are never converted: a device that does not accept
-//!   them returns `error.UnsupportedSampleRate` or `error.UnsupportedChannels`.
+//!   them is skipped, and `error.UnsupportedSampleRate` or `error.UnsupportedChannels` is returned
+//!   when no device accepts them. Most hardware devices reject mono; use two or more channels.
 
 const std = @import("std");
 const builtin = @import("builtin");
@@ -43,6 +47,9 @@ pub const Error = error{
 /// Highest card and device numbers scanned for a playback device node.
 const MAX_CARDS = 32;
 const MAX_DEVICES = 32;
+
+/// Highest codec number scanned for an HDMI ELD file.
+const MAX_CODECS = 8;
 
 /// Number of frames converted at once for integer sample formats.
 const CHUNK_FRAMES = 4096;
@@ -178,10 +185,11 @@ pub fn play(allocator: std.mem.Allocator, io: std.Io, buffer: Buffer) !void {
     _ = io;
     if (buffer.samples.len == 0) return;
 
-    const fd = try openPlaybackDevice();
+    const device = try openPlaybackDevice(buffer);
+    const fd = device.fd;
     defer _ = linux.close(fd);
 
-    const format = try configure(fd, buffer);
+    const format = device.format;
     try ioctl(fd, IOCTL_PREPARE, 0);
 
     switch (format) {
@@ -197,16 +205,41 @@ pub fn play(allocator: std.mem.Allocator, io: std.Io, buffer: Buffer) !void {
     }
 }
 
-/// Opens the first PCM playback device node that can be opened for writing.
-fn openPlaybackDevice() Error!linux.fd_t {
+/// A playback device opened and configured for a buffer.
+const OpenedDevice = struct {
+    fd: linux.fd_t,
+    format: SampleFormat,
+};
+
+/// Opens the first PCM playback device node that can be opened for writing and accepts the
+/// properties of `buffer`. A device that rejects them is skipped, and the error of the last
+/// rejection is returned when no device is left.
+fn openPlaybackDevice(buffer: Buffer) Error!OpenedDevice {
     var result: Error = error.NoOutputDevice;
     for (0..MAX_CARDS) |card| {
         for (0..MAX_DEVICES) |device| {
+            if (isDisconnectedHdmi(card, device)) continue;
+
             var path_buf: [64]u8 = undefined;
             const path = std.fmt.bufPrintZ(&path_buf, "/dev/snd/pcmC{d}D{d}p", .{ card, device }) catch unreachable;
-            const rc = linux.open(path, .{ .ACCMODE = .WRONLY, .CLOEXEC = true }, 0);
+            // Without O_NONBLOCK the kernel sleeps in open() until a busy device is released,
+            // which never returns while a sound server holds it. With it, open() fails with EBUSY.
+            const rc = linux.open(path, .{ .ACCMODE = .WRONLY, .CLOEXEC = true, .NONBLOCK = true }, 0);
             switch (linux.errno(rc)) {
-                .SUCCESS => return @intCast(rc),
+                .SUCCESS => {
+                    const fd: linux.fd_t = @intCast(rc);
+                    if (!clearNonblock(fd)) {
+                        _ = linux.close(fd);
+                        result = error.DeviceFailed;
+                        continue;
+                    }
+                    const format = configure(fd, buffer) catch |err| {
+                        _ = linux.close(fd);
+                        result = err;
+                        continue;
+                    };
+                    return .{ .fd = fd, .format = format };
+                },
                 .NOENT, .NODEV, .NXIO => {},
                 .BUSY => result = error.DeviceBusy,
                 .ACCES, .PERM => if (result != error.DeviceBusy) {
@@ -217,6 +250,73 @@ fn openPlaybackDevice() Error!linux.fd_t {
         }
     }
     return result;
+}
+
+/// Returns whether the PCM device is an HDMI output with no monitor attached.
+///
+/// A PCM device of an HDMI codec accepts samples even when nothing is connected, so writing to
+/// it succeeds silently. The kernel names such a device `HDMI <n>` in `/proc/asound/card<c>/pcm<d>p/info`
+/// and reports its connection in `/proc/asound/card<c>/eld#<codec>.<n>`. Any device whose state
+/// cannot be read from procfs is treated as connected.
+fn isDisconnectedHdmi(card: usize, device: usize) bool {
+    var path_buf: [64]u8 = undefined;
+    var buf: [1024]u8 = undefined;
+
+    const info_path = std.fmt.bufPrintZ(&path_buf, "/proc/asound/card{d}/pcm{d}p/info", .{ card, device }) catch return false;
+    const info = readSmallFile(info_path, &buf) orelse return false;
+    const pin = hdmiPinIndex(info) orelse return false;
+
+    for (0..MAX_CODECS) |codec| {
+        const eld_path = std.fmt.bufPrintZ(&path_buf, "/proc/asound/card{d}/eld#{d}.{d}", .{ card, codec, pin }) catch return false;
+        const eld = readSmallFile(eld_path, &buf) orelse continue;
+        return monitorPresent(eld) == false;
+    }
+    return false;
+}
+
+/// Reads up to `buf.len` bytes of the file at `path`, or returns null if it cannot be read.
+fn readSmallFile(path: [:0]const u8, buf: []u8) ?[]const u8 {
+    const rc = linux.open(path, .{ .ACCMODE = .RDONLY, .CLOEXEC = true }, 0);
+    if (linux.errno(rc) != .SUCCESS) return null;
+    const fd: linux.fd_t = @intCast(rc);
+    defer _ = linux.close(fd);
+
+    const count = linux.read(fd, buf.ptr, buf.len);
+    if (linux.errno(count) != .SUCCESS) return null;
+    return buf[0..count];
+}
+
+/// Returns `n` from the `id: HDMI <n>` line of a PCM `info` file, or null for any other device.
+fn hdmiPinIndex(info: []const u8) ?usize {
+    var lines = std.mem.splitScalar(u8, info, '\n');
+    while (lines.next()) |line| {
+        const prefix = "id: HDMI ";
+        if (!std.mem.startsWith(u8, line, prefix)) continue;
+        return std.fmt.parseInt(usize, std.mem.trim(u8, line[prefix.len..], " \t\r"), 10) catch null;
+    }
+    return null;
+}
+
+/// Returns the `monitor_present` value of an ELD file, or null if the file has no such line.
+fn monitorPresent(eld: []const u8) ?bool {
+    var lines = std.mem.splitScalar(u8, eld, '\n');
+    while (lines.next()) |line| {
+        const key = "monitor_present";
+        if (!std.mem.startsWith(u8, line, key)) continue;
+        const value = std.mem.trim(u8, line[key.len..], " \t\r");
+        return !std.mem.eql(u8, value, "0");
+    }
+    return null;
+}
+
+/// Clears O_NONBLOCK on `fd` so that writes block until the frames are queued.
+fn clearNonblock(fd: linux.fd_t) bool {
+    const flags = linux.fcntl(fd, linux.F.GETFL, 0);
+    if (linux.errno(flags) != .SUCCESS) return false;
+    var open_flags: linux.O = @bitCast(@as(u32, @intCast(flags)));
+    open_flags.NONBLOCK = false;
+    const rc = linux.fcntl(fd, linux.F.SETFL, @as(u32, @bitCast(open_flags)));
+    return linux.errno(rc) == .SUCCESS;
 }
 
 /// Sets the hardware parameters of `fd` for `buffer` and returns the chosen sample format.
@@ -330,6 +430,18 @@ test "hwParamsFor restricts every parameter to a single value" {
         try std.testing.expectEqual(e.value, interval.min);
         try std.testing.expectEqual(e.value, interval.max);
     }
+}
+
+test "hdmiPinIndex reads the pin number of HDMI devices only" {
+    try std.testing.expectEqual(@as(?usize, 1), hdmiPinIndex("card: 0\ndevice: 7\nid: HDMI 1\nname: HDMI 1\n"));
+    try std.testing.expectEqual(@as(?usize, null), hdmiPinIndex("card: 1\ndevice: 0\nid: ALCS1200A Analog\n"));
+    try std.testing.expectEqual(@as(?usize, null), hdmiPinIndex(""));
+}
+
+test "monitorPresent reads the connection state of an ELD file" {
+    try std.testing.expectEqual(@as(?bool, false), monitorPresent("monitor_present\t\t0\neld_valid\t\t0\n"));
+    try std.testing.expectEqual(@as(?bool, true), monitorPresent("monitor_present\t\t1\neld_valid\t\t1\n"));
+    try std.testing.expectEqual(@as(?bool, null), monitorPresent("eld_valid\t\t0\n"));
 }
 
 test "toInt saturates out-of-range samples and silences NaN" {
