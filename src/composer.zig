@@ -288,6 +288,8 @@ pub fn inner(comptime T: type) type {
         ///
         /// ## Errors
         /// - `MismatchedWaveProperties`: If component waves have different sample rates or channel counts
+        /// - `UnalignedChannelOffset`: If an entry's start point is not a multiple of the channel count
+        /// - `Overflow`: If an entry's end point overflows `usize`
         /// - `OutOfMemory`: Allocator error when memory allocation fails
         pub fn finalize(self: Self, options: Wave(T).mixOptions) (Wave(T).MixErrors || std.mem.Allocator.Error)!Wave(T) {
             if (self.items.len == 0) {
@@ -417,6 +419,8 @@ pub fn inner(comptime T: type) type {
                 };
             }
 
+            /// Frees the block buffer. The composer and its entries are not touched: the iterator only
+            /// borrows them. Slices returned by `next` are invalid after this call.
             pub fn deinit(self: BlockIterator) void {
                 self.allocator.free(self.block_buffer);
             }
@@ -471,7 +475,14 @@ pub fn inner(comptime T: type) type {
         /// - `options`: Streaming options (mixer function, block_size)
         ///
         /// ## Returns
-        /// A `BlockIterator` for chunked rendering
+        /// A `BlockIterator` for chunked rendering. The caller owns it and must call `deinit`.
+        ///
+        /// ## Errors
+        /// The errors of `BlockIterator.init`:
+        /// - `MismatchedWaveProperties`: If an entry differs from the composer's sample rate or channel count
+        /// - `UnalignedChannelOffset`: If an entry's start point or an explicit `block_size` is not a multiple of the channel count
+        /// - `Overflow`: If an entry's end point overflows `usize`
+        /// - Allocator error (errors.OutOfMemory)
         pub fn render_stream(self: Self, options: StreamOptions) (InitErrors || Wave(T).MixErrors || std.mem.Allocator.Error)!BlockIterator {
             return BlockIterator.init(self, options);
         }
