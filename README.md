@@ -175,28 +175,6 @@ pub fn build(b: *std.Build) !void {
 
 You can find a complete example in [./examples/06-advanced/build-time-generation](./examples/06-advanced/build-time-generation).
 
-#### Playing at build time (`addPlay`)
-
-`addPlay` creates a Run step that plays the wave of an `addWave` call while building. It is a preview helper, like `Wave(T).play()`.
-
-```zig
-const wave = try l.addWave(b, mod, .{
-    .format = .{ .wav = .{ .bits = 16, .format_code = .pcm } },
-});
-
-// `PlayOptions`: `exe_name` (default `"play_wave"`) and `optimize` (default `.Debug`)
-const play = try l.addPlay(b, wave, .{});
-
-// Play with `zig build play`
-const play_step = b.step("play", "Play the generated wave");
-play_step.dependOn(&play.step);
-
-// Or play on every `zig build`
-// l.installPlay(b, play);
-```
-
-You can find a complete example in [./examples/06-advanced/build-time-play](./examples/06-advanced/build-time-play).
-
 ## lightmix's types
 
 ### `Wave`
@@ -267,68 +245,6 @@ const stereo_wave = try wave.to_stereo(0.5);
 defer stereo_wave.deinit();
 ```
 
-- **`to_channels(target_channels, options)`**: Converts to any channel count. A mono wave is copied to every channel (`options.pan` applies when the target is stereo). Between two multichannel layouts, channel `i` goes to channel `i`: extra destination channels are silent and extra source channels are dropped. For custom routing, pass `options.matrix`, a row-major gain matrix with one row per destination channel and one column per source channel. It is never clamped, and a matrix of the wrong length returns `error.InvalidChannelMatrix`.
-
-```zig
-// Mono to 6 channels: the signal is copied to every channel
-const surround_wave = try mono_wave.to_channels(6, .{});
-defer surround_wave.deinit();
-
-// Custom routing: swap the left and right channels of a stereo wave
-const swapped_wave = try stereo_wave.to_channels(2, .{ .matrix = &.{ 0.0, 1.0, 1.0, 0.0 } });
-defer swapped_wave.deinit();
-```
-
-#### Mixing and Splitting
-
-```zig
-// Mix two waves with the same length, sample rate and channel count.
-// The default mixer is a plain sum that never clamps.
-const mixed = try wave_a.mix(wave_b, .{});
-defer mixed.deinit();
-
-// Clamp the result to [-1.0, 1.0] instead
-const clamped = try wave_a.mix(wave_b, .{ .mixer = lightmix.Wave(f64).saturating_mixing_expression });
-defer clamped.deinit();
-
-// Split at a sample index (a multiple of the channel count)
-const parts = try wave.separate(.{ .allocator = allocator, .separate_point = 22050 });
-defer parts.initial.deinit();
-defer parts.terminal.deinit();
-
-// Keep the first 22050 samples and fill with zeros up to 44100 samples
-const padded = try wave.fill_zero_to_end(22050, 44100);
-defer padded.deinit();
-
-// Deep copy (pass another allocator instead of `null` to use it)
-const copy = try wave.clone(null);
-defer copy.deinit();
-```
-
-The same mixer value can also be used for `Composer(T).finalize` and `Composer(T).render_stream`.
-
-#### Playback
-
-`play()` is a developer preview helper: it blocks until the wave has been played. It adapts the channel count to the output device, so a mono wave is audible on hardware that only accepts stereo; the sample rate is never adapted.
-
-```zig
-try wave.play();
-
-// Pass the channel count of the wave to the device unchanged
-// (a device that rejects it returns `error.UnsupportedChannels`)
-try wave.playWithOptions(.{ .channels = .strict });
-
-// The channel counts the output device accepts, or `null` when the playback backend
-// converts them itself (a sound server, CoreAudio and WinMM)
-if (try lightmix.outputChannels(wave.sample_rate)) |range| {
-    const adapted = try wave.to_channels(range.clamp(wave.channels), .{});
-    defer adapted.deinit();
-    try adapted.playWithOptions(.{ .channels = .strict });
-}
-```
-
-On targets without a playback backend, `play()` returns `error.UnsupportedPlatform`.
-
 ### `Composer`
 
 `Composer` is a generic type function that accepts a sample type parameter (same as Wave). It contains a `Composer(T).WaveInfo` array, which contains a `Wave(T)` and the timing when it plays.
@@ -350,34 +266,6 @@ defer composer.deinit(); // Composer.items is owned by the passed allocator, so 
 const result: lightmix.Wave(f64) = try composer.finalize(.{}); // Let's finalize to create a Wave(f64)!!
 defer result.deinit(); // Don't forget to free the Wave data.
 ```
-
-#### Adding Entries and Streaming
-
-```zig
-// Reserve room for 2 entries, then add waves one by one or as a slice
-var composer = try lightmix.Composer(f64).init_capacity(2, allocator, .{
-    .sample_rate = 44100,
-    .channels = 1,
-});
-defer composer.deinit();
-
-try composer.append(.{ .wave = wave, .start_point = 0 });
-try composer.appendSlice(&.{.{ .wave = wave, .start_point = 22050 }});
-
-// Reserve room for more entries without reallocating later
-try composer.ensureUnusedCapacity(16);
-
-// Render in blocks instead of one big wave. `block_size` 0 (the default) picks a size that is
-// a multiple of the channel count, and the default mixer is the same plain sum as `finalize`.
-var blocks = try composer.render_stream(.{});
-defer blocks.deinit();
-while (blocks.next()) |block| {
-    // `block` holds interleaved samples and is valid until the next call to `next()`.
-    _ = block;
-}
-```
-
-The iterator borrows the entries of the composer: do not append while it is in use, and keep the composer and its waves alive until `deinit`.
 
 ## Zig Version & 1.0.0 Milestone
 
