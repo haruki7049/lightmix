@@ -14,10 +14,10 @@ linkFarm "zig-packages" [
     };
   }
   {
-    name = "zigggwavvv-2.0.0-rc.2-iR5xWgokAgCX4VeX-XmmDaMBpspRRsvgXHtSvpvC1_fB";
+    name = "zigggwavvv-2.0.0-iR5xWutnAgCm4osN3wN-ooN5SNj62hGCBM6yMC4EzRMc";
     path = fetchzip {
-      url = "https://github.com/haruki7049/zigggwavvv/archive/refs/tags/2.0.0-rc.2.tar.gz";
-      hash = "sha256-u8bNuigzhJ2Aw3In3oFt3jNV9jpuKZmbBe7jR5TYKwU=";
+      url = "https://github.com/haruki7049/zigggwavvv/archive/refs/tags/2.0.0.tar.gz";
+      hash = "sha256-nvCfAWEqgy57+o/z41DGjwFzcYWVbmjbfoLtLyutQew=";
     };
   }
 ]
