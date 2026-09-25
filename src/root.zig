@@ -6,12 +6,31 @@
 //! ## Core Types
 //!
 //! ### Wave
-//! The `Wave` type function creates audio waveform types for different sample formats.
-//! It supports operations like mixing and reading/writing WAV files.
+//! The `Wave` type function creates audio waveform types for the sample types `f32`, `f64`,
+//! `f80` and `f128`. A `Wave(T)` supports:
+//!
+//! - Mixing (`mix`), splitting (`separate`), padding and truncating (`fill_zero_to_end`) and
+//!   copying (`clone`).
+//! - Channel conversion (`to_mono`, `to_stereo` and `to_channels`, which also takes a gain matrix).
+//! - Reading and writing WAV files (`read`, `write` and `size`).
+//! - Playback for previewing (`play` and `playWithOptions`), a developer helper that adapts
+//!   channels to the output device by default.
 //!
 //! ### Composer
 //! The `Composer` type function creates types for sequencing and overlaying multiple
-//! Wave instances in time to create complex audio arrangements.
+//! Wave instances in time to create complex audio arrangements. It renders the whole
+//! composition at once (`finalize`) or in blocks (`render_stream`).
+//!
+//! ## Playback Helpers
+//!
+//! `ChannelRange` and `outputChannels` describe the channel counts that the output device
+//! used by `Wave(T).play` accepts.
+//!
+//! ## Build System
+//!
+//! `build.zig` of this package provides `addWave` and `installWave` to generate and install
+//! WAV files while building, `addPlay` and `installPlay` to play them, and `currentTimestamp`
+//! for the `PEAK` chunk. See the README for their usage.
 //!
 //! ## Example Usage
 //!
