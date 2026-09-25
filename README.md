@@ -33,7 +33,7 @@ I created this project because I felt a disconnect between existing audio synthe
   Real-time audio playback (`play()`, `addPlay`) is provided strictly as a developer convenience to preview generated sounds during development. It is an auxiliary feature and must never block or compromise headless CI runs or core audio generation.
 
 - **Flat Generic Typing**:
-  Audio samples are generic over `comptime T: type` (`f32`, `f64`, `f80` and `f128`). No single floating-point precision is prioritized; users choose the balance between precision and memory overhead.
+  Audio samples are generic over `comptime T: type` (`f32`, `f64`, `f80` and `f128`). No single floating-point precision is prioritized; users choose the balance between precision and memory overhead. With `f32`, compute long phases in a wider type and cast the result: a sine phase of about 1000 rad already carries an error on the order of 1e-4 in `f32`, so generate such waves with `f64` and convert the samples.
 
 - **In-Memory Buffer Model**:
   `lightmix` adopts an explicit in-memory model where entire waveforms are held in memory buffers. For game sound effects and typical multi-minute tracks, this provides maximum simplicity, safety, and performance without the complexity of streaming pipelines.
