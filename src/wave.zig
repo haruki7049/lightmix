@@ -9,6 +9,8 @@ const testing = std.testing;
 ///
 /// ## Type Parameter
 /// - `T`: The sample data type (a floating-point type: f32, f64, f80 or f128)
+///   `f32` halves the memory of `f64`, but has about 7 significant digits: compute long sine phases
+///   in `f64` and cast the samples to `f32`.
 ///
 /// ## Usage
 /// ```zig
