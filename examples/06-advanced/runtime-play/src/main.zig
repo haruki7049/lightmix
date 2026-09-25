@@ -26,16 +26,20 @@ pub fn main(init: std.process.Init) !void {
     const radians_per_sec: f128 = frequency * 2.0 * std.math.pi;
     const volume: f128 = 0.5;
 
-    var samples: [44100]f128 = undefined;
-    for (0..samples.len) |i| {
+    // Interleaved stereo: both channels carry the same sine wave. Most sound hardware rejects
+    // mono, and lightmix never converts channels implicitly.
+    var samples: [44100 * 2]f128 = undefined;
+    for (0..44100) |i| {
         const t = @as(f128, @floatFromInt(i)) / sample_rate;
         // Sine wave formula: amplitude * sin(2π * frequency * time)
-        samples[i] = volume * @sin(radians_per_sec * t);
+        const sample = volume * @sin(radians_per_sec * t);
+        samples[i * 2] = sample;
+        samples[i * 2 + 1] = sample;
     }
 
     const wave = try Wave(f128).init(samples[0..], allocator, .{
         .sample_rate = 44100,
-        .channels = 1,
+        .channels = 2,
     });
 
     try wave.play();

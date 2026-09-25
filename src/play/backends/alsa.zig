@@ -7,13 +7,15 @@
 //! `<sound/asound.h>`, through raw system calls. No library, not even libc, is linked.
 //!
 //! ## Device and format
-//! - The first playback device that can be opened is used, scanning cards and devices in order.
-//!   A device held by a sound server (PipeWire, PulseAudio) returns `error.DeviceBusy`.
+//! - The first playback device that can be opened and accepts the buffer is used, scanning cards
+//!   and devices in order. A device held by a sound server (PipeWire, PulseAudio) is skipped
+//!   without waiting, and `error.DeviceBusy` is returned when every device is held.
 //! - The sample format is the first one the device accepts among 32-bit float, 32-bit integer
 //!   and 16-bit integer, in the native byte order. Integer formats saturate samples outside
 //!   `[-1.0, 1.0]` and write NaN as silence.
 //! - The sample rate and the channel count are never converted: a device that does not accept
-//!   them returns `error.UnsupportedSampleRate` or `error.UnsupportedChannels`.
+//!   them is skipped, and `error.UnsupportedSampleRate` or `error.UnsupportedChannels` is returned
+//!   when no device accepts them. Most hardware devices reject mono; use two or more channels.
 
 const std = @import("std");
 const builtin = @import("builtin");
@@ -178,10 +180,11 @@ pub fn play(allocator: std.mem.Allocator, io: std.Io, buffer: Buffer) !void {
     _ = io;
     if (buffer.samples.len == 0) return;
 
-    const fd = try openPlaybackDevice();
+    const device = try openPlaybackDevice(buffer);
+    const fd = device.fd;
     defer _ = linux.close(fd);
 
-    const format = try configure(fd, buffer);
+    const format = device.format;
     try ioctl(fd, IOCTL_PREPARE, 0);
 
     switch (format) {
@@ -197,16 +200,39 @@ pub fn play(allocator: std.mem.Allocator, io: std.Io, buffer: Buffer) !void {
     }
 }
 
-/// Opens the first PCM playback device node that can be opened for writing.
-fn openPlaybackDevice() Error!linux.fd_t {
+/// A playback device opened and configured for a buffer.
+const OpenedDevice = struct {
+    fd: linux.fd_t,
+    format: SampleFormat,
+};
+
+/// Opens the first PCM playback device node that can be opened for writing and accepts the
+/// properties of `buffer`. A device that rejects them is skipped, and the error of the last
+/// rejection is returned when no device is left.
+fn openPlaybackDevice(buffer: Buffer) Error!OpenedDevice {
     var result: Error = error.NoOutputDevice;
     for (0..MAX_CARDS) |card| {
         for (0..MAX_DEVICES) |device| {
             var path_buf: [64]u8 = undefined;
             const path = std.fmt.bufPrintZ(&path_buf, "/dev/snd/pcmC{d}D{d}p", .{ card, device }) catch unreachable;
-            const rc = linux.open(path, .{ .ACCMODE = .WRONLY, .CLOEXEC = true }, 0);
+            // Without O_NONBLOCK the kernel sleeps in open() until a busy device is released,
+            // which never returns while a sound server holds it. With it, open() fails with EBUSY.
+            const rc = linux.open(path, .{ .ACCMODE = .WRONLY, .CLOEXEC = true, .NONBLOCK = true }, 0);
             switch (linux.errno(rc)) {
-                .SUCCESS => return @intCast(rc),
+                .SUCCESS => {
+                    const fd: linux.fd_t = @intCast(rc);
+                    if (!clearNonblock(fd)) {
+                        _ = linux.close(fd);
+                        result = error.DeviceFailed;
+                        continue;
+                    }
+                    const format = configure(fd, buffer) catch |err| {
+                        _ = linux.close(fd);
+                        result = err;
+                        continue;
+                    };
+                    return .{ .fd = fd, .format = format };
+                },
                 .NOENT, .NODEV, .NXIO => {},
                 .BUSY => result = error.DeviceBusy,
                 .ACCES, .PERM => if (result != error.DeviceBusy) {
@@ -217,6 +243,16 @@ fn openPlaybackDevice() Error!linux.fd_t {
         }
     }
     return result;
+}
+
+/// Clears O_NONBLOCK on `fd` so that writes block until the frames are queued.
+fn clearNonblock(fd: linux.fd_t) bool {
+    const flags = linux.fcntl(fd, linux.F.GETFL, 0);
+    if (linux.errno(flags) != .SUCCESS) return false;
+    var open_flags: linux.O = @bitCast(@as(u32, @intCast(flags)));
+    open_flags.NONBLOCK = false;
+    const rc = linux.fcntl(fd, linux.F.SETFL, @as(u32, @bitCast(open_flags)));
+    return linux.errno(rc) == .SUCCESS;
 }
 
 /// Sets the hardware parameters of `fd` for `buffer` and returns the chosen sample format.
