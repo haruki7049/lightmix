@@ -10,7 +10,7 @@
 //!
 //! A backend may also declare:
 //!
-//! - `pub fn outputChannels(io: std.Io, sample_rate: u32) !ChannelRange`:
+//! - `pub fn outputChannels(io: std.Io, sample_rate: u32) !ChannelRange` (or `!?ChannelRange`):
 //!   Returns the channel counts accepted by the output device `play` would use for `sample_rate`.
 //!   A backend whose system converts channels itself omits it, and `outputChannels` returns null.
 //!
@@ -59,7 +59,7 @@ pub const Selected = select(builtin.os.tag);
 /// Returns the backend for `os_tag`.
 fn select(comptime os_tag: std.Target.Os.Tag) type {
     const Backend = switch (os_tag) {
-        .linux => @import("./backends/alsa.zig"),
+        .linux => @import("./backends/linux.zig"),
         .macos => @import("./backends/coreaudio.zig"),
         .windows => @import("./backends/winmm.zig"),
         else => @import("./backends/unsupported.zig"),
@@ -97,8 +97,8 @@ pub fn assertBackend(comptime Backend: type) void {
             @compileError("`" ++ @typeName(Backend) ++ ".outputChannels` must take (std.Io, u32)");
         }
         const channels_return = @typeInfo(channels_info.return_type orelse @compileError("`" ++ @typeName(Backend) ++ ".outputChannels` must not be generic"));
-        if (channels_return != .error_union or channels_return.error_union.payload != ChannelRange) {
-            @compileError("`" ++ @typeName(Backend) ++ ".outputChannels` must return `!ChannelRange`");
+        if (channels_return != .error_union or (channels_return.error_union.payload != ChannelRange and channels_return.error_union.payload != ?ChannelRange)) {
+            @compileError("`" ++ @typeName(Backend) ++ ".outputChannels` must return `!ChannelRange` or `!?ChannelRange`");
         }
     }
 }
@@ -133,4 +133,9 @@ test "assertBackend accepts a backend that matches the interface" {
 test "Import tests" {
     _ = Selected;
     _ = @import("./backends/unsupported.zig");
+    if (builtin.os.tag == .linux) {
+        _ = @import("./backends/alsa.zig");
+        _ = @import("./backends/pulseaudio.zig");
+        _ = @import("./backends/linux.zig");
+    }
 }
