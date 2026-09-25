@@ -114,3 +114,68 @@ test "floating-point precision boundary testing for f80 and f128" {
         try std.testing.expectEqualSlices(f128, wave_f128.samples, cloned_f128.samples);
     }
 }
+
+test "read sine.wav as f32 matches f64 within f32 precision" {
+    const allocator = std.testing.allocator;
+    var reader32 = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
+    const sine32 = try Wave(f32).read(.wav, allocator, &reader32);
+    defer sine32.deinit();
+    var reader64 = std.Io.Reader.fixed(@embedFile("./assets/sine.wav"));
+    const sine64 = try Wave(f64).read(.wav, allocator, &reader64);
+    defer sine64.deinit();
+
+    try std.testing.expectEqual(sine64.samples.len, sine32.samples.len);
+    try std.testing.expectEqual(sine64.sample_rate, sine32.sample_rate);
+    try std.testing.expectEqual(sine64.channels, sine32.channels);
+    for (sine64.samples, sine32.samples) |expected, actual| {
+        try std.testing.expectApproxEqAbs(@as(f32, @floatCast(expected)), actual, 1e-6);
+    }
+}
+
+test "f32 samples survive a write and a read in every WAV sample format" {
+    const allocator = std.testing.allocator;
+    const samples = [_]f32{ 0.0, 0.25, -0.25, 0.5, -0.5, 0.999, -0.999, 0.123456 };
+
+    // Unsigned 8-bit PCM has a step of 1/128; every other format is much finer.
+    const cases = .{
+        .{ 8, .pcm, 1.0 / 128.0 },
+        .{ 16, .pcm, 1.0 / 32768.0 },
+        .{ 24, .pcm, 1.0 / 8388608.0 },
+        .{ 32, .pcm, 1e-6 },
+        .{ 32, .ieee_float, 0.0 },
+        .{ 64, .ieee_float, 0.0 },
+    };
+    inline for (cases) |case| {
+        const wave = try Wave(f32).init(&samples, allocator, .{ .sample_rate = 44100, .channels = 2 });
+        defer wave.deinit();
+
+        var out: std.Io.Writer.Allocating = .init(allocator);
+        defer out.deinit();
+        try wave.write(.wav, &out.writer, .{ .bits = case[0], .format_code = case[1] });
+
+        var reader = std.Io.Reader.fixed(out.written());
+        const read_wave = try Wave(f32).read(.wav, allocator, &reader);
+        defer read_wave.deinit();
+
+        try std.testing.expectEqual(samples.len, read_wave.samples.len);
+        try std.testing.expectEqual(@as(u32, 44100), read_wave.sample_rate);
+        try std.testing.expectEqual(@as(u16, 2), read_wave.channels);
+        for (samples, read_wave.samples) |expected, actual| {
+            try std.testing.expectApproxEqAbs(expected, actual, case[2]);
+        }
+    }
+}
+
+test "f32 waves convert channels and mix like the other sample types" {
+    const allocator = std.testing.allocator;
+    const mono = try Wave(f32).init(&[_]f32{ 0.5, -0.25 }, allocator, .{ .sample_rate = 44100, .channels = 1 });
+    defer mono.deinit();
+
+    const stereo = try mono.to_channels(2, .{});
+    defer stereo.deinit();
+    try std.testing.expectEqualSlices(f32, &[_]f32{ 0.5, 0.5, -0.25, -0.25 }, stereo.samples);
+
+    const mixed = try mono.mix(mono, .{});
+    defer mixed.deinit();
+    try std.testing.expectEqualSlices(f32, &[_]f32{ 1.0, -0.5 }, mixed.samples);
+}
