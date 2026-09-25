@@ -1,0 +1,78 @@
+name: Release
+
+# Creates the tag and the GitHub Release when `version` in build.zig.zon is
+# changed on main (see CONTRIBUTING.md, "Versioning and Releasing"). Nothing
+# happens if a tag with that version already exists.
+on:
+  push:
+    branches: ["main"]
+    paths: ["build.zig.zon"]
+  # Retry a release whose workflow run failed after the version bump was merged.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    # Never release from a branch other than main, also when run by hand.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+        with:
+          # All tags are needed to tell whether this version was released.
+          fetch-depth: 0
+      - name: Read and validate the version
+        id: version
+        run: |
+          version=$(sed -n 's/^[[:space:]]*\.version[[:space:]]*=[[:space:]]*"\(.*\)",[[:space:]]*$/\1/p' build.zig.zon)
+          if [ -z "$version" ]; then
+            echo "::error file=build.zig.zon::could not read .version"
+            exit 1
+          fi
+          # Full Semantic Versioning with an optional pre-release part, no "v" prefix.
+          if ! printf '%s' "$version" | grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'; then
+            echo "::error file=build.zig.zon::'$version' is not a valid version (expected X.Y.Z or X.Y.Z-prerelease)"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Skip if this version is already released
+        id: exists
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if git rev-parse -q --verify "refs/tags/$VERSION" > /dev/null; then
+            echo "Tag $VERSION already exists; nothing to release."
+            echo "released=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "released=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Setup Ziglang
+        if: steps.exists.outputs.released == 'false'
+        uses: mlugg/setup-zig@v2.2.1
+        with:
+          version: 0.16.0
+      - name: Test and build
+        if: steps.exists.outputs.released == 'false'
+        run: |
+          zig build test
+          zig build
+      - name: Create the tag and the GitHub Release
+        if: steps.exists.outputs.released == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          args=(--target "$GITHUB_SHA" --title "$VERSION" --generate-notes)
+          # Every 0.x version is a pre-release, and so is a version with a pre-release part
+          # (for example 1.0.0-rc.1).
+          case "$VERSION" in
+            0.* | *-*) args+=(--prerelease) ;;
+          esac
+          gh release create "$VERSION" "${args[@]}"
