@@ -44,7 +44,7 @@ Before contributing new features, please understand `lightmix`'s core architectu
 1. **Unified Export & Cross-Format Metadata**:
    Audio export should be abstracted uniformly across formats (`wave.write(...)`), accompanied by format-agnostic metadata support (such as game audio loop points).
 1. **Strict Property Matching**:
-   No hidden resampling or channel coercion. Property mismatches must produce explicit errors (`error.MismatchedWaveProperties`), requiring caller-directed conversion.
+   No hidden resampling or channel coercion. Property mismatches must produce explicit errors (`error.MismatchedWaveProperties`), requiring caller-directed conversion. The one exception is `Wave(T).play()`, a preview helper that adapts channels to the output device by default; `playWithOptions(.{ .channels = .strict })` opts back in to strict matching, and the sample rate is never adapted.
 1. **Pure Zig (Zero C Dependencies)**:
    All core capabilities and future format codecs must be implemented in Pure Zig to guarantee instant cross-compilation without C toolchains or host SDK issues.
 1. **Future Unmanaged Memory Evolution**:
@@ -154,7 +154,7 @@ We welcome:
   - Documentation comments (`///` and `//!`) must be in English
   - Regular inline comments (`//`) should also be in English
 - **Formatting**: Use `zig fmt` before committing
-  - Run `zig fmt .` in the project root
+  - Run `zig fmt .` in the project root, and `zig fmt --check .` to verify it without changing files
 - **Naming**:
   - `camelCase` for functions and variables
   - `PascalCase` for types
@@ -178,11 +178,17 @@ Use documentation comments for all public APIs:
 ///
 /// ## Returns
 /// A new Wave instance containing a copy of the sample data
+///
+/// ## Errors
+/// - `InvalidChannelCount`: If `options.channels` is zero
+/// - `InvalidSampleRate`: If `options.sample_rate` is zero
+/// - `UnalignedChannelOffset`: If `samples.len` is not a multiple of `options.channels`
+/// - Allocator error (errors.OutOfMemory)
 pub fn init(
     samples: []const T,
     allocator: std.mem.Allocator,
     options: InitOptions,
-) std.mem.Allocator.Error!Self {
+) (MixErrors || std.mem.Allocator.Error)!Self {
     // Implementation
 }
 ```
@@ -268,22 +274,22 @@ test "init creates deep copy of samples" {
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (unit and integration tests)
 zig build test
 
-# Run specific test file
-zig test src/wave.zig
-
-# Run with memory leak detection
-zig test src/wave.zig --test-filter "no memory leaks"
+# Show how many tests ran
+zig build test --summary all
 ```
+
+`zig test src/wave.zig` does not work: the source files import the `zigggwavvv` module, which only `build.zig` provides. Use `zig build test`. Tests run with `std.testing.allocator`, which reports memory leaks.
 
 ## Submitting Changes
 
 ### Before Submitting
 
 1. **Run tests**: `zig build test`
-1. **Format code**: `zig fmt .`
+1. **Format code**: `zig fmt .`, then check it with `zig fmt --check .` (the CI runs the check)
+1. **Build the documentation**: `zig build docs`
 1. **Update documentation** if needed
 1. **Add tests** for new functionality
 1. **Test examples** if they're affected
@@ -319,6 +325,13 @@ Add filter composition example
 - `test: Add tests for X`
 - `refactor: Improve code structure`
 - `perf: Optimize performance of X`
+- `build: Update build.zig, build.zig.zon or a dependency`
+- `ci: Change a GitHub Actions workflow`
+- `chore: Routine maintenance`
+- `style: Change formatting without changing behavior`
+- `revert: Revert an earlier change`
+
+A pull request title must start with one of these types, with an optional scope (`feat(wave): ...`) and `!` for a breaking change (`feat(wave)!: ...`). The check is `.github/workflows/pr-conventional-commits-validation.yml`.
 
 ## Versioning and Releasing
 
@@ -376,7 +389,7 @@ For a release with breaking changes, add a section with the breaking changes and
 
 1. Collect the breaking changes: the "Breaking changes so far" part of the tracking issue, the pull requests marked with `!`, and the pull requests with the label `breaking change`. Read each pull request, because its description has the details.
 1. An AI assistant drafts the guide, and the maintainer reviews it before it is published. For each breaking change it says what changed, who is affected, and how to migrate, with a before and an after example when a signature or a behavior changed. The changes that callers meet at compile time come first, then the changes in behavior.
-1. Add the guide after the workflow created the release. The workflow writes only the generated notes, and these commands keep them:
+1. Add the guide after the workflow created the release. The workflow writes only the generated notes, and these commands keep them. They write three files, so run them in a temporary directory outside the repository (`cd "$(mktemp -d)"`), or the files stay in the working tree as untracked files:
 
 ```bash
 version=X.Y.Z # the version of the release, for example 0.26.0
@@ -391,6 +404,7 @@ gh release edit "$version" --notes-file body.md
 If a release was created by mistake, delete it together with its tag, then fix the problem and merge a new change:
 
 ```bash
+version=X.Y.Z # the version of the release to undo, for example 0.26.0
 gh release delete "$version" --cleanup-tag --yes
 ```
 

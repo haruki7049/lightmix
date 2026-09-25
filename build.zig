@@ -299,7 +299,7 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
 ///         },
 ///     });
 ///
-///     // Install Wave file into `zig-out` as `result.wav` (default Wave name)
+///     // Install the Wave file to `zig-out/share/result.wav` (the default path is `share`, the default name is `result.wav`)
 ///     const wave = try l.addWave(b, mod, .{
 ///         .func_name = "gen",
 ///         .format = .{ .wav = .{ .bits = 16, .format_code = .pcm } },
@@ -574,7 +574,7 @@ pub const WavOptions = struct {
 ///
 /// ## Usage
 /// ```
-/// // Install Wave file into `zig-out` as `result.wav` (default Wave name)
+/// // Install the Wave file to `zig-out/share/result.wav` (the default path is `share`, the default name is `result.wav`)
 /// const wave = try l.addWave(b, mod, .{
 ///     .func_name = "gen",
 ///     .format = .{ .wav = .{ .bits = 16, .format_code = .pcm } },

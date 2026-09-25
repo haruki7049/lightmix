@@ -43,9 +43,9 @@ Follow this recommended order:
 1. **06-advanced/** - Advanced techniques (4 examples)
 
    - `build-time-generation` - compile-time audio
-   - `build-time-play`
+   - `build-time-play` - generate audio while building and play it with `zig build play`
    - `modular-composing` - organize complex projects
-   - `runtime-play`
+   - `runtime-play` - play a synthesized wave through the audio output with `zig build run`
 
 ## 🎵 Example Categories
 
@@ -71,8 +71,8 @@ Follow this recommended order:
 ## ⚠️ Important
 
 - **CHECK YOUR VOLUME** before playing generated audio files!
-- All examples create `result.wav` in their directory
-- Format: 16-bit mono PCM @ 44.1kHz
+- Most examples create `result.wav` in their directory (see `examples/README.md` for the exceptions: several named files, `zig-out/share/result.wav`, or playback only)
+- Format of the WAV files: 16-bit PCM @ 44.1kHz, mono in most examples
 - Each example focuses on ONE concept
 
 ## 🎧 Playing Audio
@@ -93,7 +93,7 @@ See `examples/README.md` for complete details.
 If an example doesn't work:
 
 1. Check you're in the example's directory
-1. Try `zig build clean` then `zig build run`
+1. Delete the build output with `rm -rf .zig-cache zig-out`, then `zig build run` (Zig has no `zig build clean` step)
 1. Make sure you have a compatible Zig version
 
 ## 🎓 What Each Example Teaches

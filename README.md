@@ -30,7 +30,7 @@ I created this project because I felt a disconnect between existing audio synthe
   High-level DSP effects (such as reverb, flanger, or chorus) and specialized synthesizer sound presets are considered **out of scope** (Non-Goals) for the core library. They belong in separate domain libraries or user application code.
 
 - **Playback as a Verification Helper**:
-  Real-time audio playback (`play()`, `addPlay`) is provided strictly as a developer convenience to preview generated sounds during development. It is an auxiliary feature and must never block or compromise headless CI runs or core audio generation.
+  Real-time audio playback (`play()`, `addPlay`) is provided strictly as a developer convenience to preview generated sounds during development. It is an auxiliary feature and must never block or compromise headless CI runs or core audio generation. On Linux, `play()` uses a PulseAudio server (which also reaches PipeWire) when one accepts the client and ALSA otherwise; the environment variable `LIGHTMIX_PLAY_BACKEND=pulseaudio` or `alsa` chooses one, and it is read from the environment the process started with.
 
 - **Flat Generic Typing**:
   Audio samples are generic over `comptime T: type` (`f32`, `f64`, `f80` and `f128`). No single floating-point precision is prioritized; users choose the balance between precision and memory overhead. With `f32`, compute long phases in a wider type and cast the result: a sine phase of about 1000 rad already carries an error on the order of 1e-4 in `f32`, so generate such waves with `f64` and convert the samples.
@@ -51,7 +51,7 @@ I created this project because I felt a disconnect between existing audio synthe
   `lightmix` aims to abstract audio export across multiple formats under a unified interface (`wave.write(...)`), paired with format-agnostic metadata support (such as loop points for game engines).
 
 - **Strict Property Matching (Explicit over Implicit)**:
-  `lightmix` strictly enforces matching sample rates and channel counts during mixing. Mismatches result in explicit errors (`error.MismatchedWaveProperties`) rather than hidden resampling or implicit channel coercion.
+  `lightmix` strictly enforces matching sample rates and channel counts during mixing. Mismatches result in explicit errors (`error.MismatchedWaveProperties`) rather than hidden resampling or implicit channel coercion. The one exception is `Wave(T).play()`, a preview helper that adapts channels to the output device by default so generated audio is audible on any hardware; `playWithOptions(.{ .channels = .strict })` opts back in to strict matching, and the sample rate is never adapted.
 
 - **Pure Zig & Zero C Dependencies**:
   The library adheres to a Pure Zig policy, avoiding C compiler toolchain or C library dependencies to ensure seamless cross-compilation across any target platform.
@@ -183,7 +183,7 @@ You can find a complete example in [./examples/06-advanced/build-time-generation
 
 When mixing waves, both waves must have identical `sample_rate`, `channels`, and sample length, or `error.MismatchedWaveProperties` will be returned.
 
-Supported sample types: `f64`, `f80`, `f128`.
+Supported sample types: `f32`, `f64`, `f80` and `f128`.
 
 ```zig
 const allocator = std.heap.page_allocator; // Use your allocator
@@ -202,7 +202,7 @@ You can write your `Wave` to a wave file, such as `result.wav`.
 // First, create your Wave with a specific sample type
 const wave = generate_wave(); // Returns a Wave(f64)
 
-// Second, you must create a file, typed as `std.fs.File`.
+// Second, you must create a file, typed as `std.Io.File`.
 const file = try std.Io.Dir.cwd().createFile(io, "result.wav", .{});
 defer file.close(io);
 
@@ -214,7 +214,7 @@ const total_size = wave.size(.wav, .{ .bits = bits });
 const buf = try allocator.alloc(u8, total_size);
 defer allocator.free(buf);
 
-// Create a std.fs.File.Writer variable from the file.
+// Create a std.Io.File.Writer variable from the file.
 // It has an `interface` variable typed `std.Io.Writer`.
 var writer = file.writer(io, buf);
 
@@ -223,6 +223,9 @@ try wave.write(.wav, &writer.interface, .{
     .bits = bits, // Bit depth for the output file
     .format_code = .pcm, // Format code (e.g., .pcm or .ieee_float)
 });
+
+// The writer buffers the whole file: flush it, or the file stays empty.
+try writer.interface.flush();
 ```
 
 #### Channel Conversion Helpers

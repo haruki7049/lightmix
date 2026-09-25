@@ -34,10 +34,13 @@ ______________________________________________________________________
   - `root.zig`: Library root entry point.
   - `wave.zig`: Waveform data structures (`Wave`), synthesis routines, and sample manipulation.
   - `composer.zig`: Audio mixing, track composition, and audio timeline building.
-  - `assets/`: Embedded/bundled audio resources and standard formats.
+  - `play/`: Playback (a developer preview helper). `backend.zig` is the backend interface and selects the backend for the target; `backends/` has `linux.zig` (PulseAudio first, then ALSA), `pulseaudio.zig`, `alsa.zig`, `coreaudio.zig`, `winmm.zig` and `unsupported.zig`.
+  - `assets/`: Embedded/bundled audio resources (`sine.wav`).
 - `tests/`
   - `wave.zig`: Integration and unit test suite for wave features.
   - `composer.zig`: Integration tests for composition and track mixing.
+  - `build_fact.zig`, `build_ieee_float.zig`, `build_peak.zig`, `build_peak_now.zig`: Programs that `build.zig` runs to test the build-time `addWave` options (`use_fact`, IEEE float output, `use_peak` and `currentTimestamp`).
+  - `assets/`: Audio files used by the tests (`sine.wav`, `soundless.wav`).
 - `examples/`: Categorized runnable example projects demonstrating `lightmix` usage.
 - `build.zig` & `build.zig.zon`: Build definition script and package metadata.
 - `flake.nix` & `shell.nix`: Nix development shell configurations.
@@ -51,7 +54,6 @@ Before marking any task as complete, AI agents **MUST** execute the relevant com
 | Task | Command | Description |
 | :--- | :--- | :--- |
 | **Run All Tests** | `zig build test` | Executes full test suite (unit + integration tests) |
-| **Run Specific Test File** | `zig test src/wave.zig` | Fast iteration for individual files |
 | **Check Code Formatting** | `zig fmt --check .` | Verifies code formatting without modifying files |
 | **Format Code** | `zig fmt .` | Auto-formats all Zig code in the repository |
 | **Generate Documentation** | `zig build docs` | Builds API documentation to check for doc errors |
