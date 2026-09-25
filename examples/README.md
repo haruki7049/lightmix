@@ -85,7 +85,11 @@ cd examples/01-getting-started/hello-wave
 zig build run
 ```
 
-This will create a `result.wav` file in the example directory.
+Most examples write `result.wav` to the example directory. Some differ:
+
+- `noise`, `frequency-changes` and `guitar` write several named files (for example `white_noise.wav`, `a4_original.wav` and `guitar_a2.wav`).
+- `build-time-generation` and `modular-composing` write the file while building, to `zig-out/share/result.wav`.
+- `build-time-play` and `runtime-play` play the audio instead of writing a file.
 
 ### Build-Time Generation
 
@@ -108,7 +112,7 @@ Most examples use 44100 Hz (CD quality), which is standard for audio files.
 
 ### File Formats
 
-Examples typically output 16-bit PCM WAV files (`.i16`), which is widely compatible. Some examples demonstrate other formats like `.f32`.
+The examples that write WAV files use 16-bit PCM (`.bits = 16` with `.format_code = .pcm`), which is widely compatible. `.format_code = .ieee_float` (with `.bits = 32` or `64`) writes floating-point WAV files, but no example uses it. Most examples are mono (`.channels = 1`).
 
 ## 📖 Learning Path
 
@@ -149,12 +153,12 @@ After generating WAV files, you can play them with:
 **"File not found" errors:**
 
 - Make sure you're in the example's directory when running `zig build run`
-- The `result.wav` is created in the current working directory
+- Most examples create `result.wav` in the current working directory; see "How to Run Examples" for the ones that do not
 
 **Build errors:**
 
 - Ensure you're using a compatible Zig version (check the main README.md)
-- Try `zig build clean` and then `zig build run` again
+- Delete the build output with `rm -rf .zig-cache zig-out` and then run `zig build run` again (Zig has no `zig build clean` step)
 
 ## 📚 Further Learning
 
@@ -162,7 +166,7 @@ After working through these examples, check out:
 
 - The main lightmix documentation in `src/root.zig`
 - API documentation for Wave and Composer modules
-- The test files in `tests/` for more usage patterns
+- The test files `tests/wave.zig` and `tests/composer.zig` for more usage patterns (the `tests/build_*.zig` files are programs that `build.zig` runs, not usage examples)
 
 ## 🤝 Contributing
 
