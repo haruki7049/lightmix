@@ -12,7 +12,7 @@ Thank you for your interest in contributing to lightmix! This document provides 
 - [Coding Guidelines](#coding-guidelines)
 - [Testing](#testing)
 - [Submitting Changes](#submitting-changes)
-- [Tagging Rules](#tagging-rules)
+- [Versioning and Releasing](#versioning-and-releasing)
 - [Documentation](#documentation)
 - [Audio-Specific Guidelines](#audio-specific-guidelines)
 
@@ -320,11 +320,91 @@ Add filter composition example
 - `refactor: Improve code structure`
 - `perf: Optimize performance of X`
 
-## Tagging Rules
+## Versioning and Releasing
 
-- Use [Semantic Versioning](https://semver.org/).
-- Use `{major}.{minor}.{patch}`, `{major}.{minor}.{patch}-{preRelease}`, or `{major}.{minor}.{patch}+{buildMetadata}`.
-- Don't prefix the tag with `v`. Use `1.0.0`, not `v1.0.0`.
+### Versioning
+
+This project follows [Semantic Versioning](https://semver.org/). The `version` in `build.zig.zon` is the single source of truth for the version, and the tag and the GitHub Release have the same name. Zig accepts only a full version (`0.26.0`, `1.0.0-rc.1`), so use `{major}.{minor}.{patch}` or `{major}.{minor}.{patch}-{preRelease}` and don't prefix it with `v`: `1.0.0`, not `v1.0.0`. Build metadata (`+...`) is not used.
+
+#### Before 1.0.0 (`0.x`)
+
+Semantic Versioning allows anything to change in a `0.x` version. The `1.0.0` release is anchored to the `1.0.0` release of Zig (#89). Until then, `minor` carries every change that a caller can notice, and `patch` carries the rest:
+
+| Change | Release |
+| --- | --- |
+| Removing or changing a public declaration, a function signature, a type, or behavior that callers rely on (a pull request marked with `!`) | minor |
+| Requiring a newer Zig minor version (`minimum_zig_version` in `build.zig.zon`) | minor |
+| Adding a public declaration, a function, or a field with a default (`feat`) | minor |
+| Adding a member to a public error set | minor |
+| Fixing a bug without changing the documented behavior (`fix`) | patch |
+| A change without an effect on the public API (`docs`, `test`, `refactor`, `perf`, `build`, `ci`, `chore`) | patch |
+
+Adding a member to an error set breaks a `switch` over it that has no `else` prong, so it goes to `minor` as well.
+
+Every `0.x` release is marked as a pre-release on GitHub, and so is every version with a pre-release part, for example `1.0.0-rc.1`.
+
+#### From 1.0.0
+
+The usual rules apply: a change in the first row above, or raising `minimum_zig_version`, is a `major` release; a `feat` or a new error set member is a `minor` release; the rest is a `patch` release.
+
+### Releasing
+
+A release is made by merging a change of `version` in `build.zig.zon` to `main`. A workflow (`.github/workflows/release.yml`) does the rest.
+
+Each minor release has a tracking issue, `feat(release): track tasks for minor release X.Y.0`, with the label `lightmix version`. It lists the issues that are done, the issues that moved out of the release, and the breaking changes so far.
+
+#### Before releasing
+
+- The CI is green on the latest commit of `main`.
+- Every change that should be in the release is merged, and the open issues are checked against the tracking issue.
+- The breaking changes are listed: pull requests marked with `!` or with the label `breaking change`, and the "Breaking changes so far" part of the tracking issue.
+- The migration guide is drafted when there are breaking changes (see "Migration guide").
+
+#### Steps
+
+1. Choose the version following the table in "Versioning". Use a pre-release version for a release candidate, for example `1.0.0-rc.1` (then `1.0.0-rc.2`, and so on).
+1. Open a pull request that only changes `version` in `build.zig.zon`, with the title `feat(lightmix version): Bump up to X.Y.Z` and the label `lightmix version`, and merge it. See "Pull Request Process" for the conventions.
+1. The workflow reads the version and checks that it is valid. If a tag with that name already exists, it stops. Otherwise it runs `zig build test` and `zig build`, creates the tag on the merged commit, and creates the GitHub Release with the generated "What's Changed" notes. The release is marked as a pre-release for a `0.x` version and for a version that contains `-`.
+1. Check the workflow run in the Actions tab, and check the new release.
+1. Add the migration guide to the release when there are breaking changes.
+
+A change of `build.zig.zon` that does not change `version` (for example an update of a dependency) also starts the workflow, and it does nothing, because the tag of that version already exists.
+
+#### Migration guide
+
+For a release with breaking changes, add a section with the breaking changes and the migration steps to the release body. It is not stored in the repository.
+
+1. Collect the breaking changes: the "Breaking changes so far" part of the tracking issue, the pull requests marked with `!`, and the pull requests with the label `breaking change`. Read each pull request, because its description has the details.
+1. An AI assistant drafts the guide, and the maintainer reviews it before it is published. For each breaking change it says what changed, who is affected, and how to migrate, with a before and an after example when a signature or a behavior changed. The changes that callers meet at compile time come first, then the changes in behavior.
+1. Add the guide after the workflow created the release. The workflow writes only the generated notes, and these commands keep them:
+
+```bash
+version=X.Y.Z # the version of the release, for example 0.26.0
+gh release view "$version" --json body --jq .body > generated.md
+# write the reviewed migration guide to migration.md, then:
+{ cat migration.md; echo; cat generated.md; } > body.md
+gh release edit "$version" --notes-file body.md
+```
+
+#### Undoing a release
+
+If a release was created by mistake, delete it together with its tag, then fix the problem and merge a new change:
+
+```bash
+gh release delete "$version" --cleanup-tag --yes
+```
+
+Do not reuse a version whose contents may already have been fetched by others: publish the next version instead.
+
+#### If the workflow fails
+
+Open the failed run in the Actions tab and read the error.
+
+- The version is not valid: fix `version` in a new pull request.
+- The tests failed: fix the problem on `main` first.
+- The tag or the release could not be created: check the workflow permissions in the repository settings (Settings, Actions, General) and the rules that protect branches and tags, because they can stop a workflow from creating a tag.
+
+After fixing the cause, run the workflow again from the Actions tab on `main` ("Run workflow"). It does nothing if the version is already released.
 
 ## Documentation
 

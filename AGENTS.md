@@ -162,9 +162,14 @@ Whenever creating an Issue or Pull Request using the `gh` CLI, agents **MUST** a
   gh pr edit <PR_NUMBER> --add-label "refactor,composer"
   ```
 
-### Version Tagging
+### Versioning and Releasing
 
-- Use Semantic Versioning **without** a `v` prefix (e.g., `1.0.0`, not `v1.0.0`).
+The full procedure is in `CONTRIBUTING.md` ("Versioning and Releasing").
+
+- Use Semantic Versioning **without** a `v` prefix (e.g., `1.0.0`, not `v1.0.0`). `version` in `build.zig.zon` is the single source of truth.
+- Before `1.0.0`, `minor` carries breaking changes, new features and new error set members, and `patch` carries fixes and changes without an effect on the public API. Every `0.x` release is a pre-release.
+- A release is made by merging a pull request that only changes `version` in `build.zig.zon`, titled `feat(lightmix version): Bump up to X.Y.Z` and labeled `lightmix version`. The `Release` workflow creates the tag and the GitHub Release. **Never create a tag or a release by hand**, and only prepare a version bump pull request when the user asks for it.
+- For a release with breaking changes, draft the migration guide for the release body when the user asks for it, and leave it to the maintainer to review and publish. Do not store it in the repository.
 
 ______________________________________________________________________
 
