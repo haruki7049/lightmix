@@ -7,6 +7,7 @@
 //! - Using `wave.play()` for real-time audio playback
 //! - Working with higher precision sample types like `f128`
 //! - Direct audio output integration with system sound drivers
+//! - Converting a mono wave to the channel count of the output device with `to_channels`
 //!
 //! ## Run this example:
 //! ```
@@ -17,6 +18,10 @@ const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
 
+/// Channel count handed to the output device. Most sound hardware rejects mono and `play()` does
+/// not convert channels, so the mono wave below is converted with `to_channels` first.
+const CHANNELS: u16 = 2;
+
 pub fn main(init: std.process.Init) !void {
     const allocator = init.arena.allocator();
 
@@ -26,21 +31,20 @@ pub fn main(init: std.process.Init) !void {
     const radians_per_sec: f128 = frequency * 2.0 * std.math.pi;
     const volume: f128 = 0.5;
 
-    // Interleaved stereo: both channels carry the same sine wave. Most sound hardware rejects
-    // mono, and lightmix never converts channels implicitly.
-    var samples: [44100 * 2]f128 = undefined;
-    for (0..44100) |i| {
+    var samples: [44100]f128 = undefined;
+    for (0..samples.len) |i| {
         const t = @as(f128, @floatFromInt(i)) / sample_rate;
         // Sine wave formula: amplitude * sin(2π * frequency * time)
-        const sample = volume * @sin(radians_per_sec * t);
-        samples[i * 2] = sample;
-        samples[i * 2 + 1] = sample;
+        samples[i] = volume * @sin(radians_per_sec * t);
     }
 
     const wave = try Wave(f128).init(samples[0..], allocator, .{
         .sample_rate = 44100,
-        .channels = 2,
+        .channels = 1,
     });
 
-    try wave.play();
+    // Duplicate the mono signal to every channel of the output device.
+    const output = try wave.to_channels(CHANNELS, .{});
+
+    try output.play();
 }
