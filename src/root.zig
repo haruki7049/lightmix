@@ -62,8 +62,8 @@ pub const Composer = @import("./composer.zig").inner;
 pub const ChannelRange = @import("./play/backend.zig").ChannelRange;
 
 /// Returns the channel counts accepted by the output device that `Wave(T).play()` would use for
-/// a wave of `sample_rate`, or null when the playback backend of the target converts channels
-/// itself (CoreAudio and WinMM) and does not restrict them.
+/// a wave of `sample_rate`, or null when the playback backend converts channels itself and does
+/// not restrict them: a PulseAudio or PipeWire server, CoreAudio and WinMM.
 ///
 /// Use it to choose a channel layout yourself, e.g. `wave.to_channels(range.clamp(wave.channels), .{})`,
 /// before `playWithOptions(.{ .channels = .strict })`.

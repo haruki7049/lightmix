@@ -763,7 +763,8 @@ pub fn inner(comptime T: type) type {
         /// completes. The wave is only read; its ownership stays with the caller.
         ///
         /// Playback goes through a Pure Zig backend chosen for the target at compile time:
-        /// ALSA on Linux, CoreAudio on macOS and WinMM on Windows. No C library is linked.
+        /// PulseAudio (which also reaches PipeWire) with a fallback to ALSA on Linux, CoreAudio on macOS
+        /// and WinMM on Windows. No C library is linked.
         ///
         /// Channels are adapted to the output device, so that a mono wave is audible on hardware
         /// that only accepts stereo. This is an exception to strict property matching, made
