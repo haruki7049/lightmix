@@ -22,7 +22,9 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const linux = std.os.linux;
-const Buffer = @import("../backend.zig").Buffer;
+const backend = @import("../backend.zig");
+const Buffer = backend.Buffer;
+const ChannelRange = backend.ChannelRange;
 
 pub const name = "alsa";
 
@@ -211,6 +213,57 @@ const OpenedDevice = struct {
     format: SampleFormat,
 };
 
+/// The result of trying to open the PCM playback node of one device.
+const NodeOutcome = union(enum) {
+    /// The node was opened for blocking writes.
+    opened: linux.fd_t,
+    /// There is no such device, or it is an HDMI output with no monitor attached.
+    absent,
+    /// The device is held by another process, such as a sound server.
+    busy,
+    /// The permissions of this process do not allow opening the device.
+    denied,
+    /// The node exists but could not be used.
+    failed,
+};
+
+/// Opens the PCM playback node of `card` and `device` without waiting for it.
+fn openNode(card: usize, device: usize) NodeOutcome {
+    if (isDisconnectedHdmi(card, device)) return .absent;
+
+    var path_buf: [64]u8 = undefined;
+    const path = std.fmt.bufPrintZ(&path_buf, "/dev/snd/pcmC{d}D{d}p", .{ card, device }) catch unreachable;
+    // Without O_NONBLOCK the kernel sleeps in open() until a busy device is released,
+    // which never returns while a sound server holds it. With it, open() fails with EBUSY.
+    const rc = linux.open(path, .{ .ACCMODE = .WRONLY, .CLOEXEC = true, .NONBLOCK = true }, 0);
+    switch (linux.errno(rc)) {
+        .SUCCESS => {
+            const fd: linux.fd_t = @intCast(rc);
+            if (!clearNonblock(fd)) {
+                _ = linux.close(fd);
+                return .failed;
+            }
+            return .{ .opened = fd };
+        },
+        .NOENT, .NODEV, .NXIO => return .absent,
+        .BUSY => return .busy,
+        .ACCES, .PERM => return .denied,
+        else => return .absent,
+    }
+}
+
+/// Records why a device could not be used, keeping `error.DeviceBusy` over `error.AccessDenied`.
+fn noteOutcome(result: *Error, outcome: NodeOutcome) void {
+    switch (outcome) {
+        .busy => result.* = error.DeviceBusy,
+        .denied => if (result.* != error.DeviceBusy) {
+            result.* = error.AccessDenied;
+        },
+        .failed => result.* = error.DeviceFailed,
+        .opened, .absent => {},
+    }
+}
+
 /// Opens the first PCM playback device node that can be opened for writing and accepts the
 /// properties of `buffer`. A device that rejects them is skipped, and the error of the last
 /// rejection is returned when no device is left.
@@ -218,21 +271,9 @@ fn openPlaybackDevice(buffer: Buffer) Error!OpenedDevice {
     var result: Error = error.NoOutputDevice;
     for (0..MAX_CARDS) |card| {
         for (0..MAX_DEVICES) |device| {
-            if (isDisconnectedHdmi(card, device)) continue;
-
-            var path_buf: [64]u8 = undefined;
-            const path = std.fmt.bufPrintZ(&path_buf, "/dev/snd/pcmC{d}D{d}p", .{ card, device }) catch unreachable;
-            // Without O_NONBLOCK the kernel sleeps in open() until a busy device is released,
-            // which never returns while a sound server holds it. With it, open() fails with EBUSY.
-            const rc = linux.open(path, .{ .ACCMODE = .WRONLY, .CLOEXEC = true, .NONBLOCK = true }, 0);
-            switch (linux.errno(rc)) {
-                .SUCCESS => {
-                    const fd: linux.fd_t = @intCast(rc);
-                    if (!clearNonblock(fd)) {
-                        _ = linux.close(fd);
-                        result = error.DeviceFailed;
-                        continue;
-                    }
+            const outcome = openNode(card, device);
+            switch (outcome) {
+                .opened => |fd| {
                     const format = configure(fd, buffer) catch |err| {
                         _ = linux.close(fd);
                         result = err;
@@ -240,16 +281,50 @@ fn openPlaybackDevice(buffer: Buffer) Error!OpenedDevice {
                     };
                     return .{ .fd = fd, .format = format };
                 },
-                .NOENT, .NODEV, .NXIO => {},
-                .BUSY => result = error.DeviceBusy,
-                .ACCES, .PERM => if (result != error.DeviceBusy) {
-                    result = error.AccessDenied;
-                },
-                else => {},
+                else => noteOutcome(&result, outcome),
             }
         }
     }
     return result;
+}
+
+/// Returns the channel counts accepted by the playback device that `play` would use for a buffer
+/// of `sample_rate`: the first device that can be opened and accepts the sample rate.
+///
+/// ## Errors
+/// Returns `Error` when no device is found, every device is unusable, or none accepts the rate.
+pub fn outputChannels(io: std.Io, sample_rate: u32) Error!ChannelRange {
+    _ = io;
+    var result: Error = error.NoOutputDevice;
+    for (0..MAX_CARDS) |card| {
+        for (0..MAX_DEVICES) |device| {
+            const outcome = openNode(card, device);
+            switch (outcome) {
+                .opened => |fd| {
+                    defer _ = linux.close(fd);
+                    var params = HwParams.any();
+                    params.setMask(HW_PARAM_ACCESS, ACCESS_RW_INTERLEAVED);
+                    params.setInterval(HW_PARAM_RATE, sample_rate);
+                    if (!refines(fd, &params)) {
+                        result = error.UnsupportedSampleRate;
+                        continue;
+                    }
+                    return channelRange(params);
+                },
+                else => noteOutcome(&result, outcome),
+            }
+        }
+    }
+    return result;
+}
+
+/// Reads the channel count interval of hardware parameters refined by the kernel.
+fn channelRange(params: HwParams) ChannelRange {
+    const interval = params.intervals[HW_PARAM_CHANNELS - HW_PARAM_FIRST_INTERVAL];
+    return .{
+        .min = @intCast(@min(interval.min, std.math.maxInt(u16))),
+        .max = @intCast(@min(interval.max, std.math.maxInt(u16))),
+    };
 }
 
 /// Returns whether the PCM device is an HDMI output with no monitor attached.
@@ -442,6 +517,19 @@ test "monitorPresent reads the connection state of an ELD file" {
     try std.testing.expectEqual(@as(?bool, false), monitorPresent("monitor_present\t\t0\neld_valid\t\t0\n"));
     try std.testing.expectEqual(@as(?bool, true), monitorPresent("monitor_present\t\t1\neld_valid\t\t1\n"));
     try std.testing.expectEqual(@as(?bool, null), monitorPresent("eld_valid\t\t0\n"));
+}
+
+test "channelRange reads the channel interval of refined parameters" {
+    var params = HwParams.any();
+    params.intervals[HW_PARAM_CHANNELS - HW_PARAM_FIRST_INTERVAL] = .{ .min = 2, .max = 8, .flags = 0 };
+    const range = channelRange(params);
+    try std.testing.expectEqual(@as(u16, 2), range.min);
+    try std.testing.expectEqual(@as(u16, 8), range.max);
+
+    // An unbounded interval is limited to what a channel count can hold.
+    const any_range = channelRange(HwParams.any());
+    try std.testing.expectEqual(@as(u16, 0), any_range.min);
+    try std.testing.expectEqual(@as(u16, std.math.maxInt(u16)), any_range.max);
 }
 
 test "toInt saturates out-of-range samples and silences NaN" {

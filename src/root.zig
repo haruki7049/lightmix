@@ -53,8 +53,29 @@
 //! }
 //! ```
 
+const std = @import("std");
+
 pub const Wave = @import("./wave.zig").inner;
 pub const Composer = @import("./composer.zig").inner;
+
+/// The inclusive range of channel counts an output device accepts.
+pub const ChannelRange = @import("./play/backend.zig").ChannelRange;
+
+/// Returns the channel counts accepted by the output device that `Wave(T).play()` would use for
+/// a wave of `sample_rate`, or null when the playback backend of the target converts channels
+/// itself (CoreAudio and WinMM) and does not restrict them.
+///
+/// Use it to choose a channel layout yourself, e.g. `wave.to_channels(range.clamp(wave.channels), .{})`,
+/// before `playWithOptions(.{ .channels = .strict })`.
+///
+/// ## Errors
+/// Returns the errors of the playback backend, e.g. when no output device is found or every
+/// device is held by a sound server.
+pub fn outputChannels(sample_rate: u32) anyerror!?ChannelRange {
+    var threaded = std.Io.Threaded.init(std.heap.smp_allocator, .{});
+    defer threaded.deinit();
+    return try @import("./play/backend.zig").outputChannels(threaded.io(), sample_rate);
+}
 
 test "Import tests" {
     _ = @import("./wave.zig");

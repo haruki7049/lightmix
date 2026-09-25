@@ -7,7 +7,7 @@
 //! - Using `wave.play()` for real-time audio playback
 //! - Working with higher precision sample types like `f128`
 //! - Direct audio output integration with system sound drivers
-//! - Converting a mono wave to the channel count of the output device with `to_channels`
+//! - Playing a mono wave on any output device: `play()` adapts the channels to the device
 //!
 //! ## Run this example:
 //! ```
@@ -17,10 +17,6 @@
 const std = @import("std");
 const lightmix = @import("lightmix");
 const Wave = lightmix.Wave;
-
-/// Channel count handed to the output device. Most sound hardware rejects mono and `play()` does
-/// not convert channels, so the mono wave below is converted with `to_channels` first.
-const CHANNELS: u16 = 2;
 
 pub fn main(init: std.process.Init) !void {
     const allocator = init.arena.allocator();
@@ -43,8 +39,7 @@ pub fn main(init: std.process.Init) !void {
         .channels = 1,
     });
 
-    // Duplicate the mono signal to every channel of the output device.
-    const output = try wave.to_channels(CHANNELS, .{});
-
-    try output.play();
+    // Most sound hardware rejects mono; `play()` converts the channels to what the device accepts.
+    // Use `wave.playWithOptions(.{ .channels = .strict })` to pass the channel count unchanged.
+    try wave.play();
 }

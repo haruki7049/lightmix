@@ -19,7 +19,7 @@ ______________________________________________________________________
   - **Clipping & Crash Noise Tolerant**: Treat clipping and crash noise as valid sound sources; never auto-normalize, sanitize, or fail builds on out-of-bounds samples, deferring quantization behavior entirely to underlying format codecs.
   - **Multi-Format Ingestion**: Support reading external audio (`Wave(T).read`) across WAV and future compressed formats (FLAC, Ogg Vorbis) alongside pure synthesis.
   - **Format Abstraction & Metadata**: Abstract output formats under a unified interface (`wave.write(...)`) and support cross-format metadata (e.g., loop points).
-  - **Strict Property Matching**: Explicit over implicit; never perform hidden resampling or channel coercion on property mismatches.
+  - **Strict Property Matching**: Explicit over implicit; never perform hidden resampling or channel coercion on property mismatches. The only exception is `Wave(T).play()`, a preview helper that adapts channels to the output device by default so generated audio is audible on any hardware; `playWithOptions(.{ .channels = .strict })` opts back in to strict matching, and the sample rate is never adapted.
   - **Pure Zig**: Keep the codebase free of C toolchains and C library dependencies to guarantee seamless cross-compilation.
   - **Unmanaged Memory Roadmap**: Architectural direction targets modern Zig 0.16 `Unmanaged` patterns (allocator-per-operation), planned for a dedicated breaking cycle.
   - **External Parallelism**: Data structures remain synchronous; parallel asset generation is delegated entirely to the build system (`zig build -j`).
