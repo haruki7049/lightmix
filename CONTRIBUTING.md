@@ -32,7 +32,7 @@ Before contributing new features, please understand `lightmix`'s core architectu
 1. **Playback is Auxiliary**:
    Real-time audio playback (`play()`, `addPlay`) is strictly a local developer preview helper. Changes to the core synthesis and build pipeline must never introduce runtime audio server dependencies or break headless CI execution.
 1. **Flat Generic Typing**:
-   `lightmix` treats floating-point sample types (`f64`, `f80`, `f128`, and future `f32`) flatly via `comptime T: type`. Do not hardcode or prioritize a specific sample type in core structures.
+   `lightmix` treats floating-point sample types (`f32`, `f64`, `f80` and `f128`) flatly via `comptime T: type`. Do not hardcode or prioritize a specific sample type in core structures.
 1. **In-Memory Buffer Model**:
    Waveforms are held in memory buffers (`Wave(T)`). Simplicity, safety, and deterministic calculation take priority over premature streaming pipelines.
 1. **Stateless Randomness**:
@@ -199,7 +199,7 @@ When creating generic functions:
 /// Wave type function: Creates a Wave type for the specified sample type.
 ///
 /// ## Type Parameter
-/// - `T`: The sample data type (typically f64, f80, or f128)
+/// - `T`: The sample data type (a floating-point type: f32, f64, f80 or f128)
 ///
 /// ## Usage
 /// ```zig

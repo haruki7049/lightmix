@@ -8,7 +8,7 @@ const testing = std.testing;
 /// Wave represents audio waveform data with methods for manipulation, mixing, and I/O.
 ///
 /// ## Type Parameter
-/// - `T`: The sample data type (typically f64, f80, or f128 for floating-point audio)
+/// - `T`: The sample data type (a floating-point type: f32, f64, f80 or f128)
 ///
 /// ## Usage
 /// ```zig
@@ -20,9 +20,6 @@ const testing = std.testing;
 /// defer wave.deinit();
 /// ```
 pub fn inner(comptime T: type) type {
-    comptime {
-        if (T == f32) @compileError("f32 sample type is currently not supported by underlying WAV decoder. Use f64, f80, or f128.");
-    }
     return struct {
         const Self = @This();
 
@@ -759,8 +756,8 @@ pub fn inner(comptime T: type) type {
 
         /// Plays the wave audio through the system audio output.
         ///
-        /// A developer preview helper: converts samples to f32 and blocks until playback
-        /// completes. The wave is only read; its ownership stays with the caller.
+        /// A developer preview helper: converts samples to f32 (`Wave(f32)` needs no conversion) and
+        /// blocks until playback completes. The wave is only read; its ownership stays with the caller.
         ///
         /// Playback goes through a Pure Zig backend chosen for the target at compile time:
         /// PulseAudio (which also reaches PipeWire) with a fallback to ALSA on Linux, CoreAudio on macOS
@@ -809,14 +806,17 @@ pub fn inner(comptime T: type) type {
                 return adapted.playWithOptions(.{ .channels = .strict });
             }
 
-            const samples = try allocator.alloc(f32, self.samples.len);
-            defer allocator.free(samples);
-            for (self.samples, samples) |sample, *dest| {
-                dest.* = @floatCast(sample);
+            // f32 samples are handed to the backend as they are; other types are converted first.
+            const converted: []f32 = if (T == f32) &.{} else try allocator.alloc(f32, self.samples.len);
+            defer if (T != f32) allocator.free(converted);
+            if (T != f32) {
+                for (self.samples, converted) |sample, *dest| {
+                    dest.* = @floatCast(sample);
+                }
             }
 
             try playback.Selected.play(allocator, io, .{
-                .samples = samples,
+                .samples = if (T == f32) self.samples else converted,
                 .sample_rate = self.sample_rate,
                 .channels = self.channels,
             });
@@ -1345,14 +1345,16 @@ pub fn inner(comptime T: type) type {
             const allocator = testing.allocator;
             const generator = struct {
                 fn sinewave() [44100]T {
-                    const sample_rate: T = 44100.0;
-                    const radins_per_sec: T = 440.0 * 2.0 * std.math.pi;
+                    // The phase reaches about 1400 rad, so it is computed in f64: f32 would already lose
+                    // more than the tolerance of the assertions below.
+                    const sample_rate: f64 = 44100.0;
+                    const radins_per_sec: f64 = 440.0 * 2.0 * std.math.pi;
 
                     var result: [44100]T = undefined;
                     var i: usize = 0;
 
                     while (i < result.len) : (i += 1) {
-                        result[i] = 0.5 * std.math.sin(@as(T, @floatFromInt(i)) * radins_per_sec / sample_rate);
+                        result[i] = @floatCast(0.5 * std.math.sin(@as(f64, @floatFromInt(i)) * radins_per_sec / sample_rate));
                     }
 
                     return result;
@@ -1819,11 +1821,11 @@ test "Run tests for each samples' type" {
     _ = inner(f128);
     _ = inner(f80);
     _ = inner(f64);
-    // _ = inner(f32); zigggwavvv 0.2.1 cannot use f32 as samples' type
+    _ = inner(f32);
 }
 
 test "Wave(T).init channel alignment across all float types" {
-    inline for (.{ f64, f80, f128 }) |FloatType| {
+    inline for (.{ f32, f64, f80, f128 }) |FloatType| {
         const allocator = std.testing.allocator;
         const samples = [_]FloatType{ 1.0, 2.0, 3.0 };
 

@@ -13,7 +13,7 @@ ______________________________________________________________________
   - **Minimalist Core (Unix Philosophy)**: Focus strictly on low-level primitives: `Wave(T)` (waveform buffer & manipulation), `Composer(T)` (timeline arrangement & mixing), accurate WAV I/O, and `addWave` build-system integration.
   - **Non-Goals**: High-level DSP effect suites (reverb, delay, chorus, flanger) and synthesizer instrument presets belong in separate higher-level libraries or application code.
   - **Auxiliary Playback**: `play()` and `addPlay` are developer preview helpers only. They must never introduce hard audio server dependencies or interfere with headless CI execution.
-  - **Flat Generic Typing**: Generic over `comptime T: type` (`f64`, `f80`, `f128`, and future `f32`). Do not hardcode or favor any single floating-point precision.
+  - **Flat Generic Typing**: Generic over `comptime T: type` (`f32`, `f64`, `f80` and `f128`). Do not hardcode or favor any single floating-point precision.
   - **In-Memory Buffer Model**: Full sample buffers are held in memory (`Wave(T)`) for deterministic safety and simplicity, avoiding premature streaming complexity.
   - **Stateless Randomness**: Do not embed PRNGs or hidden state; caller-provided noise buffers ensure deterministic control.
   - **Clipping & Crash Noise Tolerant**: Treat clipping and crash noise as valid sound sources; never auto-normalize, sanitize, or fail builds on out-of-bounds samples, deferring quantization behavior entirely to underlying format codecs.

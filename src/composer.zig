@@ -8,7 +8,7 @@ const Wave = @import("./root.zig").Wave;
 /// complex audio arrangements.
 ///
 /// ## Type Parameter
-/// - `T`: The sample data type (typically f64, f80, or f128 for floating-point audio)
+/// - `T`: The sample data type (a floating-point type: f32, f64, f80 or f128)
 ///
 /// ## Usage
 /// ```zig
@@ -1044,5 +1044,5 @@ test "Run tests for each samples' type" {
     _ = inner(f128);
     _ = inner(f80);
     _ = inner(f64);
-    // _ = inner(f32); zigggwavvv 0.2.1 cannot use f32 as samples' type
+    _ = inner(f32);
 }
