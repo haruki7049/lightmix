@@ -742,6 +742,21 @@ pub fn inner(comptime T: type) type {
             return file_extension.size(self, options);
         }
 
+        /// How `playWithOptions` treats a channel count the output device does not accept.
+        pub const ChannelPolicy = enum {
+            /// Convert the wave with `to_channels` to a channel count the device accepts.
+            adapt,
+            /// Hand the channel count of the wave to the device as is, and return the error of
+            /// the backend (e.g. `error.UnsupportedChannels`) when the device rejects it.
+            strict,
+        };
+
+        /// Options for `playWithOptions`.
+        pub const PlayOptions = struct {
+            /// Default is `.adapt`.
+            channels: ChannelPolicy = .adapt,
+        };
+
         /// Plays the wave audio through the system audio output.
         ///
         /// A developer preview helper: converts samples to f32 and blocks until playback
@@ -750,6 +765,12 @@ pub fn inner(comptime T: type) type {
         /// Playback goes through a Pure Zig backend chosen for the target at compile time:
         /// ALSA on Linux, CoreAudio on macOS and WinMM on Windows. No C library is linked.
         ///
+        /// Channels are adapted to the output device, so that a mono wave is audible on hardware
+        /// that only accepts stereo. This is an exception to strict property matching, made
+        /// because `play` exists to listen to generated audio; use `playWithOptions` with
+        /// `.channels = .strict` to pass the channel count of the wave unchanged. The sample rate
+        /// is never adapted.
+        ///
         /// ## Parameters
         /// - `self`: The wave to play
         ///
@@ -757,11 +778,35 @@ pub fn inner(comptime T: type) type {
         /// Returns `error.UnsupportedPlatform` on other targets, and errors from the conversion
         /// buffer allocation and from the playback backend (e.g. no output device)
         pub fn play(self: Self) anyerror!void {
+            return self.playWithOptions(.{});
+        }
+
+        /// Plays the wave audio like `play`, with the given options.
+        ///
+        /// ## Parameters
+        /// - `self`: The wave to play
+        /// - `options`: How to treat a channel count the output device does not accept
+        ///
+        /// ## Errors
+        /// Same as `play`. With `.channels = .strict`, a rejected channel count is returned as an
+        /// error of the backend.
+        pub fn playWithOptions(self: Self, options: PlayOptions) anyerror!void {
             if (self.samples.len == 0) return;
             const allocator = self.allocator;
             var threaded = std.Io.Threaded.init(allocator, .{});
             defer threaded.deinit();
             const io = threaded.io();
+
+            if (options.channels == .adapt) adapt: {
+                // When the device cannot be queried, playing reports the same error.
+                const range = (playback.outputChannels(io, self.sample_rate) catch break :adapt) orelse break :adapt;
+                const target = range.clamp(self.channels);
+                if (target == self.channels) break :adapt;
+
+                const adapted = try self.to_channels(target, .{});
+                defer adapted.deinit();
+                return adapted.playWithOptions(.{ .channels = .strict });
+            }
 
             const samples = try allocator.alloc(f32, self.samples.len);
             defer allocator.free(samples);
@@ -780,6 +825,16 @@ pub fn inner(comptime T: type) type {
             const wave = try Self.init(&.{}, testing.allocator, .{ .sample_rate = 44100, .channels = 1 });
             defer wave.deinit();
             try wave.play();
+        }
+
+        test "playWithOptions returns immediately for an empty wave" {
+            const wave = try Self.init(&.{}, testing.allocator, .{ .sample_rate = 44100, .channels = 1 });
+            defer wave.deinit();
+            try wave.playWithOptions(.{ .channels = .strict });
+        }
+
+        test "PlayOptions adapts channels by default" {
+            try testing.expectEqual(ChannelPolicy.adapt, (PlayOptions{}).channels);
         }
 
         test "read returns InvalidFormat when the decoded channel count is zero" {
