@@ -1,0 +1,17 @@
+.{
+    .name = .lightmix_website,
+    .version = "0.0.0",
+    .fingerprint = 0x77f4277ceb96f991,
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{
+        .ziex = .{
+            .url = "git+https://github.com/ziex-dev/ziex#26f594531d302421f4e53b52c9b3c653093c1392",
+            .hash = "ziex-0.1.0-dev-Z3YcvV7HngFlciSFWwj5ekiX1dVYPq8GorUmKFf-u1op",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "app",
+    },
+}
