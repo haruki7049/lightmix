@@ -18,3 +18,13 @@ jobs:
       - run: zig fmt --check .
       - run: zig build docs
       - run: zig build test
+
+  export-website:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: mlugg/setup-zig@v2.2.1
+        with:
+          version: 0.16.0
+      - run: zig build export
+        working-directory: website
