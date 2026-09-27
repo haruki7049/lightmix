@@ -463,6 +463,7 @@ pub fn main() !void {
 
 - **Deterministic Output**: Ensure all synthesis routines produce bit-identical output across supported operating systems and CPU architectures.
 - **Headless Compatibility**: Standard build and test steps must never assume physical audio hardware or active sound daemons (ALSA, PulseAudio, PipeWire, CoreAudio).
+- **Playback Tests**: `zig build test-play` is the only step that plays audio. It runs `addPlay` and the `runtime-play` example, and needs an audio output device. CI provides a virtual one on each operating system (a PulseAudio null sink on Linux, the built-in virtual device on macOS and a virtual audio driver on Windows); `zig build test` stays headless.
 - **Playback as Helper**: The `play()` and `addPlay` utilities are preview helpers; never introduce playback dependencies into core synthesis or file generation logic.
 
 ### Sample Rates

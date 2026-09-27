@@ -18,3 +18,33 @@ jobs:
       - run: zig fmt --check .
       - run: zig build docs
       - run: zig build test
+
+  # Playback needs an audio output device, which CI runners do not have, so each job provides a
+  # virtual one (#293). The macOS runners already have one.
+  run-zig-build-test-play:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{matrix.os}}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: mlugg/setup-zig@v2.2.1
+        with:
+          version: 0.16.0
+      - name: Start PulseAudio with a null sink
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pulseaudio
+          pulseaudio --start --exit-idle-time=-1
+          pactl load-module module-null-sink sink_name=ci_null
+          pactl set-default-sink ci_null
+      - name: Install a virtual audio device
+        if: runner.os == 'Windows'
+        uses: LABSN/sound-ci-helpers@v1
+      - run: zig build test-play
+        env:
+          # On Linux, test the PulseAudio backend instead of falling back to ALSA.
+          LIGHTMIX_PLAY_BACKEND: pulseaudio

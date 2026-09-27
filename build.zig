@@ -68,8 +68,11 @@ pub fn build(b: *std.Build) !void {
     const run_composer_integration_tests = b.addRunArtifact(composer_integration_test);
     test_step.dependOn(&run_composer_integration_tests.step);
 
+    // Playback tests. They need an audio output device, so they are separate from `test`.
+    const test_play_step = b.step("test-play", "Run playback tests (needs an audio output device)");
+
     // Examples
-    try example_verifications(b, target, optimize, lib_mod, test_step);
+    try example_verifications(b, target, optimize, lib_mod, test_step, test_play_step);
 
     // Docs
     const docs_step = b.step("docs", "Emit docs");
@@ -82,7 +85,7 @@ pub fn build(b: *std.Build) !void {
 }
 
 /// Examples' verifications
-fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, lightmix_mod: *std.Build.Module, test_step: *std.Build.Step) !void {
+fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, lightmix_mod: *std.Build.Module, test_step: *std.Build.Step, test_play_step: *std.Build.Step) !void {
     const example_files = &[_][]const u8{
         "examples/01-getting-started/hello-wave/src/main.zig",
         "examples/01-getting-started/using-filters/src/main.zig",
@@ -116,6 +119,12 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
             .root_module = example_mod,
         });
         test_step.dependOn(&example_exe.step);
+
+        if (std.mem.eql(u8, ex_path, "examples/06-advanced/runtime-play/src/main.zig")) {
+            const run_example = b.addRunArtifact(example_exe);
+            run_example.has_side_effects = true;
+            test_play_step.dependOn(&run_example.step);
+        }
     }
 
     const bt_gen_mod = b.createModule(.{
@@ -153,6 +162,9 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
         } },
     });
     test_step.dependOn(bt_play_wave.step);
+    const bt_play = try addPlay(b, bt_play_wave, .{ .optimize = optimize });
+    bt_play.has_side_effects = true;
+    test_play_step.dependOn(&bt_play.step);
 
     // Integration test for use_fact chunk option in addWave (#221)
     const bt_fact_wave = try addWave(b, bt_gen_mod, .{
@@ -253,8 +265,6 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
     const run_test_float = b.addRunArtifact(test_float_exe);
     run_test_float.addFileArg(bt_float_wave.output_file);
     test_step.dependOn(&run_test_float.step);
-
-    // TODO: l.addPlay function cannot be tested via `zig build test` command. I (@haruki7049) cannot write it.
 }
 
 /// Creates a build step that generates a WAV file at compile time.
