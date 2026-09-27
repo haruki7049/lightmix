@@ -26,12 +26,21 @@ jobs:
       - name: Generate docs
         run: |
           zig build docs
+      - name: Export website
+        working-directory: website
+        run: |
+          zig build export
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp -r website/dist/. _site/
+          cp -r zig-out/share/lightmix/docs _site/docs
       - name: Setup Pages
         uses: actions/configure-pages@v5.0.0
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4.0.0
         with:
-          path: zig-out/share/lightmix/docs/
+          path: _site/
 
   deploy:
     needs: build

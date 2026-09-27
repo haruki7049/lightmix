@@ -281,6 +281,7 @@ defer result.deinit(); // Don't forget to free the Wave data.
 - **Aggressive Deprecation Policy**: Given that Zig has not yet reached its major 1.0 release, deprecated language and library features are pruned quickly to stay aligned with modern Zig idioms.
 - **1.0.0 Release Milestone**: `lightmix 1.0.0` will be released when Zig itself reaches version `1.0.0` (see [#89](https://github.com/haruki7049/lightmix/issues/89)).
 
-## API Documentations
+## Website and API Documentation
 
-https://haruki7049.github.io/lightmix
+- Website: https://haruki7049.github.io/lightmix/
+- API documentation: https://haruki7049.github.io/lightmix/docs/
