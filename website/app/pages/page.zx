@@ -1,0 +1,37 @@
+pub fn Page(ctx: zx.PageContext) zx.Component {
+    return (
+        <main @allocator={ctx.arena}>
+            <section class="hero">
+                <h1>lightmix</h1>
+                <p>An audio synthesis and processing library written in Zig.</p>
+                <p>Audio is a build artifact: <code>zig build</code> writes your WAV files.</p>
+            </section>
+
+            <section>
+                <h2>Features</h2>
+                <ul>
+                    {for (features) |feature| (
+                        <li>
+                            <strong>{feature.title}</strong>
+                            <span>{feature.description}</span>
+                        </li>
+                    )}
+                </ul>
+            </section>
+        </main>
+    );
+}
+
+const Feature = struct {
+    title: []const u8,
+    description: []const u8,
+};
+
+const features = [_]Feature{
+    .{ .title = "Wave(T)", .description = "Waveform buffers and sample manipulation, generic over f32, f64, f80 and f128." },
+    .{ .title = "Composer(T)", .description = "Arrange waves on a timeline and mix them." },
+    .{ .title = "addWave", .description = "Generate WAV files as part of your build." },
+    .{ .title = "Pure Zig", .description = "No C toolchain and no C library dependencies." },
+};
+
+const zx = @import("zx");
