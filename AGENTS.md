@@ -58,6 +58,7 @@ Before marking any task as complete, AI agents **MUST** execute the relevant com
 | **Format Code** | `zig fmt .` | Auto-formats all Zig code in the repository |
 | **Generate Documentation** | `zig build docs` | Builds API documentation to check for doc errors |
 | **Build Library** | `zig build` | Builds the library and default artifacts |
+| **Run Playback Tests** | `zig build test-play` | Plays audio through `play()` and `addPlay`; needs an audio output device, so run it only where one exists (CI provides a virtual one) |
 
 ______________________________________________________________________
 
