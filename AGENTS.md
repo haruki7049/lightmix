@@ -116,8 +116,11 @@ Follow the conventional commits format:
 ### Branching & Pull Request Workflow
 
 - **Dedicated Branches**: Always create and work on a dedicated branch (e.g., `feat/wave-size` or `fix/composer-leak`). Do not commit directly to `main`.
+- **Pushing**: Agents may push new commits to their own topic branch without confirmation when instructed by the user or when creating or updating a pull request. Rewriting pushed history (amending or rebasing pushed commits and force-pushing) and pushing to `main` need explicit user approval.
 - **PR Creation**: Create PRs using `gh pr create`. Reference issues in the body using standard keywords (e.g., `Closes #140`).
-- **PR Merge Prohibition**: **NEVER MERGE Pull Requests.** PRs must remain open for maintainer review. Merging is strictly reserved for human maintainers unless the user explicitly commands the agent to merge a specific PR.
+- **No Issue Numbers in Commit Messages**: Do not include issue numbers (e.g. `(#140)` or `#140`) anywhere in a commit message, summary or body, or in a PR title. Squash merges copy every commit message into `main`, so a `Closes #140` in a commit body can close an issue the PR was never meant to close. Link issues only from the PR description. The ` (#N)` suffix GitHub appends to a squash-merge summary is the one exception.
+- **No Session Links**: Do not include AI session URLs or other internal session identifiers (e.g. a `Claude-Session:` trailer) in commit messages, PR descriptions, issues, or comments. Such links are not accessible from outside the private session, so publishing them in this public repository serves no purpose and only confuses readers. A `Co-Authored-By:` trailer is fine. Exception: if the user explicitly states the session is public and instructs the agent to include its URL, doing so is allowed.
+- **PR Merge Prohibition**: **NEVER MERGE Pull Requests**, including enabling auto-merge (`gh pr merge --auto`). PRs must remain open for maintainer review. Merging is strictly reserved for human maintainers unless the user explicitly commands the agent to merge a specific PR.
 
 ### GitHub Projects Registration
 
@@ -181,7 +184,7 @@ ______________________________________________________________________
 1. **Verify Before Declaring Success**: Never claim a feature or fix is complete without running `zig build test` and `zig fmt --check .`.
 1. **No Symptom Swallowing**: Fix root causes of failing tests; never comment out assertions or swallow error returns.
 1. **Preserve English Comment Rule**: Ensure any new code comments or documentation additions strictly adhere to the English language requirement.
-1. **Strict PR Merge Prohibition**: Always leave created Pull Requests open. Never attempt to merge a Pull Request unless explicitly instructed by the user.
+1. **Strict PR Merge Prohibition**: Always leave created Pull Requests open. Never attempt to merge a Pull Request, or enable auto-merge on it (`gh pr merge --auto`), unless explicitly instructed by the user.
 1. **No Unsolicited Actions on Other Branches/PRs**: Never modify, rebase, or resolve conflicts on PRs or branches without explicit user instructions.
 1. **Always Register to GitHub Project**: When creating Issues or Pull Requests with `gh`, always add them to `https://github.com/users/haruki7049/projects/11` (`lightmix GitHub Project`).
 1. **Adhere to Minimalist Scope**: Never add complex DSP effects (reverb, delay, flanger, etc.) or synthesizer instrument presets to the core library. Keep additions focused on fundamental waveform manipulation, mixing, and build-time generation.
