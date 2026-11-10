@@ -42,6 +42,7 @@ ______________________________________________________________________
   - `build_fact.zig`, `build_ieee_float.zig`, `build_peak.zig`, `build_peak_now.zig`: Programs that `build.zig` runs to test the build-time `addWave` options (`use_fact`, IEEE float output, `use_peak` and `currentTimestamp`).
   - `assets/`: Audio files used by the tests (`sine.wav`, `soundless.wav`).
 - `examples/`: Categorized runnable example projects demonstrating `lightmix` usage.
+- `website/`: The project homepage, built with [Ziex](https://github.com/ziex-dev/ziex) as a separate Zig project. `zig build export` in `website/` writes the static site to `website/dist/`, and the `deploy-pages.yml` workflow publishes it with the API documentation under `/docs/`.
 - `build.zig` & `build.zig.zon`: Build definition script and package metadata.
 - `flake.nix` & `shell.nix`: Nix development shell configurations.
 
