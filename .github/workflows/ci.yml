@@ -43,7 +43,7 @@ jobs:
           pactl set-default-sink ci_null
       - name: Install a virtual audio device
         if: runner.os == 'Windows'
-        uses: LABSN/sound-ci-helpers@v1
+        uses: LABSN/sound-ci-helpers@v1.0.4
       - run: zig build test-play
         env:
           # On Linux, test the PulseAudio backend instead of falling back to ALSA.
