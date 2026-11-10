@@ -24,6 +24,8 @@ workflows:
         - 'mlugg/setup-zig@v2.2.1'
     '.github/workflows/stale-issues-pullrequests.yml':
         - 'actions/stale@v9.0.0'
+    '.github/workflows/verify-actions-lockfile.yml':
+        - 'actions/checkout@v7.0.1'
 dependencies:
     'actions/checkout@v7.0.1':
         ref: 'v7.0.1'
