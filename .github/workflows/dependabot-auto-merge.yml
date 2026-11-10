@@ -1,0 +1,19 @@
+name: dependabot-auto-merge
+
+on:
+  pull_request:
+
+permissions: {}
+
+jobs:
+  auto-merge:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      # GitHub squash-merges the PR once the required status checks pass.
+      # A PAT (Dependabot secret) is used so that the merge to `main` triggers cachix-push.
+      - name: Enable auto-merge
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.PAT }}
