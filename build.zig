@@ -324,7 +324,7 @@ pub fn addWave(
     b: *std.Build,
     mod: *std.Build.Module,
     options: CreateWaveOptions,
-) anyerror!*CompileWave {
+) std.mem.Allocator.Error!*CompileWave {
     return switch (options.format) {
         .wav => Generator.Wav.gen(b, mod, options),
     };
@@ -482,7 +482,7 @@ const Generator = struct {
             b: *std.Build,
             mod: *std.Build.Module,
             options: CreateWaveOptions,
-        ) anyerror!*CompileWave {
+        ) std.mem.Allocator.Error!*CompileWave {
             const gen_exe = try getOrCreateExe(b, mod, options.func_name, options.optimize);
 
             // Run the generator during build with output path, bits, and format code arguments
@@ -610,6 +610,12 @@ pub fn installWave(b: *std.Build, wave: *CompileWave) void {
 /// ## Returns
 /// A Run step that executes the play functionality
 ///
+/// ## Errors
+/// Only memory allocation failures (`error.OutOfMemory`), while the step and the source of the
+/// play executable are created. Nothing is played when `addPlay` returns: the executable runs
+/// later, during `zig build`, so an error of the user-provided wave generation function or of
+/// `play()` fails that build step and not `addPlay`.
+///
 /// ## Usage
 /// ```zig
 /// const wave = try l.addWave(b, mod, .{
@@ -622,7 +628,7 @@ pub fn addPlay(
     b: *std.Build,
     wave: *CompileWave,
     options: PlayOptions,
-) anyerror!*std.Build.Step.Run {
+) std.mem.Allocator.Error!*std.Build.Step.Run {
     // Generate temporary Zig code that calls the user's function and plays it
     const play_source = try std.fmt.allocPrint(b.allocator,
         \\const std = @import("std");
