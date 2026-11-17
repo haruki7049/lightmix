@@ -12,7 +12,7 @@ workflows:
         - 'actions/checkout@v7.0.1'
         - 'actions/configure-pages@v6.0.0'
         - 'actions/deploy-pages@v5.0.1'
-        - 'actions/upload-pages-artifact@v4.0.0'
+        - 'actions/upload-pages-artifact@v5.0.0'
         - 'mlugg/setup-zig@v2.2.1'
     '.github/workflows/nix-checker.yml':
         - 'actions/checkout@v7.0.1'
@@ -47,18 +47,18 @@ dependencies:
         commit: 'sha1-4391f3da665fdf50b6810c1a66712fb9ba21aa93'
         owner_id: 44036562
         repo_id: 200437066
-    'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02':
-        ref: 'v4.6.2'
-        commit: 'sha1-ea165f8d65b6e75b540449e92b4886f43607fa02'
+    'actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f':
+        ref: 'v7.0.0'
+        commit: 'sha1-bbbca2ddaa5d8feaa63e36b76fdaad77386f024f'
         owner_id: 44036562
         repo_id: 192625955
-    'actions/upload-pages-artifact@v4.0.0':
-        ref: 'v4.0.0'
-        commit: 'sha1-7b1f4a764d45c48632c6b24a0339c27f5614fb0b'
+    'actions/upload-pages-artifact@v5.0.0':
+        ref: 'v5.0.0'
+        commit: 'sha1-fc324d3547104276b827a68afc52ff2a11cc49c9'
         owner_id: 44036562
         repo_id: 496012378
         uses:
-            - 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02'
+            - 'actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f'
     'cachix/install-nix-action@v31.11.3':
         ref: 'v31.11.3'
         commit: 'sha1-75c75c31ebece974e48ebc36b4ad125bd97bd97b'
