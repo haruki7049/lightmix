@@ -486,7 +486,7 @@ pub fn probe(allocator: std.mem.Allocator) bool {
 
 /// Connects to the server and sets the time the server may take to answer.
 fn connect(environment: Environment) Error!Connection {
-    var path_buf: [std.fs.max_path_bytes]u8 = undefined;
+    var path_buf: [std.Io.Dir.max_path_bytes]u8 = undefined;
     const path = serverPath(environment, &path_buf) orelse return error.ServerUnavailable;
 
     var address: linux.sockaddr.un = .{ .path = @splat(0) };
@@ -598,7 +598,7 @@ fn parseServer(value: []const u8) ?[]const u8 {
     while (entries.next()) |entry| {
         var rest = entry;
         if (rest.len > 0 and rest[0] == '{') {
-            const close = std.mem.indexOfScalar(u8, rest, '}') orelse continue;
+            const close = std.mem.findScalar(u8, rest, '}') orelse continue;
             rest = rest[close + 1 ..];
         }
         if (std.mem.startsWith(u8, rest, "unix:")) rest = rest["unix:".len..];
@@ -612,7 +612,7 @@ fn parseServer(value: []const u8) ?[]const u8 {
 /// is all zeros, which a server accepts from a local socket.
 fn loadCookie(environment: Environment) [COOKIE_LENGTH]u8 {
     var cookie: [COOKIE_LENGTH]u8 = @splat(0);
-    var path_buf: [std.fs.max_path_bytes:0]u8 = undefined;
+    var path_buf: [std.Io.Dir.max_path_bytes:0]u8 = undefined;
 
     if (environment.get("PULSE_COOKIE")) |path| {
         if (std.mem.printSentinel(&path_buf, "{s}", .{path}, 0)) |z| {
