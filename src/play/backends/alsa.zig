@@ -70,7 +70,7 @@ const ACCESS_RW_INTERLEAVED = 3;
 const SUBFORMAT_STD = 0;
 /// The `integer` bit field of `struct snd_interval`; bit fields start at the most significant
 /// bit on big-endian targets.
-const INTERVAL_INTEGER: u32 = if (builtin.cpu.arch.endian() == .little) 1 << 2 else 1 << 29;
+const INTERVAL_INTEGER: u32 = if (builtin.target.cpu.arch.endian() == .little) 1 << 2 else 1 << 29;
 
 /// Sample formats this backend writes, in order of preference.
 const SampleFormat = enum {
@@ -82,7 +82,7 @@ const SampleFormat = enum {
 
     /// Returns the `SNDRV_PCM_FORMAT_*` value in the native byte order.
     fn code(self: SampleFormat) u32 {
-        const little = builtin.cpu.arch.endian() == .little;
+        const little = builtin.target.cpu.arch.endian() == .little;
         return switch (self) {
             .float32 => if (little) 14 else 15, // FLOAT_LE / FLOAT_BE
             .int32 => if (little) 10 else 11, // S32_LE / S32_BE
@@ -169,7 +169,7 @@ comptime {
     std.debug.assert(@offsetOf(HwParams, "intervals") == 260);
     std.debug.assert(@offsetOf(HwParams, "rmask") == 512);
     std.debug.assert(@sizeOf(XferI) == 3 * long_size);
-    if (builtin.cpu.arch == .x86_64) {
+    if (builtin.target.cpu.arch == .x86_64) {
         std.debug.assert(IOCTL_HW_REFINE == 0xc2604110);
         std.debug.assert(IOCTL_HW_PARAMS == 0xc2604111);
         std.debug.assert(IOCTL_PREPARE == 0x00004140);

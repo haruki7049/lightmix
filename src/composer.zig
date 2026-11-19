@@ -110,7 +110,7 @@ pub fn inner(comptime T: type) type {
             if (options.channels == 0) return error.InvalidChannelCount;
             if (options.sample_rate == 0) return error.InvalidSampleRate;
 
-            const list = try std.ArrayListUnmanaged(WaveInfo).initCapacity(allocator, capacity);
+            const list = try std.ArrayList(WaveInfo).initCapacity(allocator, capacity);
             return Self{
                 .allocator = allocator,
                 .items = list.items,
@@ -131,9 +131,10 @@ pub fn inner(comptime T: type) type {
         /// `self` is invalidated after this call.
         pub fn deinit(self: *Self) void {
             if (self.capacity > 0) {
-                var list = std.ArrayListUnmanaged(WaveInfo){
+                var list = std.ArrayList(WaveInfo){
                     .items = self.items,
                     .capacity = self.capacity,
+                    .pointer_stability = .{},
                 };
                 list.deinit(self.allocator);
             }
@@ -173,7 +174,7 @@ pub fn inner(comptime T: type) type {
                 }
             }
 
-            var list: std.ArrayListUnmanaged(WaveInfo) = .empty;
+            var list: std.ArrayList(WaveInfo) = .empty;
             try list.appendSlice(allocator, info);
 
             return Self{
@@ -193,9 +194,10 @@ pub fn inner(comptime T: type) type {
         /// - `self`: Pointer to the composer
         /// - `additional_count`: Number of additional waves to ensure capacity for
         pub fn ensureUnusedCapacity(self: *Self, additional_count: usize) std.mem.Allocator.Error!void {
-            var list = std.ArrayListUnmanaged(WaveInfo){
+            var list = std.ArrayList(WaveInfo){
                 .items = self.items,
                 .capacity = self.capacity,
+                .pointer_stability = .{},
             };
             try list.ensureUnusedCapacity(self.allocator, additional_count);
             self.items = list.items;
@@ -231,9 +233,10 @@ pub fn inner(comptime T: type) type {
                 return error.UnalignedChannelOffset;
             }
 
-            var list = std.ArrayListUnmanaged(WaveInfo){
+            var list = std.ArrayList(WaveInfo){
                 .items = self.items,
                 .capacity = self.capacity,
+                .pointer_stability = .{},
             };
             try list.append(self.allocator, waveinfo);
             self.items = list.items;
@@ -258,9 +261,10 @@ pub fn inner(comptime T: type) type {
                 }
             }
 
-            var list = std.ArrayListUnmanaged(WaveInfo){
+            var list = std.ArrayList(WaveInfo){
                 .items = self.items,
                 .capacity = self.capacity,
+                .pointer_stability = .{},
             };
             try list.appendSlice(self.allocator, append_list);
             self.items = list.items;

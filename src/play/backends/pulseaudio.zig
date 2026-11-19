@@ -86,7 +86,7 @@ const TAG_CVOLUME = 'v';
 const TAG_PROPLIST = 'P';
 
 // pulse/sample.h: sample formats in the native byte order
-const SAMPLE_FLOAT32: u8 = if (builtin.cpu.arch.endian() == .little) 5 else 6;
+const SAMPLE_FLOAT32: u8 = if (builtin.target.cpu.arch.endian() == .little) 5 else 6;
 
 // pulse/channelmap.h: channel positions
 const POSITION_MONO: u8 = 0;

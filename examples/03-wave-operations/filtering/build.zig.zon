@@ -2,7 +2,7 @@
     .name = .filtering,
     .version = "0.1.0",
     .fingerprint = 0x253bec01838b0c59,
-    .minimum_zig_version = "0.16.0",
+    .minimum_zig_version = "0.17.1",
 
     .dependencies = .{
         .lightmix = .{

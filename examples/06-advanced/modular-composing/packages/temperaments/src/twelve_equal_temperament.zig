@@ -41,14 +41,14 @@ octave: usize,
 /// ```
 pub fn add(self: Self, semitones: isize) Self {
     // Convert current pitch to MIDI number (C-1 = 0, A4 = 69)
-    const self_midi_number: isize = @intCast(12 * (self.octave + 1) + @intFromEnum(self.code));
+    const self_midi_number: isize = @intCast(12 * (self.octave + 1) + @backingInt(self.code));
 
     // Add semitones
     const result_midi_number: isize = self_midi_number + semitones;
 
     // Decompose MIDI number into note code and octave
     // Remainder of division by 12 is the note, quotient gives the octave
-    const result_code: Code = @enumFromInt(@as(u8, @intCast(@mod(result_midi_number, 12))));
+    const result_code: Code = @fromBackingInt(@as(u8, @intCast(@mod(result_midi_number, 12))));
     const result_octave: usize = @intCast(@divTrunc(result_midi_number, 12) - 1);
 
     return Self{
@@ -76,7 +76,7 @@ pub fn add(self: Self, semitones: isize) Self {
 /// ```
 pub fn gen(scale: Self) f32 {
     // Convert pitch to MIDI number
-    const midi_number: isize = @intCast(12 * (scale.octave + 1) + @intFromEnum(scale.code));
+    const midi_number: isize = @intCast(12 * (scale.octave + 1) + @backingInt(scale.code));
 
     // Calculate semitone difference from A4 (MIDI number 69, 440Hz)
     const exp: f32 = @floatFromInt(midi_number - 69);

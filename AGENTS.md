@@ -24,7 +24,7 @@ ______________________________________________________________________
   - **Unmanaged Memory Roadmap**: Architectural direction targets modern Zig 0.16 `Unmanaged` patterns (allocator-per-operation), planned for a dedicated breaking cycle.
   - **External Parallelism**: Data structures remain synchronous; parallel asset generation is delegated entirely to the build system (`zig build -j`).
   - **Aggressive Pruning & Zig 1.0 Milestone**: Deprecated features are pruned promptly to track modern Zig patterns. The `1.0.0` release milestone is anchored to Zig's official `1.0.0` release (#89).
-- **Target Language Version**: Zig `0.16.0`.
+- **Target Language Version**: Zig `0.17.1`.
 
 ______________________________________________________________________
 
