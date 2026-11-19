@@ -57,7 +57,7 @@ jobs:
         if: steps.exists.outputs.released == 'false'
         uses: mlugg/setup-zig@v2.2.1
         with:
-          version: 0.16.0
+          version: 0.17.1
       - name: Test and build
         if: steps.exists.outputs.released == 'false'
         run: |

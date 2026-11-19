@@ -35,7 +35,7 @@
         let
           nativeBuildInputs = [
             # Compiler
-            pkgs.zig_0_16
+            pkgs.zig_0_17
 
             # LSP
             pkgs.nil
@@ -72,7 +72,7 @@
 
             # Zig
             programs.zig.enable = true;
-            settings.formatter.zig.command = lib.getExe pkgs.zig_0_16;
+            settings.formatter.zig.command = lib.getExe pkgs.zig_0_17;
 
             # GitHub Actions
             programs.actionlint.enable = true;

@@ -54,7 +54,7 @@ pub const ChannelRange = struct {
 };
 
 /// The backend selected for the target operating system.
-pub const Selected = select(builtin.os.tag);
+pub const Selected = select(builtin.target.os.tag);
 
 /// Returns the backend for `os_tag`.
 fn select(comptime os_tag: std.Target.Os.Tag) type {
@@ -82,9 +82,9 @@ pub fn assertBackend(comptime Backend: type) void {
 
     const info = @typeInfo(@TypeOf(Backend.play)).@"fn";
     const expected = [_]type{ std.mem.Allocator, std.Io, Buffer };
-    if (info.params.len != expected.len) @compileError("`" ++ @typeName(Backend) ++ ".play` must take (std.mem.Allocator, std.Io, Buffer)");
-    inline for (info.params, expected) |param, Expected| {
-        if (param.type != Expected) @compileError("`" ++ @typeName(Backend) ++ ".play` must take (std.mem.Allocator, std.Io, Buffer)");
+    if (info.param_types.len != expected.len) @compileError("`" ++ @typeName(Backend) ++ ".play` must take (std.mem.Allocator, std.Io, Buffer)");
+    inline for (info.param_types, expected) |param_type, Expected| {
+        if (param_type != Expected) @compileError("`" ++ @typeName(Backend) ++ ".play` must take (std.mem.Allocator, std.Io, Buffer)");
     }
 
     const Return = info.return_type orelse @compileError("`" ++ @typeName(Backend) ++ ".play` must not be generic");
@@ -93,7 +93,7 @@ pub fn assertBackend(comptime Backend: type) void {
 
     if (@hasDecl(Backend, "outputChannels")) {
         const channels_info = @typeInfo(@TypeOf(Backend.outputChannels)).@"fn";
-        if (channels_info.params.len != 2 or channels_info.params[0].type != std.Io or channels_info.params[1].type != u32) {
+        if (channels_info.param_types.len != 2 or channels_info.param_types[0] != std.Io or channels_info.param_types[1] != u32) {
             @compileError("`" ++ @typeName(Backend) ++ ".outputChannels` must take (std.Io, u32)");
         }
         const channels_return = @typeInfo(channels_info.return_type orelse @compileError("`" ++ @typeName(Backend) ++ ".outputChannels` must not be generic"));
@@ -133,7 +133,7 @@ test "assertBackend accepts a backend that matches the interface" {
 test "Import tests" {
     _ = Selected;
     _ = @import("./backends/unsupported.zig");
-    if (builtin.os.tag == .linux) {
+    if (builtin.target.os.tag == .linux) {
         _ = @import("./backends/alsa.zig");
         _ = @import("./backends/pulseaudio.zig");
         _ = @import("./backends/linux.zig");

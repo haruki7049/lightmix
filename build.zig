@@ -85,7 +85,7 @@ pub fn build(b: *std.Build) !void {
 }
 
 /// Examples' verifications
-fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, lightmix_mod: *std.Build.Module, test_step: *std.Build.Step, test_play_step: *std.Build.Step) !void {
+fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.lang.Optimize, lightmix_mod: *std.Build.Module, test_step: *std.Build.Step, test_play_step: *std.Build.Step) !void {
     const example_files = &[_][]const u8{
         "examples/01-getting-started/hello-wave/src/main.zig",
         "examples/01-getting-started/using-filters/src/main.zig",
@@ -105,7 +105,7 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
     };
 
     for (example_files, 0..) |ex_path, i| {
-        const name = try std.fmt.allocPrint(b.allocator, "example_{d}", .{i});
+        const name = try b.allocator.print("example_{d}", .{i});
         const example_mod = b.createModule(.{
             .root_source_file = b.path(ex_path),
             .target = target,
@@ -364,17 +364,17 @@ const Generator = struct {
         b: *std.Build,
         mod: *std.Build.Module,
         func_name: []const u8,
-        optimize: std.builtin.OptimizeMode,
+        optimize: std.lang.Optimize,
         exe: *std.Build.Step.Compile,
     };
 
-    var cache_list: std.ArrayListUnmanaged(ExeCacheEntry) = .empty;
+    var cache_list: std.ArrayList(ExeCacheEntry) = .empty;
 
     fn getOrCreateExe(
         b: *std.Build,
         mod: *std.Build.Module,
         func_name: []const u8,
-        optimize: std.builtin.OptimizeMode,
+        optimize: std.lang.Optimize,
     ) !*std.Build.Step.Compile {
         for (cache_list.items) |entry| {
             if (entry.b == b and entry.mod == mod and std.mem.eql(u8, entry.func_name, func_name) and entry.optimize == optimize) {
@@ -383,7 +383,7 @@ const Generator = struct {
         }
 
         // Generate temporary Zig code that parses command-line arguments dynamically
-        const gen_source = try std.fmt.allocPrint(b.allocator,
+        const gen_source = try b.allocator.print(
             \\const std = @import("std");
             \\const user_module = @import("user_module");
             \\
@@ -441,7 +441,7 @@ const Generator = struct {
         });
 
         const write_files = b.addWriteFiles();
-        const exe_name = try std.fmt.allocPrint(b.allocator, "wave_generator_{s}", .{func_name});
+        const exe_name = try b.allocator.print("wave_generator_{s}", .{func_name});
         const gen_file = write_files.add("wave_gen.zig", gen_source);
 
         const host_user_mod = b.createModule(.{
@@ -487,7 +487,7 @@ const Generator = struct {
 
             // Run the generator during build with output path, bits, and format code arguments
             const run_gen = b.addRunArtifact(gen_exe);
-            const output_wave_file = run_gen.addOutputFileArg(options.format.wav.name);
+            const output_wave_file = run_gen.addOutputFileArg2(options.format.wav.name, .{});
             run_gen.addArg(b.fmt("{d}", .{options.format.wav.bits}));
             run_gen.addArg(@tagName(options.format.wav.format_code));
             run_gen.addArg(if (options.format.wav.use_fact) "true" else "false");
@@ -538,8 +538,8 @@ pub const CreateWaveOptions = struct {
     path: std.Build.InstallDir = .{ .custom = "share" },
 
     /// Optimization mode for the wave generator executable.
-    /// Defaults to `.ReleaseFast` for high performance wave synthesis.
-    optimize: std.builtin.OptimizeMode = .ReleaseFast,
+    /// Defaults to `.fast` for high performance wave synthesis.
+    optimize: std.lang.Optimize = .fast,
 
     /// Output format and codec-specific options for the wave file to generate.
     format: FormatOptions,
@@ -630,7 +630,7 @@ pub fn addPlay(
     options: PlayOptions,
 ) std.mem.Allocator.Error!*std.Build.Step.Run {
     // Generate temporary Zig code that calls the user's function and plays it
-    const play_source = try std.fmt.allocPrint(b.allocator,
+    const play_source = try b.allocator.print(
         \\const std = @import("std");
         \\const user_module = @import("user_module");
         \\
@@ -703,5 +703,5 @@ pub const PlayOptions = struct {
     exe_name: []const u8 = "play_wave",
 
     /// Optimization mode for the executable
-    optimize: std.builtin.OptimizeMode = .Debug,
+    optimize: std.lang.Optimize = .debug,
 };

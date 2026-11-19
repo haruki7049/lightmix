@@ -72,7 +72,7 @@ Before contributing new features, please understand `lightmix`'s core architectu
 
 ### Required Tools
 
-- **Zig 0.16.0** - This project tracks Zig's minor version
+- **Zig 0.17.1** - This project tracks Zig's minor version
 - **Git** for version control
 
 ### Optional but Recommended
@@ -96,10 +96,10 @@ nix develop
 
 ### Setup without Nix
 
-1. Install Zig 0.16.0 from [ziglang.org](https://ziglang.org/download/)
+1. Install Zig 0.17.1 from [ziglang.org](https://ziglang.org/download/)
 1. Verify installation:
    ```bash
-   zig version  # Should show 0.16.0
+   zig version  # Should show 0.17.1
    ```
 
 ### Building and Testing

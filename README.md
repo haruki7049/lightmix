@@ -63,7 +63,7 @@ I created this project because I felt a disconnect between existing audio synthe
   `Wave(T)` and `Composer(T)` are kept purely synchronous and single-threaded. Multi-asset parallelization is delegated entirely to the build system via `zig build -j` to avoid internal threading complexity.
 
 - **Pragmatic Generation Strategy**:
-  Compiling native generator binaries in `.ReleaseFast` via `addWave` is a pragmatic choice for maximum generation speed. `lightmix` remains flexible and pragmatic about adopting alternative compilation or evaluation techniques if faster or more reliable methods emerge.
+  Compiling native generator binaries in `.fast` mode via `addWave` is a pragmatic choice for maximum generation speed. `lightmix` remains flexible and pragmatic about adopting alternative compilation or evaluation techniques if faster or more reliable methods emerge.
 
 ## How to use
 
@@ -173,7 +173,7 @@ pub fn build(b: *std.Build) !void {
 
 - **`func_name`**: The name of the function in your module that generates the Wave. The function must have the signature `pub fn name(init: std.process.Init) !lightmix.Wave(T)` where T is your chosen sample type (e.g., f64) (default: `"gen"`).
 - **`path`**: The installation directory relative to the install prefix (default: `.{ .custom = "share" }`).
-- **`optimize`**: Optimization mode for the standalone wave generator executable (default: `.ReleaseFast`). Using `addWave` compiles a high-performance native generator binary (`.ReleaseFast`), enabling extremely fast audio synthesis during `zig build` without compiler `comptime` interpreter slowdowns.
+- **`optimize`**: Optimization mode for the standalone wave generator executable (default: `.fast`). Using `addWave` compiles a high-performance native generator binary (`.fast`), enabling extremely fast audio synthesis during `zig build` without compiler `comptime` interpreter slowdowns.
 - **`format`**: Tagged union specifying output format options (`.wav = WavOptions`).
   - **`bits`**: Bit depth for the output WAV file (e.g., `16`, `24`, `32`).
   - **`format_code`**: Audio encoding format (e.g., `.pcm`, `.ieee_float`).
@@ -277,7 +277,7 @@ defer result.deinit(); // Don't forget to free the Wave data.
 
 ## Zig Version & 1.0.0 Milestone
 
-- **Language Target**: Zig `0.16.0` (tracks Zig's minor version).
+- **Language Target**: Zig `0.17.1` (tracks Zig's minor version).
 - **Aggressive Deprecation Policy**: Given that Zig has not yet reached its major 1.0 release, deprecated language and library features are pruned quickly to stay aligned with modern Zig idioms.
 - **1.0.0 Release Milestone**: `lightmix 1.0.0` will be released when Zig itself reaches version `1.0.0` (see [#89](https://github.com/haruki7049/lightmix/issues/89)).
 

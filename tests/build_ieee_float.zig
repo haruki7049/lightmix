@@ -18,7 +18,7 @@ pub fn main(init: std.process.Init) !void {
     const file_size = try file.length(io);
     var buf: [64 * 1024]u8 = undefined;
     var file_reader = file.reader(io, &buf);
-    const bytes = try file_reader.interface.readAlloc(allocator, file_size);
+    const bytes = try file_reader.interface.readAllocAll(allocator, file_size);
 
     // Verify WAV RIFF header
     if (bytes.len < 12) return error.InvalidWavHeader;
@@ -26,7 +26,7 @@ pub fn main(init: std.process.Init) !void {
     if (!std.mem.eql(u8, bytes[8..12], "WAVE")) return error.InvalidWaveSignature;
 
     // Locate "fmt " chunk signature
-    const fmt_pos = std.mem.indexOf(u8, bytes, "fmt ") orelse return error.MissingFmtChunk;
+    const fmt_pos = std.mem.find(u8, bytes, "fmt ") orelse return error.MissingFmtChunk;
     if (bytes.len < fmt_pos + 10) return error.TruncatedFmtChunk;
 
     // Format code (u16 little endian) at offset +8 of fmt chunk must be 3 (IEEE float)

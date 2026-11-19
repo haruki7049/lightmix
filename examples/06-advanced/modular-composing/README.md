@@ -83,7 +83,7 @@ This example can be extended in the following ways:
 
 ## Requirements
 
-- Zig 0.16.0 or later
+- Zig 0.17.1 or later
 - lightmix library
 
 ## License
