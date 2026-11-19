@@ -6,8 +6,8 @@
 
     .dependencies = .{
         .zigggwavvv = .{
-            .url = "https://github.com/haruki7049/zigggwavvv/archive/refs/tags/3.0.0-rc.1.tar.gz",
-            .hash = "zigggwavvv-3.0.0-rc.1-iR5xWn92AgBYwCukG56Ik02PwbQ0KbnGLUcizJZT-iep",
+            .url = "https://github.com/haruki7049/zigggwavvv/archive/refs/tags/3.0.0-rc.2.tar.gz",
+            .hash = "zigggwavvv-3.0.0-rc.2-iR5xWn92AgAXlbKn-FarE3JdI77xlK5kAuOE2MKibZBt",
         },
     },
 
