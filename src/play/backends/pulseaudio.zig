@@ -586,9 +586,9 @@ fn serverPath(environment: Environment, buf: []u8) ?[]const u8 {
     }
 
     if (environment.get("XDG_RUNTIME_DIR")) |dir| {
-        return std.fmt.bufPrint(buf, "{s}/pulse/native", .{dir}) catch null;
+        return std.mem.print(buf, "{s}/pulse/native", .{dir}) catch null;
     }
-    return std.fmt.bufPrint(buf, "/run/user/{d}/pulse/native", .{linux.getuid()}) catch null;
+    return std.mem.print(buf, "/run/user/{d}/pulse/native", .{linux.getuid()}) catch null;
 }
 
 /// Returns the first UNIX socket path of a `PULSE_SERVER` value, which is a list separated by
@@ -615,7 +615,7 @@ fn loadCookie(environment: Environment) [COOKIE_LENGTH]u8 {
     var path_buf: [std.fs.max_path_bytes:0]u8 = undefined;
 
     if (environment.get("PULSE_COOKIE")) |path| {
-        if (std.fmt.bufPrintZ(&path_buf, "{s}", .{path})) |z| {
+        if (std.mem.printSentinel(&path_buf, "{s}", .{path}, 0)) |z| {
             if (readCookie(z, &cookie)) return cookie;
         } else |_| {}
     }
@@ -626,7 +626,7 @@ fn loadCookie(environment: Environment) [COOKIE_LENGTH]u8 {
     };
     inline for (candidates) |candidate| {
         if (environment.get(candidate.variable)) |dir| {
-            if (std.fmt.bufPrintZ(&path_buf, candidate.format, .{dir})) |z| {
+            if (std.mem.printSentinel(&path_buf, candidate.format, .{dir}, 0)) |z| {
                 if (readCookie(z, &cookie)) return cookie;
             } else |_| {}
         }
