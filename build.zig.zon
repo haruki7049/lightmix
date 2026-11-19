@@ -2,12 +2,12 @@
     .name = .lightmix,
     .version = "0.26.0",
     .fingerprint = 0xe48269dbca8904a,
-    .minimum_zig_version = "0.16.0",
+    .minimum_zig_version = "0.17.1",
 
     .dependencies = .{
         .zigggwavvv = .{
-            .url = "https://github.com/haruki7049/zigggwavvv/archive/refs/tags/2.0.0.tar.gz",
-            .hash = "zigggwavvv-2.0.0-iR5xWutnAgCm4osN3wN-ooN5SNj62hGCBM6yMC4EzRMc",
+            .url = "https://github.com/haruki7049/zigggwavvv/archive/refs/tags/3.0.0-rc.1.tar.gz",
+            .hash = "zigggwavvv-3.0.0-rc.1-iR5xWn92AgBYwCukG56Ik02PwbQ0KbnGLUcizJZT-iep",
         },
     },
 
