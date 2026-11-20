@@ -2,7 +2,7 @@
 
 The homepage of lightmix, built with [Ziex](https://github.com/ziex-dev/ziex).
 
-This is a separate Zig project with its own `build.zig.zon`, so the Ziex dependency never reaches the lightmix package. Ziex is pinned to `v0.1.0-dev.1259`, the latest release that supports Zig `0.16.0`.
+This is a separate Zig project with its own `build.zig.zon`, so the Ziex dependency never reaches the lightmix package. Ziex is pinned to `v0.1.0`, which requires Zig `0.17.0` or later.
 
 ## Commands
 

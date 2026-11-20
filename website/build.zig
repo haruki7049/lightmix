@@ -22,7 +22,7 @@ pub fn build(b: *std.Build) !void {
             .steps = .{
                 .dev = "dev",
                 .serve = "serve",
-                .@"export" = "export",
+                .static = "export",
             },
         },
     });
