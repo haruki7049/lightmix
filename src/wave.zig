@@ -248,7 +248,7 @@ pub fn inner(comptime T: type) type {
         }
 
         /// Mixer function type for blending two samples. It is a function pointer so that one mixer value
-        /// can be shared between `Wave(T).mix`, `Composer(T).finalize` and `Composer(T).render_stream`.
+        /// can be shared between several calls of `Wave(T).mix`.
         pub const MixerFn = *const fn (T, T) T;
 
         /// Options for mixing two waves together.

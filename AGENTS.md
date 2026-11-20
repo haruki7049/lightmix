@@ -10,7 +10,7 @@ ______________________________________________________________________
 
 - **Core Philosophy**: Treat audio generation as a deterministic build artifact. Running `zig build` or `zig build run` produces WAV audio files directly during the build process, eliminating the need for real-time audio recording or external sound server dependencies.
 - **Architectural Principles & Scope**:
-  - **Minimalist Core (Unix Philosophy)**: Focus strictly on low-level primitives: `Wave(T)` (waveform buffer & manipulation), `Composer(T)` (timeline arrangement & mixing), accurate WAV I/O, and `addWave` build-system integration.
+  - **Minimalist Core (Unix Philosophy)**: Focus strictly on low-level primitives: `Wave(T)` (waveform buffer & manipulation), accurate WAV I/O, and `addWave` build-system integration.
   - **Non-Goals**: High-level DSP effect suites (reverb, delay, chorus, flanger) and synthesizer instrument presets belong in separate higher-level libraries or application code.
   - **Auxiliary Playback**: `play()` and `addPlay` are developer preview helpers only. They must never introduce hard audio server dependencies or interfere with headless CI execution.
   - **Flat Generic Typing**: Generic over `comptime T: type` (`f32`, `f64`, `f80` and `f128`). Do not hardcode or favor any single floating-point precision.
@@ -33,12 +33,10 @@ ______________________________________________________________________
 - `src/`
   - `root.zig`: Library root entry point.
   - `wave.zig`: Waveform data structures (`Wave`), synthesis routines, and sample manipulation.
-  - `composer.zig`: Audio mixing, track composition, and audio timeline building.
   - `play/`: Playback (a developer preview helper). `backend.zig` is the backend interface and selects the backend for the target; `backends/` has `linux.zig` (PulseAudio first, then ALSA), `pulseaudio.zig`, `alsa.zig`, `coreaudio.zig`, `winmm.zig` and `unsupported.zig`.
   - `assets/`: Embedded/bundled audio resources (`sine.wav`).
 - `tests/`
   - `wave.zig`: Integration and unit test suite for wave features.
-  - `composer.zig`: Integration tests for composition and track mixing.
   - `build_fact.zig`, `build_ieee_float.zig`, `build_peak.zig`, `build_peak_now.zig`: Programs that `build.zig` runs to test the build-time `addWave` options (`use_fact`, IEEE float output, `use_peak` and `currentTimestamp`).
   - `assets/`: Audio files used by the tests (`sine.wav`, `soundless.wav`).
 - `examples/`: Categorized runnable example projects demonstrating `lightmix` usage.
@@ -115,7 +113,7 @@ Follow the conventional commits format:
 
 ### Branching & Pull Request Workflow
 
-- **Dedicated Branches**: Always create and work on a dedicated branch (e.g., `feat/wave-size` or `fix/composer-leak`). Do not commit directly to `main`.
+- **Dedicated Branches**: Always create and work on a dedicated branch (e.g., `feat/wave-size` or `fix/wave-leak`). Do not commit directly to `main`.
 - **Pushing**: Agents may push new commits to their own topic branch without confirmation when instructed by the user or when creating or updating a pull request. Rewriting pushed history (amending or rebasing pushed commits and force-pushing) and pushing to `main` need explicit user approval.
 - **PR Creation**: Create PRs using `gh pr create`. Reference issues in the body using standard keywords (e.g., `Closes #140`).
 - **No Issue Numbers in Commit Messages**: Do not include issue numbers (e.g. `(#140)` or `#140`) anywhere in a commit message, summary or body, or in a PR title. Squash merges copy every commit message into `main`, so a `Closes #140` in a commit body can close an issue the PR was never meant to close. Link issues only from the PR description. The ` (#N)` suffix GitHub appends to a squash-merge summary is the one exception.
@@ -155,17 +153,17 @@ gh project item-edit 11 --owner haruki7049 --url <ISSUE_OR_PR_URL> --field "Esti
 
 ### Labels (Tags) Assignment
 
-Whenever creating an Issue or Pull Request using the `gh` CLI, agents **MUST** assign relevant labels (tags) to categorize the item (e.g. `feat`, `fix`, `docs`, `refactor`, `build.zig`, `Wave(T)`, `composer`, etc.):
+Whenever creating an Issue or Pull Request using the `gh` CLI, agents **MUST** assign relevant labels (tags) to categorize the item (e.g. `feat`, `fix`, `docs`, `refactor`, `build.zig`, `Wave(T)`, `play`, etc.):
 
 - **Via `--label` flag when creating**:
   ```bash
   gh issue create --label "docs,Wave(T)" ...
-  gh pr create --label "refactor,composer" ...
+  gh pr create --label "refactor,Wave(T)" ...
   ```
 - **Via `gh issue/pr edit` after creation**:
   ```bash
   gh issue edit <ISSUE_NUMBER> --add-label "docs,Wave(T)"
-  gh pr edit <PR_NUMBER> --add-label "refactor,composer"
+  gh pr edit <PR_NUMBER> --add-label "refactor,Wave(T)"
   ```
 
 ### Versioning and Releasing

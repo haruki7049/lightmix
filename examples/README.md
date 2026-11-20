@@ -41,18 +41,7 @@ Once you can generate waves, learn how to transform and combine them.
 
 **What you'll learn:** Wave mixing, filter composition, additive synthesis, pitch relationships
 
-### 04-composer/
-
-**Arranging sounds in time**
-
-The Composer lets you sequence and layer multiple audio sources.
-
-- **simple-sequence** - Create a simple melody by sequencing notes
-- **overlapping-sounds** - Layer sounds on top of each other (polyphony)
-
-**What you'll learn:** Using the Composer API, timing control, creating musical arrangements
-
-### 05-practical-examples/
+### 04-practical-examples/
 
 **Real-world instrument synthesis**
 
@@ -63,7 +52,7 @@ See how to combine techniques to create realistic instrument sounds.
 
 **What you'll learn:** Physical modeling, combining noise and tones, percussion synthesis
 
-### 06-advanced/
+### 05-advanced/
 
 **Advanced techniques**
 
@@ -93,10 +82,10 @@ Most examples write `result.wav` to the example directory. Some differ:
 
 ### Build-Time Generation
 
-The `06-advanced/build-time-generation` example is special - it generates audio during the build:
+The `05-advanced/build-time-generation` example is special - it generates audio during the build:
 
 ```bash
-cd examples/06-advanced/build-time-generation
+cd examples/05-advanced/build-time-generation
 zig build  # Note: just 'build', not 'build run'
 ```
 
@@ -121,9 +110,8 @@ We recommend following this order:
 1. **Start with 01-getting-started/** - Get comfortable with the basics
 1. **Explore 02-wave-basics/** - Understand different waveforms and their sounds
 1. **Try 03-wave-operations/** - Learn to combine and transform waves
-1. **Move to 04-composer/** - Start creating musical sequences
-1. **Study 05-practical-examples/** - See real synthesis techniques in action
-1. **Experiment with 06-advanced/** - Explore advanced features
+1. **Study 04-practical-examples/** - See real synthesis techniques in action
+1. **Experiment with 05-advanced/** - Explore advanced features
 
 ## 🎵 Understanding the Code
 
@@ -165,8 +153,8 @@ After generating WAV files, you can play them with:
 After working through these examples, check out:
 
 - The main lightmix documentation in `src/root.zig`
-- API documentation for Wave and Composer modules
-- The test files `tests/wave.zig` and `tests/composer.zig` for more usage patterns (the `tests/build_*.zig` files are programs that `build.zig` runs, not usage examples)
+- API documentation for the Wave module
+- The test file `tests/wave.zig` for more usage patterns (the `tests/build_*.zig` files are programs that `build.zig` runs, not usage examples)
 
 ## 🤝 Contributing
 
