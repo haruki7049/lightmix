@@ -124,21 +124,24 @@ Follow the conventional commits format:
 
 ### GitHub Projects Registration
 
-Whenever creating an Issue or Pull Request using the `gh` CLI, agents **MUST** register the created item to the project at `https://github.com/users/haruki7049/projects/11` (`lightmix GitHub Project`).
+The project at `https://github.com/users/haruki7049/projects/11` (`lightmix GitHub Project`) tracks **issues only**. Pull requests are not registered to it.
+
+Whenever creating an Issue using the `gh` CLI, agents **MUST** register the created issue to the project.
 
 - **Via `--project` flag when creating**:
   ```bash
   gh issue create --project "lightmix GitHub Project" ...
-  gh pr create --project "lightmix GitHub Project" ...
   ```
 - **Via `gh project item-add` after creation**:
   ```bash
-  gh project item-add 11 --owner haruki7049 --url <ISSUE_OR_PR_URL>
+  gh project item-add 11 --owner haruki7049 --url <ISSUE_URL>
   ```
+
+Do not pass `--project` to `gh pr create`, and do not run `gh project item-add` for a pull request. Link a pull request to the issue it resolves with a closing keyword (see "PR Creation"), so that it shows up as a linked pull request of that issue.
 
 ### Priority and Estimate Configuration
 
-Whenever creating an Issue or Pull Request, agents **MUST** set the **Priority** and **Estimate** fields in GitHub Project 11 (`lightmix GitHub Project`):
+Whenever creating an Issue, agents **MUST** set the **Priority** and **Estimate** fields of the issue in GitHub Project 11 (`lightmix GitHub Project`):
 
 - **Priority**: Single-select field (`P0`, `P1`, or `P2`).
   - `P0`: Critical blockers, emergency bug fixes, or build failures.
@@ -149,8 +152,8 @@ Whenever creating an Issue or Pull Request, agents **MUST** set the **Priority**
 Configure these fields via `gh project item-edit`:
 
 ```bash
-gh project item-edit 11 --owner haruki7049 --url <ISSUE_OR_PR_URL> --field "Priority" --value "P1"
-gh project item-edit 11 --owner haruki7049 --url <ISSUE_OR_PR_URL> --field "Estimate" --number 2
+gh project item-edit 11 --owner haruki7049 --url <ISSUE_URL> --field "Priority" --value "P1"
+gh project item-edit 11 --owner haruki7049 --url <ISSUE_URL> --field "Estimate" --number 2
 ```
 
 ### Labels (Tags) Assignment
@@ -186,9 +189,9 @@ ______________________________________________________________________
 1. **Preserve English Comment Rule**: Ensure any new code comments or documentation additions strictly adhere to the English language requirement.
 1. **Strict PR Merge Prohibition**: Always leave created Pull Requests open. Never attempt to merge a Pull Request, or enable auto-merge on it (`gh pr merge --auto`), unless explicitly instructed by the user.
 1. **No Unsolicited Actions on Other Branches/PRs**: Never modify, rebase, or resolve conflicts on PRs or branches without explicit user instructions.
-1. **Always Register to GitHub Project**: When creating Issues or Pull Requests with `gh`, always add them to `https://github.com/users/haruki7049/projects/11` (`lightmix GitHub Project`).
+1. **Always Register Issues to GitHub Project**: When creating Issues with `gh`, always add them to `https://github.com/users/haruki7049/projects/11` (`lightmix GitHub Project`). Do not register Pull Requests to it.
 1. **Adhere to Minimalist Scope**: Never add complex DSP effects (reverb, delay, flanger, etc.) or synthesizer instrument presets to the core library. Keep additions focused on fundamental waveform manipulation, mixing, and build-time generation.
 1. **Preserve Headless Execution**: Ensure all build steps, examples, and tests run cleanly in headless environments without physical audio devices or sound daemons. Playback utilities (`play()`) must remain strictly auxiliary preview helpers.
 1. **Preserve Pure Zig**: Avoid introducing C source files, C library dependencies, or external non-Zig toolchain dependencies into core synthesis, manipulation, or codec logic.
 1. **Always Assign Labels**: When creating Issues or Pull Requests with `gh`, always assign relevant labels (e.g., `fix`, `feat`, `docs`, `refactor`, `Wave(T)`, `build.zig`) to categorize the work.
-1. **Always Set Priority and Estimate**: When registering Issues or Pull Requests to the GitHub Project, always configure the `Priority` (`P0`/`P1`/`P2`) and `Estimate` numeric value using `gh project item-edit`.
+1. **Always Set Priority and Estimate**: When registering Issues to the GitHub Project, always configure the `Priority` (`P0`/`P1`/`P2`) and `Estimate` numeric value using `gh project item-edit`.
