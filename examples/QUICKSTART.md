@@ -30,11 +30,6 @@ Follow this recommended order:
    - `filtering` - apply several self-written filters in sequence
    - `frequency-changes` - change pitch
 
-1. **04-composer/** - Making music (2 examples)
-
-   - `simple-sequence` - create a melody
-   - `overlapping-sounds` - layer sounds
-
 1. **05-practical-examples/** - Real instruments (2 examples)
 
    - `guitar` - realistic string sound
@@ -55,7 +50,6 @@ Follow this recommended order:
 ├── 🌱 01-getting-started     - Absolute beginner friendly
 ├── 🎼 02-wave-basics         - Basic waveforms & sounds  
 ├── 🔧 03-wave-operations     - Transform & combine audio
-├── 🎹 04-composer            - Sequence & layer sounds
 ├── 🎸 05-practical-examples  - Real synthesis techniques
 └── 🚀 06-advanced            - Advanced features
 ```

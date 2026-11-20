@@ -27,7 +27,7 @@ Before contributing new features, please understand `lightmix`'s core architectu
 1. **Audio as a Deterministic Build Artifact**:
    The primary mission is generating audio deterministically at build time (`zig build`), suitable for CI pipelines, automated game asset compilation, and headless environments. Output must be bit-identical and reproducible.
 1. **Minimalist Core (Unix Philosophy)**:
-   - **In Scope**: Foundational primitives for waveform data structures (`Wave(T)`), timeline mixing (`Composer(T)`), WAV encoding/decoding, and build integration (`addWave`).
+   - **In Scope**: Foundational primitives for waveform data structures (`Wave(T)`), WAV encoding/decoding, and build integration (`addWave`).
    - **Out of Scope (Non-Goals)**: Heavy DSP effect suites (reverb, chorus, flanger, etc.) and specialized synthesizer instrument presets. These belong in higher-level libraries or application code.
 1. **Playback is Auxiliary**:
    Real-time audio playback (`play()`, `addPlay`) is strictly a local developer preview helper. Changes to the core synthesis and build pipeline must never introduce runtime audio server dependencies or break headless CI execution.

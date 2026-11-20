@@ -2,7 +2,6 @@ const std = @import("std");
 const z_wav = @import("zigggwavvv");
 
 pub const Wave = @import("./src/wave.zig");
-pub const Composer = @import("./src/composer.zig");
 
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
@@ -54,20 +53,6 @@ pub fn build(b: *std.Build) !void {
     const run_wave_integration_tests = b.addRunArtifact(wave_integration_test);
     test_step.dependOn(&run_wave_integration_tests.step);
 
-    // Composer
-    const composer_integration_test = b.addTest(.{
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("tests/composer.zig"),
-            .target = target,
-            .optimize = optimize,
-            .imports = &.{
-                .{ .name = "lightmix", .module = lib_mod },
-            },
-        }),
-    });
-    const run_composer_integration_tests = b.addRunArtifact(composer_integration_test);
-    test_step.dependOn(&run_composer_integration_tests.step);
-
     // Playback tests. They need an audio output device, so they are separate from `test`.
     const test_play_step = b.step("test-play", "Run playback tests (needs an audio output device)");
 
@@ -97,8 +82,6 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
         "examples/03-wave-operations/filtering/src/main.zig",
         "examples/03-wave-operations/frequency-changes/src/main.zig",
         "examples/03-wave-operations/mixing-waves/src/main.zig",
-        "examples/04-composer/overlapping-sounds/src/main.zig",
-        "examples/04-composer/simple-sequence/src/main.zig",
         "examples/05-practical-examples/drum/src/main.zig",
         "examples/05-practical-examples/guitar/src/main.zig",
         "examples/06-advanced/runtime-play/src/main.zig",

@@ -24,7 +24,6 @@ I created this project because I felt a disconnect between existing audio synthe
   `lightmix` focuses exclusively on foundational audio primitives:
 
   - Waveform buffer management and basic transformations (`Wave(T)`).
-  - Timeline-based audio mixing and track arrangement (`Composer(T)`).
   - Accurate WAV encoding/decoding and `build.zig` integration (`addWave`).
 
   High-level DSP effects (such as reverb, flanger, or chorus) and specialized synthesizer sound presets are considered **out of scope** (Non-Goals) for the core library. They belong in separate domain libraries or user application code.
@@ -60,7 +59,7 @@ I created this project because I felt a disconnect between existing audio synthe
   While current structs hold allocator instances for simplicity, `lightmix` embraces a planned future evolution toward modern Zig 0.16 `Unmanaged` patterns (explicit allocators per operation) when breaking changes can be bundled.
 
 - **External Parallelism via Build System**:
-  `Wave(T)` and `Composer(T)` are kept purely synchronous and single-threaded. Multi-asset parallelization is delegated entirely to the build system via `zig build -j` to avoid internal threading complexity.
+  `Wave(T)` is kept purely synchronous and single-threaded. Multi-asset parallelization is delegated entirely to the build system via `zig build -j` to avoid internal threading complexity.
 
 - **Pragmatic Generation Strategy**:
   Compiling native generator binaries in `.fast` mode via `addWave` is a pragmatic choice for maximum generation speed. `lightmix` remains flexible and pragmatic about adopting alternative compilation or evaluation techniques if faster or more reliable methods emerge.
@@ -251,28 +250,6 @@ defer mono_wave.deinit();
 // Convert to stereo with panning (e.g., pan 50% right)
 const stereo_wave = try wave.to_stereo(0.5);
 defer stereo_wave.deinit();
-```
-
-### `Composer`
-
-`Composer` is a generic type function that accepts a sample type parameter (same as Wave). It contains a `Composer(T).WaveInfo` array, which contains a `Wave(T)` and the timing when it plays.
-
-```zig
-const allocator = std.heap.page_allocator; // Use your allocator
-const wave = generate_wave(); // Returns a Wave(f64)
-
-const info: []const lightmix.Composer(f64).WaveInfo = &.{
-    .{ .wave = wave, .start_point = 0 },
-    .{ .wave = wave, .start_point = 44100 },
-};
-var composer: lightmix.Composer(f64) = try lightmix.Composer(f64).init_with(info, allocator, .{
-    .sample_rate = 44100, // Samples per second.
-    .channels = 1, // Channels for the Wave. If this composer has two channels, it means the wave is stereo.
-});
-defer composer.deinit(); // Composer.items is owned by the passed allocator, so you must free this composer. Do not copy a composer and use both copies, as with std.ArrayList.
-
-const result: lightmix.Wave(f64) = try composer.finalize(.{}); // Let's finalize to create a Wave(f64)!!
-defer result.deinit(); // Don't forget to free the Wave data.
 ```
 
 ## Zig Version & 1.0.0 Milestone

@@ -1,6 +1,6 @@
 //! # lightmix - Audio Synthesis and Manipulation Library
 //!
-//! lightmix is a Zig library for audio waveform generation, manipulation, and composition.
+//! lightmix is a Zig library for audio waveform generation and manipulation.
 //! It provides type-safe, generic interfaces for working with audio data.
 //!
 //! ## Core Types
@@ -15,11 +15,6 @@
 //! - Reading and writing WAV files (`read`, `write` and `size`).
 //! - Playback for previewing (`play` and `playWithOptions`), a developer helper that adapts
 //!   channels to the output device by default.
-//!
-//! ### Composer
-//! The `Composer` type function creates types for sequencing and overlaying multiple
-//! Wave instances in time to create complex audio arrangements. It renders the whole
-//! composition at once (`finalize`) or in blocks (`render_stream`).
 //!
 //! ## Playback Helpers
 //!
@@ -38,7 +33,6 @@
 //! const std = @import("std");
 //! const lightmix = @import("lightmix");
 //! const Wave = lightmix.Wave;
-//! const Composer = lightmix.Composer;
 //!
 //! pub fn main() !void {
 //!     const allocator = std.heap.page_allocator;
@@ -56,26 +50,12 @@
 //!         .channels = 1,
 //!     });
 //!     defer wave.deinit();
-//!
-//!     // Create a composition with multiple waves
-//!     var composer: Composer(f64) = try Composer(f64).init(allocator, .{
-//!         .sample_rate = 44100,
-//!         .channels = 1,
-//!     });
-//!     defer composer.deinit();
-//!
-//!     // Composer(T).append() modifies the Composer in-place
-//!     try composer.append(.{ .wave = wave, .start_point = 0 });
-//!
-//!     const result: Wave(f64) = try composer.finalize(.{});
-//!     defer result.deinit();
 //! }
 //! ```
 
 const std = @import("std");
 
 pub const Wave = @import("./wave.zig").inner;
-pub const Composer = @import("./composer.zig").inner;
 
 /// The inclusive range of channel counts an output device accepts.
 pub const ChannelRange = @import("./play/backend.zig").ChannelRange;
@@ -98,6 +78,5 @@ pub fn outputChannels(sample_rate: u32) anyerror!?ChannelRange {
 
 test "Import tests" {
     _ = @import("./wave.zig");
-    _ = @import("./composer.zig");
     _ = @import("./play/backend.zig");
 }
