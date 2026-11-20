@@ -82,9 +82,9 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
         "examples/03-wave-operations/filtering/src/main.zig",
         "examples/03-wave-operations/frequency-changes/src/main.zig",
         "examples/03-wave-operations/mixing-waves/src/main.zig",
-        "examples/05-practical-examples/drum/src/main.zig",
-        "examples/05-practical-examples/guitar/src/main.zig",
-        "examples/06-advanced/runtime-play/src/main.zig",
+        "examples/04-practical-examples/drum/src/main.zig",
+        "examples/04-practical-examples/guitar/src/main.zig",
+        "examples/05-advanced/runtime-play/src/main.zig",
     };
 
     for (example_files, 0..) |ex_path, i| {
@@ -103,7 +103,7 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
         });
         test_step.dependOn(&example_exe.step);
 
-        if (std.mem.eql(u8, ex_path, "examples/06-advanced/runtime-play/src/main.zig")) {
+        if (std.mem.eql(u8, ex_path, "examples/05-advanced/runtime-play/src/main.zig")) {
             const run_example = b.addRunArtifact(example_exe);
             run_example.has_side_effects = true;
             test_play_step.dependOn(&run_example.step);
@@ -111,7 +111,7 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
     }
 
     const bt_gen_mod = b.createModule(.{
-        .root_source_file = b.path("examples/06-advanced/build-time-generation/src/main.zig"),
+        .root_source_file = b.path("examples/05-advanced/build-time-generation/src/main.zig"),
         .target = target,
         .optimize = optimize,
         .imports = &.{
@@ -129,7 +129,7 @@ fn example_verifications(b: *std.Build, target: std.Build.ResolvedTarget, optimi
     test_step.dependOn(bt_gen_wave.step);
 
     const bt_play_mod = b.createModule(.{
-        .root_source_file = b.path("examples/06-advanced/build-time-play/src/main.zig"),
+        .root_source_file = b.path("examples/05-advanced/build-time-play/src/main.zig"),
         .target = target,
         .optimize = optimize,
         .imports = &.{

@@ -180,7 +180,7 @@ pub fn build(b: *std.Build) !void {
   - **`use_peak`**: Whether to write a `PEAK` chunk in the WAV header (default: `false`).
   - **`peak_timestamp`**: Timestamp value (in Unix epoch seconds) written to the `PEAK` chunk when `use_peak` is `true` (default: `0`). Use `l.currentTimestamp(b)` to stamp the current time (or `SOURCE_DATE_EPOCH` when set); note that a wall-clock value disables build caching of the generated wave.
 
-You can find a complete example in [./examples/06-advanced/build-time-generation](./examples/06-advanced/build-time-generation).
+You can find a complete example in [./examples/05-advanced/build-time-generation](./examples/05-advanced/build-time-generation).
 
 ## lightmix's types
 
