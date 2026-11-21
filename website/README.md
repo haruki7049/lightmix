@@ -11,7 +11,7 @@ Run these in this directory:
 | Command | Description |
 | :--- | :--- |
 | `zig build dev` | Starts a development server with hot reload |
-| `zig build export` | Writes the static site to `dist/` |
+| `zig build static` | Writes the static site to `dist/` |
 
 The site is served from `/lightmix` on GitHub Pages, so every route and asset path is prefixed with `/lightmix` (`base_path` in `build.zig`).
 
