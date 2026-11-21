@@ -19,11 +19,7 @@ pub fn build(b: *std.Build) !void {
         // GitHub Pages serves the site under `/lightmix`.
         .app = .{ .base_path = "/lightmix" },
         .cli = .{
-            .steps = .{
-                .dev = "dev",
-                .serve = "serve",
-                .static = "export",
-            },
+            .steps = .{ .static = "static" },
         },
     });
 }
