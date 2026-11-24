@@ -16,7 +16,7 @@ workflows:
         - 'mlugg/setup-zig@v2.2.1'
     '.github/workflows/nix-checker.yml':
         - 'actions/checkout@v7.0.1'
-        - 'cachix/install-nix-action@v31.11.5'
+        - 'cachix/install-nix-action@v32.0.0'
     '.github/workflows/pr-conventional-commits-validation.yml':
         - 'ytanikin/pr-conventional-commits@1.5.2'
     '.github/workflows/release.yml':
@@ -59,9 +59,9 @@ dependencies:
         repo_id: 496012378
         uses:
             - 'actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f'
-    'cachix/install-nix-action@v31.11.5':
-        ref: 'v31.11.5'
-        commit: 'sha1-3dc140bfc76c49fbd4dd958429132e3746bcb086'
+    'cachix/install-nix-action@v32.0.0':
+        ref: 'v32.0.0'
+        commit: 'sha1-bb0495a1086c46893eee56f32fd192dfe4a15bb9'
         owner_id: 36824654
         repo_id: 212301524
     'labsn/sound-ci-helpers@v1.0.4':
