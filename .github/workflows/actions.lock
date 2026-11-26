@@ -3,10 +3,6 @@
 # Docs: https://gh.io/actions-lockfile
 version: 'v0.0.3'
 workflows:
-    '.github/workflows/ci.yml':
-        - 'actions/checkout@v7.0.1'
-        - 'labsn/sound-ci-helpers@v1.0.4'
-        - 'mlugg/setup-zig@v2.2.1'
     '.github/workflows/dependabot-auto-merge.yml': []
     '.github/workflows/deploy-api-docs.yml':
         - 'actions/checkout@v7.0.1'
@@ -14,7 +10,7 @@ workflows:
         - 'actions/deploy-pages@v5.0.1'
         - 'actions/upload-pages-artifact@v5.0.0'
         - 'mlugg/setup-zig@v2.2.1'
-    '.github/workflows/nix-checker.yml':
+    '.github/workflows/nix-ci.yml':
         - 'actions/checkout@v7.0.1'
         - 'cachix/install-nix-action@v32.0.0'
     '.github/workflows/pr-conventional-commits-validation.yml':
@@ -26,6 +22,10 @@ workflows:
         - 'actions/stale@v11.0.0'
     '.github/workflows/verify-actions-lockfile.yml':
         - 'actions/checkout@v7.0.1'
+    '.github/workflows/zig-ci.yml':
+        - 'actions/checkout@v7.0.1'
+        - 'labsn/sound-ci-helpers@v1.0.4'
+        - 'mlugg/setup-zig@v2.2.1'
 dependencies:
     'actions/checkout@v7.0.1':
         ref: 'v7.0.1'

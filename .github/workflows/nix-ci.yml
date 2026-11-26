@@ -1,9 +1,12 @@
-name: nix-checker
+name: Nix CI
 
 on:
   push:
+    branches: [ main ]
+  pull_request:
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   run-nix-check:
@@ -33,5 +36,5 @@ jobs:
         uses: cachix/install-nix-action@v32.0.0
         with:
           nix_path: nixpkgs=channel:nixos-unstable
-      - name: Run nix-build with flakes
+      - name: Run nix build
         run: nix build .#default
