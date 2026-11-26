@@ -16,7 +16,6 @@ jobs:
 
     steps:
       # GitHub squash-merges the PR once the required status checks pass.
-      # A PAT (Dependabot secret) is used so that the merge to `main` triggers cachix-push.
       - name: Enable auto-merge
         run: gh pr merge --auto --squash "$PR_URL"
         env:
