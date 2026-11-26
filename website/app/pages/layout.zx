@@ -1,0 +1,28 @@
+pub fn Layout(ctx: zx.LayoutContext, children: zx.Component) zx.Component {
+    return (
+        <html @allocator={ctx.arena} lang="en-US">
+            <head>
+                <meta charset="UTF-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                <title>lightmix</title>
+                <link rel="stylesheet" href="/assets/style.css" />
+            </head>
+
+            <body>
+                <header>
+                    <a class="brand" href="/">lightmix</a>
+                    <nav>
+                        <a href="/docs/">API Docs</a>
+                        <a href="https://github.com/haruki7049/lightmix">GitHub</a>
+                    </nav>
+                </header>
+                {children}
+                <footer>
+                    <p>Built with Ziex.</p>
+                </footer>
+            </body>
+        </html>
+    );
+}
+
+const zx = @import("zx");
