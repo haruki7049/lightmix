@@ -14,7 +14,7 @@ pub fn build(b: *std.Build) !void {
         }),
     });
 
-    // Adds the `dev`, `serve` and `export` steps. `zig build export` writes the static site to `dist/`.
+    // Adds the `dev`, `serve` and `static` steps. `zig build static` writes the static site to `dist/`.
     _ = try ziex.init(b, app_exe, .{
         // GitHub Pages serves the site under `/lightmix`.
         .app = .{ .base_path = "/lightmix" },
