@@ -29,7 +29,6 @@ const Feature = struct {
 
 const features = [_]Feature{
     .{ .title = "Wave(T)", .description = "Waveform buffers and sample manipulation, generic over f32, f64, f80 and f128." },
-    .{ .title = "Composer(T)", .description = "Arrange waves on a timeline and mix them." },
     .{ .title = "addWave", .description = "Generate WAV files as part of your build." },
     .{ .title = "Pure Zig", .description = "No C toolchain and no C library dependencies." },
 };
