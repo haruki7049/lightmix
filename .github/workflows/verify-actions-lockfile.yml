@@ -1,7 +1,7 @@
 # Fails when .github/workflows/actions.lock is out of sync with the
 # workflows or a locked pin no longer verifies upstream.
 
-name: verify-lockfile
+name: verify-actions-lockfile
 
 on:
   pull_request:
@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  verify-actions-lockfile:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
