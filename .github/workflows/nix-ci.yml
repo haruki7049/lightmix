@@ -21,7 +21,7 @@ jobs:
         uses: cachix/install-nix-action@v31.11.5
         with:
           nix_path: nixpkgs=channel:nixos-unstable
-      - name: Run nix flake check
+      - name: Run `nix flake check`
         run: nix flake check --all-systems
 
   run-nix-build:
@@ -36,5 +36,5 @@ jobs:
         uses: cachix/install-nix-action@v31.11.5
         with:
           nix_path: nixpkgs=channel:nixos-unstable
-      - name: Run nix build
+      - name: Run `nix build`
         run: nix build .#default
